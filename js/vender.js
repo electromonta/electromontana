@@ -12,7 +12,8 @@ var VistaVender = (function () {
       inicial: null, pagaInicial: true, metodo: (ST.metodos.find(function (m) { return m.activo; }) || {}).id, refInicial: '',
       fecha: hoy, pagadoAntes: null,
       frecuencia: 'semanal', modo: 'numero', numero: 8, cuota: null, primera: Cuentas.primeraSugerida(hoy, 'semanal'), primeraTocada: false,
-      personal: null, contratoPapel: '', foto: null, notas: ''
+      personal: null, contratoPapel: '', foto: null, notas: '',
+      clave: nuevaClave()   // una sola clave por venta: tocar Guardar dos veces no la repite
     };
   }
 
@@ -21,8 +22,9 @@ var VistaVender = (function () {
     c.appendChild(raiz);
     F = nuevoFormulario();
     if (arg) ponerCliente(arg);
+    // "Ya debía" solo lo usan los dueños (lo pagado antes no pasa por el efectivo de nadie)
     raiz.innerHTML =
-      '<div class="seg" id="vTipo"><button type="button" data-t="nueva" class="activo">Venta nueva</button><button type="button" data-t="carga">Ya debía</button></div>' +
+      '<div class="seg" id="vTipo"' + (esDueno() ? '' : ' hidden') + '><button type="button" data-t="nueva" class="activo">Venta nueva</button><button type="button" data-t="carga">Ya debía</button></div>' +
       '<p class="tenue chico" id="vTipoAyuda" style="margin:8px 2px 0"></p>' +
       '<div class="tarjeta" style="margin-top:12px"><div class="paso"><b>1</b><h3>Cliente</h3></div><div id="vCliente"></div></div>' +
       '<div class="tarjeta"><div class="paso"><b>2</b><h3>Lo que se lleva</h3></div><div id="vItems"></div>' +
@@ -416,14 +418,13 @@ var VistaVender = (function () {
         if (F.tipo === 'nueva' && lista[k].fecha < F.fecha) { toast('Una cuota no puede ser antes de la fecha de la venta', 'error'); return; }
       }
     }
-    var op = { clave: nuevaClave(), tipo: 'venta', datos: datos, resumen: { texto: (F.tipo === 'carga' ? 'Carga de ' : 'Venta a ') + c.nombre + ' por ' + fmtUSD(t) } };
+    var op = { clave: F.clave, tipo: 'venta', datos: datos, resumen: { texto: (F.tipo === 'carga' ? 'Carga de ' : 'Venta a ') + c.nombre + ' por ' + fmtUSD(t) } };
     var r;
     try {
       r = await enviarYEsperar(op);
     } catch (e) {
       if (e && e.code === 'EM001' && await confirmar({ titulo: 'Referencia repetida', mensaje: errMsg(e) + ' ¿Guardar igual?', boton: 'Guardar igual' })) {
         datos.pago_inicial.forzar_referencia = true;
-        op.clave = nuevaClave();
         r = await enviarYEsperar(op);
       } else throw e;
     }

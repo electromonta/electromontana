@@ -236,6 +236,25 @@ select igual('empleado ve su entrega', $q$ (select count(*) from public.entregas
 select t('no venderle bloquea al empleado', $q$ public.registrar_venta('{"cliente_id":3,"items":[{"descripcion":"X","precio":10}],"inicial":10}') $q$, 'no se le vende');
 reset role;
 
+-- Arreglos de la revisión: tasa, "Ya debía", entrega de lo contado, historial de costos
+select como('E'); set role authenticated;
+select t('empleado abona 7', $q$ public.registrar_abono('{"cliente_id":3,"metodo_id":1,"monto":7}', '55555555-0000-0000-0000-000000000001')->>'saldo_cliente' $q$);
+select t('empleado abona 3', $q$ public.registrar_abono('{"cliente_id":3,"metodo_id":1,"monto":3}', '55555555-0000-0000-0000-000000000002')->>'saldo_cliente' $q$);
+select t('empleado con tasa inventada', $q$ public.registrar_abono('{"cliente_id":3,"metodo_id":5,"monto":100,"tasa":1}') $q$, 'no es la que pusieron');
+select t('empleado inicial con tasa inventada', $q$ public.registrar_venta('{"cliente_id":2,"items":[{"descripcion":"X","precio":10}],"inicial":10,"pago_inicial":{"metodo_id":5,"monto":10,"tasa":1}}') $q$, 'no es la que pusieron');
+select t('empleado carga "ya debía"', $q$ public.registrar_venta('{"cliente_id":2,"origen":"carga_inicial","items":[{"descripcion":"X","precio":100}],"pagado_antes":50,"cuotas":[{"fecha":"2099-01-01","monto":50}]}') $q$, 'Solo los dueños pueden cargar');
+reset role;
+select como('D'); set role authenticated;
+select igual('entrega solo de lo contado', $q$ public.registrar_entrega('00000000-0000-0000-0000-00000000000e', 7, 0, null, null, array[(select id from public.abonos where grupo = '55555555-0000-0000-0000-000000000001')])->>'esperado_usd' $q$, '7.00');
+select igual('lo no contado sigue pendiente', $q$ public.registrar_entrega('00000000-0000-0000-0000-00000000000e', 3, 0)->>'esperado_usd' $q$, '3.00');
+select t('costo de la venta de Pedraza', $q$ (select public.poner_costo((select i.id from public.venta_items i join public.ventas v on v.id = i.venta_id where v.clave = '22222222-0000-0000-0000-000000000005'), 205)) $q$);
+select t('dueño cobra con otra tasa', $q$ public.registrar_abono('{"cliente_id":3,"metodo_id":5,"monto":42,"tasa":42}')->>'saldo_cliente' $q$);
+reset role;
+select como('E'); set role authenticated;
+select igual('empleado no ve el historial de costos', $q$ (select count(*) from public.eventos_venta where tipo = 'costo') $q$, '0');
+select igual('empleado ve sus otras novedades', $q$ (select count(*) >= 0 from public.eventos_venta) $q$, 'true');
+reset role;
+
 select como('X'); set role authenticated;
 select t('usuario inactivo', $q$ public.guardar_cliente('{"nombre":"Z","sede":"pedraza"}') $q$, 'no está activo');
 select igual('inactivo no ve nada', $q$ (select count(*) from public.clientes) $q$, '0');

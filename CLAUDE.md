@@ -108,6 +108,9 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - Funciones internas en el esquema `interno` (la API no las ve). RPC públicas solo para `authenticated`; la app solo puede LEER tablas (sin insert/update/delete).
 - Fotos en el bucket privado `fotos`, ruta `cli/<id del cliente>/<tipo>-<…>.jpg`; se ven con enlace temporal y solo si se ve al cliente (`ve_ruta_foto`).
 - Errores con código: `EM001` referencia repetida (la app ofrece "Guardar igual"), `EM002` cédula repetida.
+- Reglas del empleado (revisión del 2026-10-15): en Bs solo puede usar la tasa que pusieron los dueños (la de hoy o una de los últimos 8 días, `interno.revisar_tasa`); no puede cargar "Ya debía"; no ve costos (ni en `eventos_venta`). La entrega marca solo los cobros que el dueño contó (`p_abonos`).
+- La app reintenta sola (no toma como rechazo) los errores del servidor (5xx, `40001`, `40P01`, `57014`, `PGRST00x`, `PGRST30x`), y usa una sola clave por formulario: tocar Guardar dos veces no duplica.
+- `pg_net` está instalado: sirve para probar desde la base que la entrada de un usuario o la Edge Function responden (el contenedor de Claude no llega directo a Supabase).
 
 ## Pruebas (correr antes de cada entrega)
 
@@ -118,7 +121,8 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 
 ## Estado
 
-- **2026-10-15 — Entrega 1 (etapa 1) hecha.** Detalle en `docs/HISTORIAL.md`.
+- **2026-10-15 — Entrega 1 (etapa 1) hecha y aplicada a la base real** (migraciones `001_base` y `002_respaldo_diario`, las 47 funciones con la misma huella que las probadas; Edge Function `usuarios` desplegada). Cuentas creadas: `franklin` y `daniel` (dueños, clave temporal que Kinan les pasa; al entrar la cambian). La base no tiene clientes todavía. Detalle en `docs/HISTORIAL.md`.
 - **Falta antes de usarla con clientes reales:** (1) pasar la base a **Pro**; (2) que Franklin o Daniel activen GitHub Pages (Settings → Pages → rama `main`, carpeta raíz); (3) apagar el registro público en Supabase (Authentication → Sign In / Providers → "Allow new users to sign up"); (4) crear al empleado de Pedraza desde Ajustes cuando se sepa su nombre; (5) que revisen las condiciones del contrato (Ajustes → Contrato).
 - Respaldos hechos: ninguno todavía (la base no tiene datos reales).
+- **Pedido de Kinan (2026-10-15):** al terminar el sistema completo, hacer una **guía completa de uso** para dársela a Franklin y Daniel y para que Kinan aprenda a mostrarlo.
 - **Siguiente (etapa 2):** mercancía de la tienda de Pedraza, notas de cobro, reportes (ganancia, morosos, cobrado por semana), recordatorios de WhatsApp a los atrasados. Etapa 3: contrato firmado en la pantalla. Etapa 4: dominio.

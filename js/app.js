@@ -139,17 +139,24 @@ function hojaCola() {
           '<div class="tenue chico">' + esc(fmtFechaHora(o.creado)) + (o.intentos ? ' · ' + plural(o.intentos, 'intento', 'intentos') : '') + '</div>' +
           (o.estado === 'error' ? '<div class="aviso aviso-error" style="margin-top:8px">' + esc(o.error || '') + '</div>' +
             '<div class="botonera" style="margin-top:8px">' +
-            (o.codigo === 'EM001' ? '<button type="button" class="btn btn-sec btn-chico" data-forzar="' + o.clave + '">Guardar igual</button>' : '') +
+            (o.codigo === 'EM001' ? '<button type="button" class="btn btn-sec btn-chico" data-forzar="' + o.clave + '">Guardar igual</button>'
+                                  : '<button type="button" class="btn btn-sec btn-chico" data-reintentar="' + o.clave + '">Reintentar</button>') +
             '<button type="button" class="btn btn-sec btn-chico" data-descartar="' + o.clave + '">Descartar</button></div>' : '') +
           '</div>';
       }).join('');
   }
   pintar();
   h.cuerpo.addEventListener('click', async function (e) {
-    var f = e.target.closest('[data-forzar]');
+    // Reintentar con la misma clave es seguro: si ya se había guardado, la base no lo repite
+    var f = e.target.closest('[data-forzar], [data-reintentar]');
     if (f) {
-      var op = Cola.ops.find(function (o) { return o.clave === f.dataset.forzar; });
-      if (op) { op.datos.forzar_referencia = true; op.estado = 'pendiente'; op.error = null; await Cola.guardar(op); Cola.procesar(); setTimeout(pintar, 1500); }
+      var clave = f.dataset.forzar || f.dataset.reintentar;
+      var op = Cola.ops.find(function (o) { return o.clave === clave; });
+      if (op) {
+        if (f.dataset.forzar) { if (op.datos.pago_inicial) op.datos.pago_inicial.forzar_referencia = true; else op.datos.forzar_referencia = true; }
+        op.estado = 'pendiente'; op.error = null; op.codigo = null;
+        await Cola.guardar(op); Cola.procesar(); setTimeout(pintar, 1500);
+      }
       return;
     }
     var d = e.target.closest('[data-descartar]');

@@ -9,8 +9,9 @@ function hojaAbono(cliId, ventaId) {
   if (!activas.length) { toast('Este cliente no tiene ventas pendientes.', 'error'); return; }
   var dueno = esDueno();
   var metodos = ST.metodos.filter(function (m) { return m.activo; });
+  // Una sola clave por ventana: si se toca Guardar otra vez (o se reintenta), la base no lo repite
   var A = { venta: ventaId || (activas.length === 1 ? activas[0].id : null), metodo: metodos.length ? metodos[0].id : null,
-            tasa: Number(ST.cfg.tasa_bs) || 0, foto: null };
+            tasa: Number(ST.cfg.tasa_bs) || 0, foto: null, clave: nuevaClave() };
 
   var h = abrirHoja({
     titulo: 'Abono de ' + c.nombre.split(' ')[0], completa: true,
@@ -126,13 +127,13 @@ function hojaAbono(cliId, ventaId) {
       fecha: dueno ? (h.$('#abFecha').value || hoyCaracas()) : hoyCaracas(), hecho_en: new Date().toISOString()
     };
     if (dueno) datos.recibido_por = h.$('#abRecibe').value;
-    var op = { clave: nuevaClave(), tipo: 'abono', datos: datos, resumen: { texto: 'Abono de ' + c.nombre + ' por ' + fmtUSD(usd) } };
+    var op = { clave: A.clave, tipo: 'abono', datos: datos, resumen: { texto: 'Abono de ' + c.nombre + ' por ' + fmtUSD(usd) } };
     var r;
     try {
       r = await enviarYEsperar(op);
     } catch (e) {
       if (e && e.code === 'EM001' && await confirmar({ titulo: 'Referencia repetida', mensaje: errMsg(e) + ' ¿Guardar igual?', boton: 'Guardar igual' })) {
-        datos.forzar_referencia = true; op.clave = nuevaClave();
+        datos.forzar_referencia = true;
         r = await enviarYEsperar(op);
       } else throw e;
     }

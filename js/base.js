@@ -135,13 +135,16 @@ function toast(msg, tipo, ms) {
   setTimeout(function () { el.remove(); }, ms || (tipo === 'error' ? 6000 : 3000));
 }
 // ¿El error es de conexión (se puede reintentar) o es una respuesta de la base (no se reintenta)?
+// Las fallas del servidor (5xx, base ocupada, sesión por renovar) también se reintentan: con la clave no se repite nada.
 function esErrorDeRed(e) {
   if (!e) return false;
   if (e.name === 'AbortError' || e.esTiempo) return true;
+  var st = Number(e.status != null ? e.status : e.statusCode);
+  if (st === 0 || st >= 500) return true;
+  if (e.code && /^(40001|40P01|57014|57P0\d|53\d{3}|08\d{3}|PGRST00\d|PGRST30\d)$/.test(e.code)) return true;
   if (e.code && /^[0-9A-Z]{5}$/.test(e.code)) return false;   // error de Postgres (regla del negocio)
   var m = String(e.message || e.error_description || e.error || e);
   if (/failed to fetch|networkerror|load failed|network request failed|fetch|timeout|tiempo|aborted|offline|ERR_/i.test(m)) return true;
-  if (e.status === 0 || e.status >= 500 || e.statusCode >= 500) return true;
   return false;
 }
 // Convierte errores técnicos en mensajes que se entienden
@@ -187,7 +190,9 @@ async function rpc(nombre, args, ms) {
     var r = await sb.rpc(nombre, args || {}).abortSignal(ctrl.signal);
     if (r.error) {
       if (ctrl.signal.aborted) { var e = new Error('Se agotó el tiempo de espera'); e.esTiempo = true; throw e; }
-      throw r.error;
+      var err = r.error;
+      try { err.status = r.status; } catch (x) { /* objeto congelado */ }
+      throw err;
     }
     return r.data;
   } finally { clearTimeout(t); }

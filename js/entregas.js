@@ -90,7 +90,9 @@ var VistaEntregas = (function () {
   }
 
   function hojaRecibir(uid) {
-    var u = ST.usrPorId.get(uid), s = sumar(pendientes.filter(function (a) { return a.recibido_por === uid; }));
+    var mios = pendientes.filter(function (a) { return a.recibido_por === uid; });
+    var u = ST.usrPorId.get(uid), s = sumar(mios);
+    var ids = mios.map(function (a) { return a.id; });   // solo lo que se está contando (si entra otro cobro, queda para la próxima)
     var clave = nuevaClave();
     var h = abrirHoja({
       titulo: 'Recibir de ' + u.nombre,
@@ -114,7 +116,7 @@ var VistaEntregas = (function () {
     protegerBoton(h.$('#enGuardar'), async function () {
       var usd = parseNum(h.$('#enUsd').value), bs = parseNum(h.$('#enBs').value);
       if (isNaN(usd) || usd < 0 || isNaN(bs) || bs < 0) { toast('Revisa los montos', 'error'); return; }
-      var r = await rpc('registrar_entrega', { p_usuario: uid, p_entregado_usd: redondear2(usd), p_entregado_bs: redondear2(bs), p_nota: h.$('#enNota').value.trim(), p_clave: clave });
+      var r = await rpc('registrar_entrega', { p_usuario: uid, p_entregado_usd: redondear2(usd), p_entregado_bs: redondear2(bs), p_nota: h.$('#enNota').value.trim(), p_clave: clave, p_abonos: ids });
       h.cerrar();
       var cuadra = Math.abs(r.diferencia_usd) < 0.005 && Math.abs(r.diferencia_bs) < 0.005;
       toast(cuadra ? 'Entrega #' + r.numero + ' guardada. Cuadró.' : 'Entrega #' + r.numero + ' guardada con diferencia.', cuadra ? 'ok' : 'error', 5000);

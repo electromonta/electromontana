@@ -19,4 +19,8 @@
 
 **Pruebas**: 131 escenarios de la base, 27 de cuentas y 33 revisiones del recorrido completo en tamaño teléfono (incluye sin señal y reintento sin duplicar).
 
+**Revisión independiente antes de producción** (7 hallazgos, todos corregidos y con prueba): el empleado podía mandar una tasa inventada; veía costos en el historial de la venta; un error 5xx del servidor se tomaba como rechazo (podía trabar o duplicar un abono); "Guardar igual" no servía para ventas en cola; el empleado podía usar "Ya debía" para esconder efectivo; anular un abono no bloqueaba la venta; la entrega podía marcar un cobro que no se contó. Quedaron 142 escenarios de base.
+
+**Aplicado a la base real el 2026-10-15**: huellas de las 47 funciones iguales a las probadas; inspector de seguridad sin problemas (solo lo esperado); prueba de venta y abono dentro de una transacción que se deshizo; entrada de Franklin, lectura por la API y Edge Function comprobadas desde la base con `pg_net`. Cuentas `franklin` y `daniel` creadas.
+
 **Pendiente de Kinan / dueños**: plan Pro antes de cargar clientes reales, activar GitHub Pages, apagar el registro público de Supabase, crear al empleado, revisar las condiciones del contrato.

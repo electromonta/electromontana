@@ -405,7 +405,7 @@ function hojaCliente(c, o) {
   o = o || {};
   var nuevo = !c, dueno = esDueno();
   c = c || { sede: ST.yo.sede || 'socopo' };
-  var fotos = { cliente: null, cedula: null }, ubic = null;
+  var fotos = { cliente: null, cedula: null }, ubic = null, claveForm = nuevaClave();
   function campo(id, etq, val, extra) {
     return '<label class="campo"><span>' + etq + '</span><input id="' + id + '" value="' + esc(val || '') + '" ' + (extra || '') + '></label>';
   }
@@ -500,7 +500,7 @@ function hojaCliente(c, o) {
     }
     if (ubic) { datos.lat = ubic.lat; datos.lng = ubic.lng; }
     if (!nuevo) datos.id = c.id;
-    var op = { clave: nuevaClave(), tipo: 'cliente', datos: datos, resumen: { texto: (nuevo ? 'Cliente nuevo: ' : 'Cambios de ') + datos.nombre } };
+    var op = { clave: claveForm, tipo: 'cliente', datos: datos, resumen: { texto: (nuevo ? 'Cliente nuevo: ' : 'Cambios de ') + datos.nombre } };
     var r;
     try {
       r = await enviarYEsperar(op);

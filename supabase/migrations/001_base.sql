@@ -16,7 +16,7 @@
 -- Cuentas de una venta:
 --   lo que debe  = total + ajuste (recargos − descuentos) − pagado (abonos vivos)
 --   calendario   = plan_base + suma de cuotas vigentes = total + ajuste (siempre)
---   atrasado hoy = plan_base + cuotas vigentes con fecha <= hoy − pagado
+--   atrasado hoy = plan_base + cuotas vigentes con fecha < hoy − pagado (lo calcula la app al mostrar)
 --
 -- Retiro (como dice su contrato): si se atrasa varias cuotas ("giros") se le retira el artículo
 -- y se le devuelve cuando termine de pagar. La venta sigue activa y se sigue cobrando.
@@ -579,6 +579,19 @@ begin
   end if;
 end $$;
 
+-- El empleado solo cobra en Bs con la tasa que pusieron los dueños (la de hoy o una de los últimos días,
+-- por lo que quedó en la cola sin señal). Los dueños pueden usar otra.
+create function interno.revisar_tasa(r interno.pago, u public.usuarios) returns void
+language plpgsql stable security definer set search_path = public, pg_temp as $$
+begin
+  if r.moneda <> 'VES' or u.rol = 'dueno' then return; end if;
+  if exists (select 1 from public.config where id = 1 and tasa_bs = r.tasa)
+     or exists (select 1 from public.tasas where tasa = r.tasa and creado_en >= now() - interval '8 days') then
+    return;
+  end if;
+  raise exception 'La tasa % no es la que pusieron los dueños. Actualiza la app y vuelve a intentar.', r.tasa;
+end $$;
+
 create function interno.fecha_permitida(p_fecha date, u public.usuarios) returns date
 language plpgsql stable set search_path = public, pg_temp as $$
 begin
@@ -791,6 +804,9 @@ begin
   end if;
 
   if v_origen not in ('nueva','carga_inicial') then raise exception 'Tipo de venta no válido.'; end if;
+  if v_origen = 'carga_inicial' and u.rol <> 'dueno' then
+    raise exception 'Solo los dueños pueden cargar clientes que ya debían.';
+  end if;
   v_fecha := coalesce(nullif(p->>'fecha', '')::date, interno.hoy());
   if v_fecha > interno.hoy() then raise exception 'La fecha de la venta no puede ser futura.'; end if;
   if v_origen = 'nueva' then
@@ -892,6 +908,7 @@ begin
   if jsonb_typeof(p->'pago_inicial') = 'object' then
     if v_origen <> 'nueva' or v_inicial <= 0 then raise exception 'Esta venta no lleva inicial.'; end if;
     r := interno.leer_pago(p->'pago_inicial');
+    perform interno.revisar_tasa(r, u);
     perform interno.revisar_referencia(r, coalesce(nullif(p->'pago_inicial'->>'forzar_referencia', '')::boolean, false));
     if r.monto_usd > v_inicial + 0.004 then
       raise exception 'Lo que pagó de inicial (%) es más que la inicial (%).', interno.dinero(r.monto_usd), interno.dinero(v_inicial);
@@ -945,6 +962,7 @@ begin
   v_cli := coalesce(nullif(p->>'cliente_id', '')::bigint, interno.id_por_clave(nullif(p->>'cliente_clave', '')::uuid, 'cliente'));
   c := interno.cliente_para(v_cli, u);
   r := interno.leer_pago(p);
+  perform interno.revisar_tasa(r, u);
   perform interno.revisar_referencia(r, coalesce(nullif(p->>'forzar_referencia', '')::boolean, false));
   v_fecha := interno.fecha_permitida(nullif(p->>'fecha', '')::date, u);
 
@@ -1017,6 +1035,7 @@ declare u public.usuarios; x record; n int := 0;
 begin
   u := interno.dueno();
   if nullif(trim(p_motivo), '') is null then raise exception 'Escribe por qué se anula.'; end if;
+  perform 1 from public.ventas where id in (select venta_id from public.abonos where grupo = p_grupo) order by id for update;
   for x in select * from public.abonos where grupo = p_grupo and anulado_en is null order by id for update loop
     update public.abonos set anulado_en = now(), anulado_por = u.id, motivo_anulacion = trim(p_motivo) where id = x.id;
     perform interno.recalcular_venta(x.venta_id);
@@ -1274,12 +1293,13 @@ $$;
 -- =====================================================================
 -- Entregas del efectivo cobrado (empleado de Pedraza → dueño)
 -- =====================================================================
+-- p_abonos: los cobros que el dueño tenía en pantalla al contar (si llega uno nuevo, queda para la próxima)
 create function public.registrar_entrega(p_usuario uuid, p_entregado_usd numeric, p_entregado_bs numeric,
-                                         p_nota text default null, p_clave uuid default null)
+                                         p_nota text default null, p_clave uuid default null, p_abonos bigint[] default null)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   u public.usuarios; v_prev jsonb; v_usd numeric := 0; v_bs numeric := 0; v_n int := 0; v_id bigint; v_num bigint;
-  v_res jsonb; x record;
+  v_res jsonb; x record; v_ids bigint[] := '{}';
 begin
   u := interno.dueno();
   v_prev := interno.idem_inicio(p_clave, 'entrega');
@@ -1289,9 +1309,11 @@ begin
   if coalesce(p_entregado_usd, 0) < 0 or coalesce(p_entregado_bs, 0) < 0 then raise exception 'Montos no válidos.'; end if;
   for x in select a.id, a.moneda, a.monto from public.abonos a join public.metodos_pago m on m.id = a.metodo_id
             where a.recibido_por = p_usuario and m.en_mano and a.entrega_id is null and a.anulado_en is null
+              and (p_abonos is null or a.id = any(p_abonos))
             order by a.id for update of a loop
     if x.moneda = 'USD' then v_usd := v_usd + x.monto; else v_bs := v_bs + x.monto; end if;
     v_n := v_n + 1;
+    v_ids := v_ids || x.id;
   end loop;
   if v_n = 0 then raise exception 'No tiene efectivo pendiente por entregar.'; end if;
   v_num := interno.siguiente('entrega');
@@ -1300,9 +1322,7 @@ begin
   values (v_num, p_usuario, u.id, interno.hoy(), v_usd, v_bs, round(coalesce(p_entregado_usd, 0), 2),
           round(coalesce(p_entregado_bs, 0), 2), v_n, interno.texto(jsonb_build_object('n', p_nota), 'n', 500), p_clave)
   returning id into v_id;
-  update public.abonos a set entrega_id = v_id
-    from public.metodos_pago m
-   where m.id = a.metodo_id and a.recibido_por = p_usuario and m.en_mano and a.entrega_id is null and a.anulado_en is null;
+  update public.abonos set entrega_id = v_id where id = any(v_ids);
   v_res := jsonb_build_object('id', v_id, 'numero', v_num, 'esperado_usd', v_usd, 'esperado_bs', v_bs,
                               'diferencia_usd', round(coalesce(p_entregado_usd, 0), 2) - v_usd,
                               'diferencia_bs', round(coalesce(p_entregado_bs, 0), 2) - v_bs, 'abonos', v_n);
@@ -1423,7 +1443,7 @@ create policy "leer" on public.venta_item_costos for select to authenticated usi
 create policy "leer" on public.cuotas            for select to authenticated using (public.ve_venta(venta_id));
 create policy "leer" on public.entregas          for select to authenticated using (public.es_dueno() or usuario_id = auth.uid());
 create policy "leer" on public.abonos            for select to authenticated using (public.ve_cliente(cliente_id));
-create policy "leer" on public.eventos_venta     for select to authenticated using (public.ve_venta(venta_id));
+create policy "leer" on public.eventos_venta     for select to authenticated using (public.ve_venta(venta_id) and (tipo <> 'costo' or public.es_dueno()));
 create policy "leer" on public.auditoria         for select to authenticated using (public.es_dueno());
 -- contadores y operaciones: sin políticas (nadie las lee desde la app)
 
@@ -1446,7 +1466,7 @@ grant execute on function
   public.retirar_mercancia(bigint, text), public.devolver_mercancia(bigint, text),
   public.cerrar_venta(bigint, text), public.reabrir_venta(bigint, text), public.anular_venta(bigint, text),
   public.poner_costo(bigint, numeric), public.poner_foto(text, bigint, uuid, text), public.resolver_clave(uuid),
-  public.registrar_entrega(uuid, numeric, numeric, text, uuid),
+  public.registrar_entrega(uuid, numeric, numeric, text, uuid, bigint[]),
   public.actualizar_tasa(numeric), public.actualizar_config(jsonb), public.guardar_metodo(jsonb),
   public.actualizar_usuario(uuid, text, text, text, boolean), public.marcar_clave_cambiada()
 to authenticated;
