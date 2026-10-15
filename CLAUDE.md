@@ -137,4 +137,5 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **Pedido de Kinan (2026-10-15):** al terminar el sistema completo, hacer una **guía completa de uso** para dársela a Franklin y Daniel y para que Kinan aprenda a mostrarlo.
 - **2026-10-15 — Entrega 2 (etapa 2) hecha y aplicada a la base real** (migración `003_etapa2`, 56 funciones con la misma huella que las probadas): mercancía de las tiendas, venta desde la tienda, notas de cobro y promesas, recordatorios por WhatsApp, reportes.
 - **2026-10-15 — Entrega 3 (etapa 3) hecha y aplicada a la base real** (migración `004_firma`, 58 funciones con la misma huella): contrato firmado en la pantalla, también sin señal.
-- **Siguiente:** Etapa 4: dominio (solo documento de pasos, `docs/DOMINIO.md`). Después: guía completa de uso.
+- **2026-10-15 — Entrega 4 (etapa 4):** `docs/DOMINIO.md` con los pasos para activar GitHub Pages, comprar y apuntar un dominio, y pasar los teléfonos a la dirección nueva sin perder lo "por enviar". Lo hacen los dueños (Claude no puede comprar ni activar Pages).
+- **Siguiente:** guía completa de uso para Franklin, Daniel y Kinan.

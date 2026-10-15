@@ -1,5 +1,10 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 4 — Etapa 4: pasos del dominio (2026-10-15)
+
+- `docs/DOMINIO.md`: activar GitHub Pages (Settings → Pages → `main` / raíz), instalar la app en iPhone y Android, comprar un dominio (recomendado `app.<dominio>` con un CNAME a `electromonta.github.io`), Enforce HTTPS, verificar el dominio, avisarle a Supabase, y cómo pasar cada teléfono a la dirección nueva sin perder lo que esté "por enviar".
+- No cambia la app ni la base.
+
 ## Entrega 3 — Etapa 3: contrato firmado en la pantalla (2026-10-15)
 
 **Qué hace la app**
