@@ -71,7 +71,26 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
     - Usar `apply_migration` para cambios de estructura, para que queden registrados, y guardar la misma migración en `supabase/migrations/`.
     - **Nunca `DELETE` desde el conector:** se cuelga esperando una confirmación que nunca llega y la transacción se deshace sola. Para quitar algo: borrado suave o anular. Un `UPDATE` suelto también se puede colgar: envolverlo en un bloque `DO $$ BEGIN ... END $$;`. Las pruebas en la base real van dentro de un `DO` que termina en `RAISE EXCEPTION` para que todo se deshaga.
 
+## Cómo trabaja el negocio (respuestas de Kinan, 2026-10-15)
+
+- **Dónde venden:** en Socopó, Franklin y Daniel venden en la calle, llevan ellos mismos la mercancía y cobran casa por casa. En **Pedraza** tienen una tienda con un **empleado** encargado, donde también venden a crédito. Muchos clientes viven **fuera del país** y pagan por Zelle.
+- **Quién lo usa:** Franklin, Daniel y el empleado de Pedraza. El empleado registra créditos nuevos y ve lo de ventas.
+- **Precio:** cada cosa vendida lleva su **costo** y el **precio al cliente**, para sacar la ganancia. No hay un % fijo de ganancia.
+- **Inicial:** sí la piden. Ronda el 30 %, pero el monto lo escriben ellos en cada venta.
+- **Cuotas:** casi siempre fijas, pero se pueden personalizar por cliente. El plazo también es personalizado.
+- **Si se pasa del plazo:** poder poner un recargo, dar más tiempo o, al llegar al límite, retirar la mercancía.
+- **Moneda:** casi todo en dólares. Métodos: efectivo $, Zelle, USDT y bolívares, a una tasa que ellos fijan para recibir.
+- **Cuentas con Pedraza:** cada cierto tiempo Franklin y Daniel van a la tienda a recoger lo cobrado y sacar cuentas. En Socopó, cada pago se registra en el perfil del cliente.
+- **Recibo por WhatsApp:** sí.
+- **Señal:** en la calle hay señal, pero el internet es lento. Nada de lo que se registre se puede perder.
+- **Datos del cliente:** cédula, dirección, punto de referencia (si aplica), trabajo, fiador, foto y ubicación.
+- **Contrato:** idealmente siguen firmando en papel (con foto), o un formato digital firmado en el teléfono o la tablet. En los dos casos el contrato queda guardado en el perfil del cliente.
+- **Mercancía:** no tienen depósito. Cuando venden, la buscan en Yumana; si es para Pedraza, la dejan en la tienda. Por ahora solo le compran a Yumana. Sin seriales por ahora.
+- **Hoy llevan las cuentas por WhatsApp.** Hay que pasar al sistema los clientes que ya deben.
+- **Marca:** no tienen logo ni colores.
+- **Vínculo con Yumana:** ninguno, es un sistema aparte. Solo se deja la puerta abierta (por ejemplo, un código de producto de Yumana opcional) por si algún día se conecta.
+
 ## Estado
 
-- **2026-10-15:** repo y base vacíos (sin tablas). Kinan pidió el plan por etapas y el diseño de la base antes de construir. Esperando sus respuestas al cuestionario y su "dale".
+- **2026-10-15:** repo y base vacíos (sin tablas). CLAUDE.md listo y respuestas del cuestionario recibidas. Plan por etapas y diseño de la base propuestos a Kinan; esperando su "dale" para la etapa 1.
 - Respaldos hechos: ninguno todavía.
