@@ -35,11 +35,14 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 
 ## Stack
 
-- **Frontend:** HTML/CSS/JavaScript puro, sin frameworks, sin build. Estructura como JABELLA: `index.html` + `css/app.css` + `js/` (un archivo por sección) + `js/config.js` (URL y key publishable).
+- **Frontend:** HTML/CSS/JavaScript puro, sin frameworks, sin build. `index.html` + `css/app.css` + `js/` (un archivo por sección) + `js/config.js` (URL y key publishable). supabase-js va copiado en `js/vendor/` y las letras en `fonts/` (para que la app abra sin internet).
+  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `entregas.js` (efectivo de Pedraza), `ajustes.js`.
+- **Sin señal:** lo que se registra se guarda primero en la cola del teléfono y `Cola.procesar()` lo manda cuando hay internet (al volver la señal, cada 20 s y al abrir la app). Cada operación lleva su `clave`: si se reintenta, la base devuelve el mismo resultado sin repetir. `sw.js` guarda solo los archivos de la app (nunca datos). La app abre con la última copia de los datos guardada en el teléfono.
 - **Backend:** Supabase (PostgreSQL + Auth + Storage). Migraciones numeradas en `supabase/migrations/`, aplicadas con `apply_migration`. Pruebas de negocio en `supabase/pruebas/`.
 - Sesión con `storageKey: 'electromontana-sesion'`.
 - Se instala en el teléfono como app (Compartir → Agregar a inicio): `manifest.webmanifest` + íconos.
-- Versionar los `?v=N` de los archivos en `index.html` en cada entrega (Safari cachea fuerte).
+- **En cada entrega:** subir los `?v=N` de `index.html`, la lista de `sw.js` y su `VERSION` (Safari y el modo sin conexión guardan los archivos viejos), y `VERSION_APP` en `js/ajustes.js`.
+- **Usuarios:** entran con un nombre corto (`franklin`); por dentro es `franklin@electromontana.app` (nunca se mandan correos). Los crea un dueño desde Ajustes con la Edge Function `usuarios` (`supabase/functions/usuarios`, `verify_jwt` apagado porque revisa la sesión por dentro). Al entrar por primera vez se obliga a cambiar la clave. Las claves temporales nunca van al repo.
 - Historial de entregas: `docs/HISTORIAL.md`.
 
 ## Diseño
@@ -47,7 +50,9 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 - **Marca propia.** Nada de la paleta dorada de Yumana ni de sus letras (Fraunces/Outfit).
 - **Primero el teléfono:** se usa en la calle, con una mano y a pleno sol. Fondo claro y alto contraste, botones grandes (mínimo 44 px de alto), lo importante arriba, navegación abajo al alcance del pulgar. En tablet y PC se adapta, pero se diseña para teléfono.
 - **Cero emojis.** Íconos SVG de un solo color.
-- Paleta y letras exactas: se definen con el logo de ellos. Cuando se aprueben, anotarlas aquí con sus códigos.
+- **Logo (hecho el 2026-10-15, ellos no tenían):** emblema redondo de línea, una montaña de dos picos con un rayo que cae entre ellos. Archivos `img/logo.svg`, `img/logo-blanco.svg` e íconos `img/icono-*.png`; en el código, `logoSVG()` en `base.js`. Lema "Todo a tu alcance" (sale en su contrato de papel).
+- **Paleta:** azul noche `#172b4d` (encabezados), cobre `#a9541f` (botón principal y rayo; `#e0904f` sobre fondo oscuro), fondo arena `#f6f4f0`, superficie `#ffffff`, texto `#18202e`. Estados: verde `#1f7a45` al día, azul `#1d5fa8` le toca hoy, rojo `#b42318` atrasado. Todo en variables de `css/app.css`.
+- **Letras:** Barlow (texto) y Barlow Semi Condensed (títulos y montos), servidas desde `fonts/`.
 
 ## REGLAS CRÍTICAS (heredadas de Yumana; romper una cuesta plata)
 
@@ -86,11 +91,34 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 - **Datos del cliente:** cédula, dirección, punto de referencia (si aplica), trabajo, fiador, foto y ubicación.
 - **Contrato:** idealmente siguen firmando en papel (con foto), o un formato digital firmado en el teléfono o la tablet. En los dos casos el contrato queda guardado en el perfil del cliente.
 - **Mercancía:** no tienen depósito. Cuando venden, la buscan en Yumana; si es para Pedraza, la dejan en la tienda. Por ahora solo le compran a Yumana. Sin seriales por ahora.
-- **Hoy llevan las cuentas por WhatsApp.** Hay que pasar al sistema los clientes que ya deben.
+- **Hoy llevan las cuentas por WhatsApp.** Hay que pasar al sistema los clientes que ya deben (no saben cuántos son): se cargan desde Vender → "Ya debía".
+- **El empleado de Pedraza solo ve los clientes de Pedraza.** USDT se toma 1 a 1 con el dólar.
+- **Su contrato de papel** (foto del 2026-10-15) dice: recargo por demora si no paga a tiempo; con tres "giros" (cuotas) sin pagar se retira el artículo y se devuelve cuando pague todo; "firmando el contrato no se devuelve dinero". El contrato nuevo del sistema (`js/contrato.js`) lleva esas condiciones y más; los dueños las editan en Ajustes.
 - **Marca:** no tienen logo ni colores.
 - **Vínculo con Yumana:** ninguno, es un sistema aparte. Solo se deja la puerta abierta (por ejemplo, un código de producto de Yumana opcional) por si algún día se conecta.
 
+## Base de datos (etapa 1)
+
+Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con pg_cron en `respaldo_diario.copias`, 2:30 a. m.; no reemplaza el plan Pro).
+- Tablas: `usuarios` (rol `dueno`/`empleado` + `sede`), `config` (tasa, % inicial, giros para retiro, condiciones del contrato), `tasas`, `metodos_pago` (`en_mano` = efectivo), `clientes` (sede `socopo`/`pedraza`, fiador, fotos, ubicación, `no_venderle`), `productos` + `producto_costos`, `ventas`, `venta_items` + `venta_item_costos`, `cuotas` (calendario; `vigente`), `abonos` (un pago repartido = varias filas con el mismo `grupo`), `entregas`, `eventos_venta`, `auditoria`, `contadores`, `operaciones` (claves).
+- **Cuentas:** debe = `total + ajuste − pagado` (`saldo`, columna calculada). `pagado` lo recalcula `interno.recalcular_venta` desde los abonos vivos. Siempre se cumple `plan_base + cuotas vigentes = total + ajuste` (lo revisa la prueba `cuadre()`). Atrasado = lo que debió pagar **antes de hoy** y no pagó.
+- La inicial es la "cuota 0" del día de la venta. "Ya debía" (carga inicial): `plan_base` = lo que pagó antes, con un abono `antes_del_sistema` sin método ni quién lo recibió (no cuenta en cobros ni en el efectivo).
+- Recargo = cuota extra en una fecha. Descuento = rebaja las últimas cuotas. Más tiempo = calendario nuevo para lo que falta (`plan_base` = pagado; las cuotas viejas quedan `vigente = false`).
+- Retiro (como su contrato): `ventas.mercancia = 'retirada'`; la venta sigue activa y se sigue cobrando; al pagar se devuelve. Cerrar = `estado 'cerrada'` (se deja de cobrar). Anular solo si no tiene abonos.
+- Funciones internas en el esquema `interno` (la API no las ve). RPC públicas solo para `authenticated`; la app solo puede LEER tablas (sin insert/update/delete).
+- Fotos en el bucket privado `fotos`, ruta `cli/<id del cliente>/<tipo>-<…>.jpg`; se ven con enlace temporal y solo si se ve al cliente (`ve_ruta_foto`).
+- Errores con código: `EM001` referencia repetida (la app ofrece "Guardar igual"), `EM002` cédula repetida.
+
+## Pruebas (correr antes de cada entrega)
+
+- `supabase/pruebas/correr.sh` → escenarios de la base en un Postgres local (`escenarios.sql`). Todo `ok`.
+- `node pruebas/cuentas.test.js` → calendario y atraso.
+- `pruebas/preparar-local.sh` + `NODE_PATH=/opt/node22/lib/node_modules node pruebas/e2e.js <carpeta>` → copia local (Postgres + PostgREST + `pruebas/servidor-local.js`, que imita auth y fotos) y recorrido completo en tamaño teléfono, con prueba sin señal. Usuarios locales: franklin, daniel, pedraza (clave `prueba123`, solo local).
+- Antes de aplicar a la base real: `get_advisors` de seguridad después de la migración.
+
 ## Estado
 
-- **2026-10-15:** repo y base vacíos (sin tablas). CLAUDE.md listo y respuestas del cuestionario recibidas. Plan por etapas y diseño de la base propuestos a Kinan; esperando su "dale" para la etapa 1.
-- Respaldos hechos: ninguno todavía.
+- **2026-10-15 — Entrega 1 (etapa 1) hecha.** Detalle en `docs/HISTORIAL.md`.
+- **Falta antes de usarla con clientes reales:** (1) pasar la base a **Pro**; (2) que Franklin o Daniel activen GitHub Pages (Settings → Pages → rama `main`, carpeta raíz); (3) apagar el registro público en Supabase (Authentication → Sign In / Providers → "Allow new users to sign up"); (4) crear al empleado de Pedraza desde Ajustes cuando se sepa su nombre; (5) que revisen las condiciones del contrato (Ajustes → Contrato).
+- Respaldos hechos: ninguno todavía (la base no tiene datos reales).
+- **Siguiente (etapa 2):** mercancía de la tienda de Pedraza, notas de cobro, reportes (ganancia, morosos, cobrado por semana), recordatorios de WhatsApp a los atrasados. Etapa 3: contrato firmado en la pantalla. Etapa 4: dominio.

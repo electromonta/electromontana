@@ -1,0 +1,17 @@
+{
+  "name": "Electro Montana",
+  "short_name": "E. Montana",
+  "description": "Clientes, ventas a crédito y cobros",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#172b4d",
+  "theme_color": "#172b4d",
+  "icons": [
+    { "src": "img/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "img/icono-512-mascara.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

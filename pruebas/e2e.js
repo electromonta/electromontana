@@ -1,0 +1,283 @@
+// Recorrido completo de la app en un teléfono simulado contra la copia LOCAL (pruebas/preparar-local.sh).
+// Uso: node pruebas/e2e.js [carpeta-de-capturas]
+'use strict';
+const { chromium } = require('playwright');
+const { execFileSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const URL_APP = 'http://localhost:8080/';
+const CAPTURAS = process.argv[2] || '/tmp/em-capturas';
+const FOTO = path.join(__dirname, '..', 'img', 'icono-512.png');
+fs.mkdirSync(CAPTURAS, { recursive: true });
+const sql = q => execFileSync('psql', ['-h', '127.0.0.1', '-p', '54329', '-U', 'postgres', '-d', 'em_local', '-At', '-c', q], { encoding: 'utf8' }).trim();
+
+let ok = 0, mal = 0;
+const errores = [];
+function revisar(nombre, cond, detalle) {
+  if (cond) { ok++; console.log('ok  ' + nombre); } else { mal++; console.log('!!! ' + nombre + (detalle ? ' → ' + detalle : '')); }
+}
+
+async function nuevoTelefono(b) {
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+    timezoneId: 'America/Caracas', locale: 'es-VE', geolocation: { latitude: 8.2312, longitude: -70.8201 }, permissions: ['geolocation'] });
+  const p = await ctx.newPage();
+  p.on('pageerror', e => errores.push('pageerror: ' + e.message));
+  p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_INTERNET_DISCONNECTED|net::/.test(m.text())) errores.push('console: ' + m.text()); });
+  await p.addInitScript(() => { window.__abiertos = []; window.open = function (u) { window.__abiertos.push(u); return null; }; });
+  return { ctx, p };
+}
+async function foto(p, nombre) { await p.waitForTimeout(250); await p.screenshot({ path: path.join(CAPTURAS, nombre + '.png') }); }
+async function entrar(p, usuario) {
+  await p.goto(URL_APP);
+  await p.fill('#loginUsuario', usuario);
+  await p.fill('#loginClave', 'prueba123');
+  await p.click('#btnEntrar');
+  await p.waitForSelector('#app:not([hidden])');
+  await p.waitForTimeout(400);
+}
+async function cerrarHojas(p) {
+  while (await p.locator('.velo').count()) { await p.locator('.velo [data-cerrar]').last().click(); await p.waitForTimeout(150); }
+}
+async function tomarFoto(p, selector) {
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click(selector)]);
+  await fc.setFiles(FOTO);
+  await p.waitForTimeout(500);
+}
+
+(async () => {
+  const b = await chromium.launch();
+  const { ctx, p } = await nuevoTelefono(b);
+
+  // 1. Entrada
+  await p.goto(URL_APP);
+  await p.waitForSelector('#pantallaLogin:not([hidden])');
+  await foto(p, '01-entrada');
+  await p.fill('#loginUsuario', 'franklin'); await p.fill('#loginClave', 'mala'); await p.click('#btnEntrar');
+  await p.waitForSelector('#loginError:not([hidden])');
+  revisar('clave mala avisa', (await p.textContent('#loginError')).includes('incorrectos'));
+  await entrar(p, 'franklin');
+  revisar('Cobrar vacío', await p.locator('text=Todavía no hay ventas por cobrar').count() === 1);
+  await foto(p, '02-cobrar-vacio');
+
+  // 2. Tasa
+  await p.click('[data-tasa]');
+  await p.fill('#tasaNueva', '40');
+  await p.click('#tasaGuardar');
+  await p.waitForTimeout(500);
+  revisar('tasa guardada', (await p.textContent('#chipTasa')).includes('40'));
+
+  // 3. Cliente nuevo
+  await p.click('#navTabs [data-ir="clientes"]');
+  await p.click('[data-nuevo]');
+  await p.fill('#fNombre', 'Ana Pérez');
+  await p.fill('#fCedula', 'V-12.345.678');
+  await p.fill('#fTelefono', '0414-1234567');
+  await p.fill('#fSector', 'Barrio Nuevo');
+  await p.fill('#fDireccion', 'Calle 3, casa 15');
+  await p.fill('#fReferencia', 'Frente a la bodega azul');
+  await p.fill('#fTrabajo', 'Maestra, escuela Bolívar');
+  await p.fill('#fFiNombre', 'Carmen Pérez');
+  await p.fill('#fFiCedula', '9876543');
+  await p.fill('#fFiTel', '0424-5550000');
+  await tomarFoto(p, '[data-tomar="cedula"]');
+  await p.click('#fUbicar');
+  await p.waitForTimeout(800);
+  await foto(p, '03-cliente-formulario');
+  await p.click('#fGuardar');
+  await p.waitForSelector('.ficha-cab');
+  await p.waitForTimeout(1500);
+  revisar('ficha del cliente nuevo', (await p.textContent('.ficha-cab')).includes('Ana Pérez'));
+  revisar('cliente en la base con cédula normalizada', sql("select cedula || '/' || sede || '/' || (lat is not null) from clientes where nombre = 'Ana Pérez'") === 'V12345678/socopo/true');
+  revisar('foto de la cédula subida', sql("select foto_cedula like 'cli/%/cedula-%' from clientes where nombre = 'Ana Pérez'") === 't');
+
+  // 4. Venta nueva: nevera $300, inicial 30 % en pago móvil, 7 semanales
+  await p.click('[data-vender]');
+  await p.waitForSelector('#vItems');
+  await p.fill('#vItems [data-campo="descripcion"]', 'Nevera Mabe 14 pies');
+  await p.fill('#vItems [data-campo="precio"]', '300');
+  await p.fill('#vItems [data-campo="costo"]', '200');
+  await p.click('#vUsarPct');
+  await p.click('#vMetodos [data-m="4"]');
+  await p.fill('#vRef', '0102-5566');
+  await p.fill('#vNumero', '7');
+  revisar('Bs de la inicial a la tasa', (await p.textContent('#vPagoBs')).includes('3.600,00'));
+  revisar('cuotas suman', (await p.textContent('#vSuma')).includes('7 cuotas suman $210,00'));
+  await p.fill('#vPapel', '000412');
+  await tomarFoto(p, '#vFoto');
+  await foto(p, '04-vender');
+  await p.click('#vGuardar');
+  await p.waitForSelector('.hoja h2:has-text("Venta #1 guardada")');
+  await foto(p, '05-venta-guardada');
+  await p.click('.hoja [data-resumen]');
+  const resumen = await p.evaluate(() => decodeURIComponent(window.__abiertos.pop() || ''));
+  revisar('resumen por WhatsApp', resumen.includes('wa.me/584141234567') && resumen.includes('Contrato #1') && resumen.includes('7 semanales de $30,00'), resumen.slice(0, 200));
+  await p.click('.hoja [data-imprimir]');
+  await p.waitForSelector('.ct');
+  await foto(p, '06-contrato');
+  revisar('contrato lleno', (await p.textContent('.ct')).includes('Nevera Mabe 14 pies') && (await p.textContent('.ct')).includes('000001'));
+  await cerrarHojas(p);
+  await p.waitForTimeout(1500);
+  revisar('venta en la base', sql("select numero || '/' || total || '/' || pagado || '/' || saldo || '/' || contrato_papel || '/' || (foto_contrato is not null) from ventas") === '1/300.00/90.00/210.00/000412/true');
+
+  // 5. Cliente de Pedraza que ya debía
+  await p.click('#navTabs [data-ir="clientes"]');
+  await p.click('[data-nuevo]');
+  await p.fill('#fNombre', 'Luis Rojas');
+  await p.click('#fSede [data-v="pedraza"]');
+  await p.fill('#fTelefono', '0426-1112233');
+  await p.click('#fGuardar');
+  await p.waitForSelector('.ficha-cab');
+  await p.click('[data-vender]');
+  await p.click('#vTipo [data-t="carga"]');
+  await p.fill('#vItems [data-campo="descripcion"]', 'Juego de cuarto');
+  await p.fill('#vItems [data-campo="precio"]', '500');
+  await p.fill('#vFecha', '2026-07-01');
+  await p.fill('#vAntes', '200');
+  await p.click('#vFrec [data-f="mensual"]');
+  await p.fill('#vNumero', '3');
+  await p.fill('#vPrimera', '2026-10-01');
+  await p.dispatchEvent('#vPrimera', 'change');
+  revisar('cuotas de la carga', (await p.textContent('#vSuma')).includes('3 cuotas suman $300,00'));
+  await p.click('#vGuardar');
+  await p.waitForSelector('.hoja h2:has-text("Cliente cargado")');
+  await cerrarHojas(p);
+  revisar('carga en la base', sql("select origen || '/' || plan_base || '/' || saldo from ventas where numero = 2") === 'carga_inicial/200.00/300.00');
+
+  // 6. Cobrar: Luis atrasado
+  await p.click('#navTabs [data-ir="cobrar"]');
+  await p.waitForTimeout(600);
+  const txtCobrar = await p.textContent('#cbListas');
+  revisar('Luis aparece atrasado', /Atrasado \$100,00 · 14 días/.test(txtCobrar), txtCobrar.slice(0, 300));
+  await foto(p, '07-cobrar');
+  await p.click('.cobro:has-text("Luis Rojas") [data-abonar]');
+  await p.click('#abMetodos [data-m="1"]');
+  await p.click('[data-rapido]');
+  revisar('botón de lo atrasado', (await p.inputValue('#abMonto')) === '100,00');
+  await foto(p, '08-abono');
+  await p.click('#abGuardar');
+  await p.waitForSelector('.hoja h2:has-text("Abono registrado")');
+  await p.click('#agRecibo');
+  const recibo = await p.evaluate(() => decodeURIComponent(window.__abiertos.pop() || ''));
+  revisar('recibo por WhatsApp', recibo.includes('Recibo de abono') && recibo.includes('Saldo pendiente: *$200,00*'), recibo.slice(0, 300));
+  await foto(p, '09-abono-guardado');
+  await cerrarHojas(p);
+
+  // 7. Ficha de Ana con la venta abierta
+  await p.click('#navTabs [data-ir="clientes"]');
+  await p.click('.item:has-text("Ana Pérez")');
+  await p.waitForSelector('.venta-det');
+  await p.waitForTimeout(800);
+  await foto(p, '10-ficha');
+  await p.screenshot({ path: path.join(CAPTURAS, '10b-ficha-completa.png'), fullPage: true });
+  // Recargo y más tiempo (dueño)
+  await p.click('[data-accion="recargo"]');
+  await p.fill('#ajMonto', '10'); await p.fill('#ajMotivo', 'Prueba de recargo');
+  await p.click('#ajGuardar');
+  await p.waitForTimeout(1200);
+  revisar('recargo aplicado', sql("select saldo from ventas where numero = 1") === '220.00');
+  await p.click('[data-accion="tiempo"]');
+  await p.fill('#rpNum', '4'); await p.dispatchEvent('#rpNum', 'input');
+  await p.fill('#rpMotivo', 'Pidió más tiempo');
+  await p.click('#rpGuardar');
+  await p.waitForTimeout(1200);
+  revisar('más tiempo: 4 cuotas nuevas', sql("select count(*) from cuotas c join ventas v on v.id = c.venta_id where v.numero = 1 and c.vigente") === '4');
+
+  // 8. Empleado de Pedraza en otro teléfono
+  const t2 = await nuevoTelefono(b);
+  const e = t2.p;
+  await entrar(e, 'pedraza');
+  revisar('empleado sin filtros de sede', await e.locator('#cbFiltro').count() === 0);
+  await e.click('#navTabs [data-ir="clientes"]');
+  const txtE = await e.textContent('#clLista');
+  revisar('empleado solo ve Pedraza', txtE.includes('Luis Rojas') && !txtE.includes('Ana Pérez'), txtE);
+  await e.click('.item:has-text("Luis Rojas")');
+  await e.click('.ficha-cab [data-abonar]');
+  await e.click('#abMetodos [data-m="5"]');
+  await e.fill('#abMonto', '400');
+  revisar('empleado no cambia la tasa', await e.getAttribute('#abTasa', 'readonly') !== null);
+  revisar('equivalente en $', (await e.textContent('#abEquiv')).includes('$10,00'));
+  await e.click('#abGuardar');
+  await e.waitForSelector('.hoja h2:has-text("Abono registrado")');
+  await cerrarHojas(e);
+  await foto(e, '11-empleado');
+
+  // 9. Sin señal: el abono se guarda en el teléfono y se manda solo al volver
+  const antes = sql("select count(*) from abonos");
+  await t2.ctx.setOffline(true);
+  await e.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await e.click('.ficha-cab [data-abonar]');
+  await e.click('#abMetodos [data-m="1"]');
+  await e.fill('#abMonto', '5');
+  await e.click('#abGuardar');
+  await e.waitForSelector('.hoja h2:has-text("Guardado en el teléfono")', { timeout: 20000 });
+  await foto(e, '12-sin-senal');
+  await cerrarHojas(e);
+  revisar('aviso de por enviar', (await e.textContent('#chipCola')).includes('1 por enviar'));
+  revisar('no llegó a la base sin señal', sql("select count(*) from abonos") === antes);
+  await t2.ctx.setOffline(false);
+  await e.evaluate(() => window.dispatchEvent(new Event('online')));
+  await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 20000 });
+  revisar('al volver la señal se envió una sola vez', sql("select count(*) from abonos") === String(Number(antes) + 1));
+  // Reintento con la misma clave: no se duplica
+  const clave = sql("select grupo from abonos order by id desc limit 1");
+  const repetido = await e.evaluate(async (c) => {
+    const r = await sb.rpc('registrar_abono', { p: { cliente_id: 2, metodo_id: 1, monto: 5 }, p_clave: c });
+    return r.error ? r.error.message : 'ok';
+  }, clave);
+  revisar('misma clave no duplica', repetido === 'ok' && sql("select count(*) from abonos") === String(Number(antes) + 1));
+
+  // 10. Dueño recibe la entrega de Pedraza
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="efectivo"]');
+  await p.waitForSelector('[data-recibir]');
+  await foto(p, '13-efectivo-pedraza');
+  await p.click('[data-recibir]');
+  revisar('esperado del empleado', (await p.textContent('.hoja')).includes('$5,00') && (await p.textContent('.hoja')).includes('Bs 400,00'));
+  await p.fill('#enUsd', '5');
+  await p.click('#enGuardar');
+  await p.waitForTimeout(1200);
+  revisar('entrega guardada', sql("select esperado_usd || '/' || esperado_bs || '/' || abonos from entregas") === '5.00/400.00/2');
+
+  // 11. Cobros y Ajustes
+  await p.click('#navTabs [data-ir="cobros"]');
+  await p.waitForSelector('#coTotales .kpi');
+  await foto(p, '14-cobros');
+  revisar('cobrado hoy', (await p.textContent('#coTotales')).includes('$205,00'), await p.textContent('#coTotales'));
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="ajustes"]');
+  await p.waitForSelector('#ajCond');
+  await foto(p, '15-ajustes');
+  await p.click('[data-nuevo-usuario]');
+  await p.fill('#usNombre', 'Pedro Prueba'); await p.fill('#usUsuario', 'pedro'); await p.fill('#usClave', 'temporal1');
+  await p.click('#usGuardar');
+  await p.waitForTimeout(1200);
+  revisar('usuario creado', sql("select rol || '/' || sede from usuarios where usuario = 'pedro'") === 'empleado/pedraza');
+
+  // 12. Primera entrada de Daniel: debe poner su clave
+  const t3 = await nuevoTelefono(b);
+  await entrar(t3.p, 'daniel');
+  await t3.p.waitForSelector('.hoja h2:has-text("Pon tu clave")');
+  await t3.p.fill('#clave1', 'nueva123'); await t3.p.fill('#clave2', 'nueva123');
+  await t3.p.click('#claveGuardar');
+  await t3.p.waitForTimeout(800);
+  revisar('Daniel cambió su clave', sql("select debe_cambiar_clave from usuarios where usuario = 'daniel'") === 'f');
+
+  // 13. Contrato en blanco
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-contrato-blanco]');
+  await p.waitForSelector('.ct');
+  await p.setViewportSize({ width: 820, height: 1100 });
+  await foto(p, '16-contrato-blanco');
+  await p.setViewportSize({ width: 390, height: 844 });
+  await cerrarHojas(p);
+
+  // Cuadre final en la base
+  revisar('cuadre de todas las ventas', sql(`select count(*) from ventas v where v.estado <> 'anulada' and (
+    abs(v.plan_base + coalesce((select sum(monto) from cuotas q where q.venta_id = v.id and q.vigente), 0) - (v.total + v.ajuste)) > 0.004
+    or abs(v.pagado - coalesce((select sum(monto_usd) from abonos a where a.venta_id = v.id and a.anulado_en is null), 0)) > 0.004)`) === '0');
+  revisar('sin errores en la consola', errores.length === 0, errores.join(' | '));
+  await b.close();
+  console.log('----\nok: ' + ok + '   fallas: ' + mal + '\nCapturas en ' + CAPTURAS);
+  process.exit(mal ? 1 : 0);
+})().catch(e => { console.error('!!! se detuvo:', e.message, '\n', errores.join('\n')); process.exit(2); });

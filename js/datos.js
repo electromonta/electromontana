@@ -1,0 +1,396 @@
+// Electro Montana — datos: lo que hay en memoria, la copia en el teléfono (para abrir sin señal)
+// y la cola de envío (lo que se registra se guarda primero en el teléfono y se manda solo).
+'use strict';
+
+var ST = {
+  yo: null, cfg: null, metodos: [], usuarios: [], usrPorId: new Map(),
+  clientes: [], cliPorId: new Map(),
+  ventas: [], ventaPorId: new Map(), ventasPorCliente: new Map(),
+  cuotas: [], cuotasPorVenta: new Map(),
+  items: [], itemsPorVenta: new Map(),
+  itemCostos: [], costoPorItem: new Map(),
+  productos: [], prodCostos: [], costoProducto: new Map(),
+  cargadoEn: null, desdeCache: false
+};
+var _estados = new Map();
+
+function esDueno() { return !!(ST.yo && ST.yo.activo && ST.yo.rol === 'dueno'); }
+function metodoPorId(id) { return ST.metodos.find(function (m) { return m.id === id; }); }
+function nombreUsuario(id) { var u = ST.usrPorId.get(id); return u ? u.nombre : '—'; }
+function tasaDeHoy() {
+  return !!(ST.cfg && Number(ST.cfg.tasa_bs) > 0 && ST.cfg.tasa_actualizada_en && fechaCaracas(ST.cfg.tasa_actualizada_en) === hoyCaracas());
+}
+
+/* ---------------- Copia en el teléfono (IndexedDB) ---------------- */
+var BD = (function () {
+  var p = null;
+  function abrir() {
+    if (p) return p;
+    p = new Promise(function (res, rej) {
+      var r = indexedDB.open('electromontana', 1);
+      r.onupgradeneeded = function () {
+        var db = r.result;
+        db.createObjectStore('cache');
+        db.createObjectStore('cola', { keyPath: 'clave' });
+        db.createObjectStore('fotos');
+      };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { p = null; rej(r.error); };
+    });
+    return p;
+  }
+  function tx(store, modo, fn) {
+    return abrir().then(function (db) {
+      return new Promise(function (res, rej) {
+        var t = db.transaction(store, modo), req = fn(t.objectStore(store));
+        t.oncomplete = function () { res(req ? req.result : undefined); };
+        t.onerror = function () { rej(t.error); };
+        t.onabort = function () { rej(t.error); };
+      });
+    });
+  }
+  return {
+    get: function (st, k) { return tx(st, 'readonly', function (s) { return s.get(k); }); },
+    put: function (st, v, k) { return tx(st, 'readwrite', function (s) { return k === undefined ? s.put(v) : s.put(v, k); }); },
+    del: function (st, k) { return tx(st, 'readwrite', function (s) { return s.delete(k); }); },
+    todos: function (st) { return tx(st, 'readonly', function (s) { return s.getAll(); }); },
+    limpiar: function (st) { return tx(st, 'readwrite', function (s) { return s.clear(); }); }
+  };
+})();
+
+function indexar() {
+  _estados = new Map();
+  ST.usrPorId = new Map(ST.usuarios.map(function (u) { return [u.id, u]; }));
+  ST.cliPorId = new Map(ST.clientes.map(function (c) { return [c.id, c]; }));
+  ST.ventaPorId = new Map();
+  ST.ventasPorCliente = new Map();
+  ST.ventas.sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.id - b.id; });
+  ST.ventas.forEach(function (v) {
+    ST.ventaPorId.set(v.id, v);
+    if (!ST.ventasPorCliente.has(v.cliente_id)) ST.ventasPorCliente.set(v.cliente_id, []);
+    ST.ventasPorCliente.get(v.cliente_id).push(v);
+  });
+  ST.cuotasPorVenta = agrupar(ST.cuotas, 'venta_id');
+  ST.itemsPorVenta = agrupar(ST.items, 'venta_id');
+  ST.itemsPorVenta.forEach(function (l) { l.sort(function (a, b) { return a.orden - b.orden; }); });
+  ST.costoPorItem = new Map(ST.itemCostos.map(function (c) { return [c.item_id, Number(c.costo)]; }));
+  ST.costoProducto = new Map(ST.prodCostos.map(function (c) { return [c.producto_id, Number(c.costo)]; }));
+  ST.clientes.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
+  ST.productos.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
+}
+function agrupar(lista, campo) {
+  var m = new Map();
+  lista.forEach(function (x) { if (!m.has(x[campo])) m.set(x[campo], []); m.get(x[campo]).push(x); });
+  return m;
+}
+function fotoDatos() {
+  return { cfg: ST.cfg, metodos: ST.metodos, usuarios: ST.usuarios, clientes: ST.clientes, ventas: ST.ventas, cuotas: ST.cuotas,
+           items: ST.items, itemCostos: ST.itemCostos, productos: ST.productos, prodCostos: ST.prodCostos, cargadoEn: ST.cargadoEn };
+}
+function aplicarDatos(d) {
+  ST.cfg = d.cfg; ST.metodos = d.metodos || []; ST.usuarios = d.usuarios || []; ST.clientes = d.clientes || [];
+  ST.ventas = d.ventas || []; ST.cuotas = d.cuotas || []; ST.items = d.items || []; ST.itemCostos = d.itemCostos || [];
+  ST.productos = d.productos || []; ST.prodCostos = d.prodCostos || []; ST.cargadoEn = d.cargadoEn;
+  indexar();
+}
+var guardarCache = debounce(function () {
+  if (!ST.yo) return;
+  BD.put('cache', { yo: ST.yo, datos: fotoDatos() }, 'datos:' + ST.yo.id).catch(function (e) { console.warn('No se guardó la copia', e); });
+}, 800);
+async function leerCache(uid) {
+  try { return await BD.get('cache', 'datos:' + uid); } catch (e) { return null; }
+}
+
+/* ---------------- Carga desde la base ---------------- */
+function _uno(r) { if (r.error) throw r.error; return r.data; }
+async function cargarTodo() {
+  var dueno = esDueno();
+  var tareas = [
+    sb.from('config').select('*').eq('id', 1).single().then(_uno),
+    traerTodo('metodos_pago', '*', null, 'orden'),
+    traerTodo('usuarios', 'id,usuario,nombre,rol,sede,activo', null, 'nombre'),
+    traerTodo('clientes'),
+    traerTodo('ventas', '*', function (q) { return q.neq('estado', 'anulada'); }),
+    traerTodo('cuotas', 'id,venta_id,plan,n,tipo,fecha,monto', function (q) { return q.eq('vigente', true); }),
+    traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden'),
+    traerTodo('productos', 'id,nombre,precio_sugerido,activo')
+  ];
+  if (dueno) {
+    tareas.push(traerTodo('venta_item_costos', 'item_id,costo', null, 'item_id'));
+    tareas.push(traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id'));
+  }
+  var r = await Promise.all(tareas);
+  aplicarDatos({ cfg: r[0], metodos: r[1], usuarios: r[2], clientes: r[3], ventas: r[4], cuotas: r[5], items: r[6],
+                 productos: r[7], itemCostos: r[8] || [], prodCostos: r[9] || [], cargadoEn: new Date().toISOString() });
+  ST.desdeCache = false;
+  guardarCache();
+}
+
+// Después de registrar algo, solo se recarga ese cliente (rinde con internet lento)
+async function recargarCliente(id) {
+  var rc = await sb.from('clientes').select('*').eq('id', id).maybeSingle();
+  if (rc.error) throw rc.error;
+  var vs = await traerTodo('ventas', '*', function (q) { return q.eq('cliente_id', id).neq('estado', 'anulada'); });
+  var ids = vs.map(function (v) { return v.id; });
+  var cs = [], its = [], costos = [];
+  if (ids.length) {
+    var r = await Promise.all([
+      traerTodo('cuotas', 'id,venta_id,plan,n,tipo,fecha,monto', function (q) { return q.in('venta_id', ids).eq('vigente', true); }),
+      traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden', function (q) { return q.in('venta_id', ids); })
+    ]);
+    cs = r[0]; its = r[1];
+    if (esDueno() && its.length) {
+      costos = await traerTodo('venta_item_costos', 'item_id,costo', function (q) { return q.in('item_id', its.map(function (i) { return i.id; })); }, 'item_id');
+    }
+  }
+  var viejas = new Set((ST.ventasPorCliente.get(id) || []).map(function (v) { return v.id; }));
+  ids.forEach(function (x) { viejas.add(x); });
+  var itemsViejos = new Set(ST.items.filter(function (i) { return viejas.has(i.venta_id); }).map(function (i) { return i.id; }));
+  ST.clientes = ST.clientes.filter(function (c) { return c.id !== id; }).concat(rc.data ? [rc.data] : []);
+  ST.ventas = ST.ventas.filter(function (v) { return !viejas.has(v.id); }).concat(vs);
+  ST.cuotas = ST.cuotas.filter(function (c) { return !viejas.has(c.venta_id); }).concat(cs);
+  ST.items = ST.items.filter(function (i) { return !viejas.has(i.venta_id); }).concat(its);
+  ST.itemCostos = ST.itemCostos.filter(function (c) { return !itemsViejos.has(c.item_id); }).concat(costos);
+  indexar();
+  guardarCache();
+}
+async function recargarConfig() {
+  var r = await Promise.all([
+    sb.from('config').select('*').eq('id', 1).single().then(_uno),
+    traerTodo('metodos_pago', '*', null, 'orden'),
+    traerTodo('usuarios', 'id,usuario,nombre,rol,sede,activo', null, 'nombre')
+  ]);
+  ST.cfg = r[0]; ST.metodos = r[1]; ST.usuarios = r[2];
+  indexar();
+  guardarCache();
+}
+async function recargarProductos() {
+  var r = await Promise.all([
+    traerTodo('productos', 'id,nombre,precio_sugerido,activo'),
+    esDueno() ? traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id') : Promise.resolve([])
+  ]);
+  ST.productos = r[0]; ST.prodCostos = r[1];
+  indexar();
+  guardarCache();
+}
+
+/* ---------------- Cuentas por venta y por cliente ---------------- */
+// Abonos que todavía están en la cola (se muestran aparte, nunca se restan de lo que dice la base)
+function abonosEnCola(filtro) {
+  return Cola.ops.filter(function (o) { return o.tipo === 'abono' && o.uid === (ST.yo && ST.yo.id) && filtro(o.datos); });
+}
+function enColaDeVenta(ventaId) {
+  return abonosEnCola(function (d) { return d.venta_id === ventaId; })
+    .reduce(function (s, o) { return s + (Number(o.datos.monto_usd) || 0); }, 0);
+}
+function enColaDeCliente(cliId) {
+  return abonosEnCola(function (d) { return d.cliente_id === cliId; })
+    .reduce(function (s, o) { return s + (Number(o.datos.monto_usd) || 0); }, 0);
+}
+function estadoDe(v) {
+  var e = _estados.get(v.id);
+  if (!e) {
+    e = Cuentas.estadoVenta(v, ST.cuotasPorVenta.get(v.id) || [], hoyCaracas());
+    _estados.set(v.id, e);
+  }
+  return e;
+}
+function ventasActivas(cliId) {
+  return (ST.ventasPorCliente.get(cliId) || []).filter(function (v) { return v.estado === 'activa'; });
+}
+// Resumen de lo que debe un cliente (todas sus ventas activas)
+function resumenCliente(cliId) {
+  var r = { saldo: 0, atraso: 0, dias: 0, proxima: null, activas: 0, retirada: false, plazoVencido: false, cuotasVencidas: 0 };
+  ventasActivas(cliId).forEach(function (v) {
+    var e = estadoDe(v);
+    r.activas++;
+    r.saldo += e.saldo;
+    r.atraso += e.atraso;
+    r.dias = Math.max(r.dias, e.diasAtraso);
+    r.cuotasVencidas += e.cuotas.filter(function (c) { return c.vencida; }).length;
+    if (v.mercancia === 'retirada') r.retirada = true;
+    if (e.plazoVencido) r.plazoVencido = true;
+    if (e.proxima && (!r.proxima || e.proxima.fecha < r.proxima.fecha)) r.proxima = e.proxima;
+  });
+  r.saldo = redondear2(r.saldo); r.atraso = redondear2(r.atraso);
+  r.enCola = redondear2(enColaDeCliente(cliId));
+  return r;
+}
+function descripcionVenta(v) {
+  var its = ST.itemsPorVenta.get(v.id) || [];
+  if (!its.length) return 'Venta #' + v.numero;
+  var t = its.map(function (i) { return (i.cantidad > 1 ? i.cantidad + ' ' : '') + i.descripcion; }).join(', ');
+  return t.length > 70 ? t.slice(0, 68) + '…' : t;
+}
+function textoFrecuencia(f, n) {
+  var m = { semanal: ['semanal', 'semanales'], quincenal: ['quincenal', 'quincenales'], mensual: ['mensual', 'mensuales'],
+            personalizada: ['personalizada', 'personalizadas'], contado: ['de contado', 'de contado'] }[f] || [f, f];
+  return n === 1 ? m[0] : m[1];
+}
+
+/* ---------------- Cola de envío ---------------- */
+// Cada operación: {clave, tipo: cliente|venta|abono|foto, datos, uid, creado, estado: pendiente|error, error, resumen}
+var Cola = {
+  ops: [],
+  procesando: false,
+  esperas: new Map(),
+  _timer: null,
+
+  async cargar() {
+    try { this.ops = (await BD.todos('cola')) || []; } catch (e) { console.warn('Sin cola en el teléfono', e); this.ops = []; }
+    this.ops.sort(function (a, b) { return a.creado - b.creado; });
+    pintarCola();
+  },
+  mias() { var uid = ST.yo && ST.yo.id; return this.ops.filter(function (o) { return o.uid === uid; }); },
+  async guardar(op) { try { await BD.put('cola', op); } catch (e) { console.warn('No se guardó en el teléfono', e); } },
+  async agregar(op) {
+    op.uid = ST.yo.id; op.creado = Date.now(); op.estado = 'pendiente'; op.intentos = 0;
+    this.ops.push(op);
+    await this.guardar(op);
+    pintarCola();
+  },
+  async quitar(clave) {
+    this.ops = this.ops.filter(function (o) { return o.clave !== clave; });
+    try { await BD.del('cola', clave); await BD.del('fotos', clave); } catch (e) { /* nada */ }
+    pintarCola();
+  },
+  avisar(clave, err, res) {
+    var w = this.esperas.get(clave);
+    if (!w) return;
+    this.esperas.delete(clave);
+    if (err) w.error(err); else w.ok(res);
+  },
+  programar() {
+    clearTimeout(this._timer);
+    var self = this;
+    if (this.mias().some(function (o) { return o.estado === 'pendiente'; })) {
+      this._timer = setTimeout(function () { self.procesar(); }, 20000);
+    }
+  },
+  async procesar() {
+    if (this.procesando || !ST.yo) return;
+    this.procesando = true;
+    var huboExito = false;
+    try {
+      while (true) {
+        var uid = ST.yo && ST.yo.id;
+        var op = this.ops.find(function (o) { return o.estado === 'pendiente' && o.uid === uid; });
+        if (!op) break;
+        try {
+          var res = await enviarOp(op);
+          await this.quitar(op.clave);
+          huboExito = true;
+          this.avisar(op.clave, null, res);
+          alTerminarOp(op, res);
+        } catch (e) {
+          if (esErrorDeRed(e)) {
+            op.intentos++;
+            await this.guardar(op);
+            this.avisar(op.clave, 'red');
+            break;
+          }
+          console.warn('Operación rechazada', op, e);
+          op.estado = 'error'; op.error = errMsg(e); op.codigo = e.code || null;
+          await this.guardar(op);
+          this.avisar(op.clave, e);
+        }
+      }
+    } finally {
+      this.procesando = false;
+      pintarCola();
+      this.programar();
+      if (huboExito) actualizarConexion(true);
+    }
+  }
+};
+
+// Agrega la operación y espera un rato su resultado. Si no hay señal, queda guardada en el teléfono.
+// Devuelve {estado: 'ok', resultado} o {estado: 'pendiente'}; si la base la rechaza, lanza el error
+// (y la operación se quita de la cola para que se corrija).
+function enviarYEsperar(op, ms) {
+  return new Promise(function (resolve, reject) {
+    var t = setTimeout(function () { Cola.esperas.delete(op.clave); resolve({ estado: 'pendiente' }); }, ms || 15000);
+    Cola.esperas.set(op.clave, {
+      ok: function (res) { clearTimeout(t); resolve({ estado: 'ok', resultado: res }); },
+      error: function (e) {
+        clearTimeout(t);
+        if (e === 'red') { resolve({ estado: 'pendiente' }); return; }
+        Cola.quitar(op.clave).then(function () { reject(e); });
+      }
+    });
+    Cola.agregar(op).then(function () { Cola.procesar(); });
+  });
+}
+
+async function enviarOp(op) {
+  if (op.tipo === 'cliente') return rpc('guardar_cliente', { p: op.datos, p_clave: op.clave }, 25000);
+  if (op.tipo === 'venta') return rpc('registrar_venta', { p: op.datos, p_clave: op.clave }, 25000);
+  if (op.tipo === 'abono') return rpc('registrar_abono', { p: op.datos, p_clave: op.clave }, 25000);
+  if (op.tipo === 'foto') return subirFotoOp(op);
+  throw { code: 'EM000', message: 'Operación desconocida' };
+}
+
+// Foto en cola: se sube al bucket privado (cli/<cliente>/...) y luego se anota en el registro
+async function subirFotoOp(op) {
+  var cli = op.cliente_id;
+  if (!cli && op.cliente_clave) {
+    var r = await rpc('resolver_clave', { p_clave: op.cliente_clave });
+    if (!r || !r.id) throw { code: 'EM404', message: 'No se encontró el cliente de esta foto.' };
+    cli = r.id;
+  }
+  var ruta = 'cli/' + cli + '/' + op.nombre;
+  if (!op.subida) {
+    var blob = await BD.get('fotos', op.clave);
+    if (!blob) throw { code: 'EM404', message: 'La foto ya no está en el teléfono.' };
+    var up = await sb.storage.from('fotos').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+    if (up.error) {
+      var msg = String(up.error.message || '');
+      var st = Number(up.error.statusCode || up.error.status || 0);
+      if (/already exists|duplicate/i.test(msg) || st === 409) { /* ya estaba subida */ }
+      else if (st >= 400 && st < 500) throw { code: 'EM4XX', message: 'No se pudo subir la foto: ' + msg };
+      else throw up.error;
+    }
+    op.subida = true;
+    await Cola.guardar(op);
+  }
+  var pid = op.ref_id || ((op.tipo_foto === 'cliente' || op.tipo_foto === 'cedula') ? cli : null);
+  await rpc('poner_foto', { p_tipo: op.tipo_foto, p_id: pid, p_clave: pid ? null : (op.ref_clave || null), p_ruta: ruta }, 25000);
+  return { ruta: ruta, cliente_id: cli };
+}
+
+// Agrega una foto a la cola (se guarda en el teléfono hasta que sube)
+async function encolarFoto(blob, o) {
+  var clave = nuevaClave();
+  try { await BD.put('fotos', blob, clave); } catch (e) { toast('No se pudo guardar la foto en el teléfono.', 'error'); return; }
+  var op = {
+    clave: clave, tipo: 'foto', tipo_foto: o.tipo, cliente_id: o.cliente_id || null, cliente_clave: o.cliente_clave || null,
+    ref_id: o.ref_id || null, ref_clave: o.ref_clave || null,
+    nombre: o.tipo + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + '.jpg',
+    resumen: { texto: 'Foto (' + ({ cliente: 'cliente', cedula: 'cédula', contrato: 'contrato', comprobante: 'comprobante' }[o.tipo]) + ') de ' + (o.nombreCliente || 'cliente') }
+  };
+  await Cola.agregar(op);
+  Cola.procesar();
+}
+
+var _clientesPorRecargar = new Set();
+var _recargarPendientes = debounce(async function () {
+  var ids = Array.from(_clientesPorRecargar); _clientesPorRecargar.clear();
+  try {
+    for (var i = 0; i < ids.length; i++) await recargarCliente(ids[i]);
+    if (ids.length) repintar();
+  } catch (e) { console.warn('No se pudo actualizar', e); }
+}, 600);
+function alTerminarOp(op, res) {
+  var cli = res && (res.cliente_id || (op.tipo === 'cliente' ? res.id : null));
+  if (cli) { _clientesPorRecargar.add(Number(cli)); _recargarPendientes(); }
+  if (op.tipo === 'venta') recargarProductos().catch(function () {});
+}
+
+/* ---------------- Conexión ---------------- */
+var _enLinea = true;
+function actualizarConexion(ok) {
+  _enLinea = ok;
+  pintarCola();
+}
+window.addEventListener('online', function () { actualizarConexion(true); Cola.procesar(); });
+window.addEventListener('offline', function () { actualizarConexion(false); });
