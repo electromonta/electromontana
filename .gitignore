@@ -1,0 +1,3 @@
+# Ajustes locales y copias de trabajo temporales de Claude Code. Nunca subirlos.
+.claude/settings.local.json
+.claude/worktrees/
