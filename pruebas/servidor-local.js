@@ -96,6 +96,23 @@ http.createServer(async (req, res) => {
     }
 
     /* ---------- Fotos (bucket privado) ---------- */
+    // supabase-js manda los Blob como multipart (campo "cacheControl" y el archivo): se saca solo el archivo
+    function archivoDeSubida(rq, b) {
+      const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(rq.headers['content-type'] || '');
+      if (!m) return b;
+      const sep = Buffer.from('--' + (m[1] || m[2]));
+      let i = b.indexOf(sep);
+      while (i >= 0) {
+        const j = b.indexOf(sep, i + sep.length);
+        if (j < 0) break;
+        const parte = b.subarray(i + sep.length, j);
+        const fin = parte.indexOf('\r\n\r\n');
+        const cab = parte.subarray(0, fin).toString();
+        if (/content-type:\s*image\//i.test(cab) || /filename=/i.test(cab)) return parte.subarray(fin + 4, parte.length - 2);
+        i = j;
+      }
+      return b;
+    }
     const mFirma = url.pathname.match(/^\/storage\/v1\/object\/sign\/fotos\/(.+)$/);
     if (mFirma) {
       const ruta = decodeURIComponent(mFirma[1]);
@@ -124,7 +141,7 @@ http.createServer(async (req, res) => {
       } catch (e) {
         return json(res, 400, { statusCode: '403', error: 'Unauthorized', message: 'new row violates row-level security policy' });
       }
-      archivos.set(ruta, await cuerpo(req));
+      archivos.set(ruta, archivoDeSubida(req, await cuerpo(req)));
       return json(res, 200, { Key: 'fotos/' + ruta, Id: crypto.randomUUID() });
     }
 

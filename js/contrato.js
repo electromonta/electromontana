@@ -30,6 +30,18 @@ function numeroEnLetras(n) {
 function datosContrato(v, b) {
   if (b) return b;
   if (!v) return null;
+  // Contrato firmado en la pantalla: se muestra tal como se firmó
+  var f = v.contrato_firmado;
+  if (f) {
+    return {
+      numero: f.numero, fecha: f.fecha, cliente: f.cliente || {}, origen: f.origen,
+      items: (f.items || []).map(function (i) { return { cantidad: Number(i.cantidad), descripcion: i.descripcion, precio: Number(i.precio) }; }),
+      total: Number(f.total), inicial: Number(f.inicial), pagado_antes: f.origen === 'carga_inicial' ? Number(f.plan_base) : 0,
+      inicial_pagada: Number(v.pagado) >= Number(v.inicial) - 0.004, frecuencia: f.frecuencia,
+      cuotas: (f.cuotas || []).map(function (c) { return { fecha: c.fecha, monto: Number(c.monto) }; }), contrato_papel: f.contrato_papel,
+      condiciones: f.condiciones, firmado: true
+    };
+  }
   var cuotas = (ST.cuotasPorVenta.get(v.id) || []).filter(function (c) { return c.tipo !== 'inicial'; })
     .sort(function (a, c) { return a.fecha < c.fecha ? -1 : a.fecha > c.fecha ? 1 : a.n - c.n; });
   return {
@@ -40,8 +52,9 @@ function datosContrato(v, b) {
   };
 }
 
-function htmlContrato(d) {
+function htmlContrato(d, firmas) {
   var vacio = !d;
+  firmas = firmas || {};
   d = d || { cliente: {}, items: [], cuotas: [] };
   var c = d.cliente || {};
   function linea(etq, val, ancho) {
@@ -92,16 +105,22 @@ function htmlContrato(d) {
     }).join('') + '</div>' +
 
     '<div class="ct-sec">Condiciones</div>' +
-    '<ol class="ct-cond">' + condicionesContrato().map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ol>' +
+    '<ol class="ct-cond">' + ((d.condiciones && d.condiciones.length) ? d.condiciones : condicionesContrato()).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ol>' +
 
     '<div class="ct-firmas">' +
-      '<div><div class="ct-raya"></div>Firma del comprador<br><span>C.I.:</span></div>' +
+      '<div>' + imgFirma(firmas.cliente) + '<div class="ct-raya"></div>Firma del comprador<br><span>C.I.: ' + (firmas.cliente && c.cedula ? esc(fmtCedula(c.cedula)) : '') + '</span></div>' +
       '<div class="ct-huella">Huella</div>' +
-      '<div><div class="ct-raya"></div>Firma del fiador<br><span>C.I.:</span></div>' +
+      '<div>' + imgFirma(firmas.fiador) + '<div class="ct-raya"></div>Firma del fiador<br><span>C.I.: ' + (firmas.fiador && c.fiador_cedula ? esc(fmtCedula(c.fiador_cedula)) : '') + '</span></div>' +
       '<div><div class="ct-raya"></div>Por Electro Montana</div>' +
     '</div>' +
+    (firmas.en ? '<div class="ct-firmado">Firmado en la pantalla el ' + esc(fmtFechaAnio(fechaCaracas(firmas.en))) + ' a las ' + esc(fmtHora(firmas.en)) +
+      (firmas.por ? ', registrado por ' + esc(nombreUsuario(firmas.por)) : '') + (firmas.enCola ? ' (por enviar)' : '') + '.</div>' : '') +
     '<div class="ct-nota">NOTA: FIRMANDO EL CONTRATO NO SE DEVUELVE DINERO</div>' +
   '</div>';
+}
+
+function imgFirma(url) {
+  return url ? '<img class="ct-firma" src="' + esc(url) + '" alt="Firma">' : '';
 }
 
 var _estiloContrato = false;
@@ -128,6 +147,8 @@ function ponerEstiloContrato() {
     '.ct-caja{width:16px;height:16px;border:1.5px solid #172b4d;border-radius:2px}' +
     '.ct-cond{margin:0;padding-left:18px;font-size:11.5px}.ct-cond li{margin-bottom:2px}' +
     '.ct-firmas{display:grid;grid-template-columns:1fr 70px 1fr 1fr;gap:14px;margin-top:34px;text-align:center;font-size:11px;align-items:end}' +
+    '.ct-firma{display:block;max-width:100%;max-height:64px;margin:0 auto 2px;mix-blend-mode:multiply}' +
+    '.ct-firmado{margin-top:8px;font-size:11px;color:#333;text-align:center}' +
     '.ct-raya{border-top:1px solid #111;margin-bottom:3px}.ct-firmas span{display:inline-block;margin-top:6px}' +
     '.ct-huella{border:1px solid #999;height:72px;display:flex;align-items:flex-end;justify-content:center;font-size:10px;color:#666;border-radius:4px}' +
     '.ct-nota{margin-top:14px;background:#172b4d;color:#fff;text-align:center;font:700 13px "Barlow Semi Condensed",Arial,sans-serif;letter-spacing:.06em;padding:6px;border-radius:3px}' +
@@ -136,7 +157,7 @@ function ponerEstiloContrato() {
     '@media print{@page{size:letter;margin:9mm 11mm}body.imprimiendo>*:not(#impresion){display:none !important}body.imprimiendo #impresion{display:block}' +
       '#impresion .ct{border:0;padding:0;max-width:none;font-size:11.5px}#impresion .ct-campo{min-height:27px}#impresion .ct-sec{margin:8px 0 4px}' +
       '#impresion .ct-tabla th,#impresion .ct-tabla td{height:19px;padding:2px 6px}#impresion .ct-cuota{padding:1px 0}#impresion .ct-cond{font-size:10.5px}' +
-      '#impresion .ct-firmas{margin-top:26px}#impresion .ct-huella{height:60px}#impresion .ct-nota{margin-top:10px;padding:4px}#impresion .ct-sec,#impresion .ct-nota,#impresion .ct-tabla th{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+      '#impresion .ct-firmas{margin-top:26px}#impresion .ct-firma{max-height:46px}#impresion .ct-firmado{margin-top:4px;font-size:10px}#impresion .ct-huella{height:60px}#impresion .ct-nota{margin-top:10px;padding:4px}#impresion .ct-sec,#impresion .ct-nota,#impresion .ct-tabla th{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
       '#impresion .ct-cuotas{grid-template-columns:1fr 1fr 1fr}#impresion .ct-fila{flex-wrap:nowrap}#impresion .ct-campo{flex-basis:auto !important}#impresion .ct-firmas{grid-template-columns:1fr 70px 1fr 1fr}#impresion .ct-cab{flex-direction:row}#impresion .ct-titulo{text-align:right}}';
   document.head.appendChild(s);
 }
@@ -146,11 +167,20 @@ function imprimirContrato(v, borrador) {
   ponerEstiloContrato();
   var d = datosContrato(v, borrador);
   var html = htmlContrato(d);
+  var ayuda = '<p class="tenue chico">Revísalo y toca Imprimir. En el iPhone también sirve para guardarlo como PDF y mandarlo por WhatsApp.</p>';
   var h = abrirHoja({
     titulo: d ? 'Contrato' + (d.numero ? ' #' + d.numero : '') : 'Contrato en blanco', completa: true,
-    html: '<p class="tenue chico">Revísalo y toca Imprimir. En el iPhone también sirve para guardarlo como PDF y mandarlo por WhatsApp.</p>' + html,
+    html: ayuda + html,
     pie: '<button type="button" class="btn btn-ancho" id="ctImprimir">' + icono('imprimir') + 'Imprimir o guardar PDF</button>'
   });
+  // Firmado en la pantalla: se ponen las firmas (de la base o del teléfono)
+  if (v && (v.firma_cliente || firmaEnCola(v.id, v.clave))) {
+    imagenesFirma(v).then(function (f) {
+      if (h.cerrado) return;
+      html = htmlContrato(d, f);
+      h.cuerpo.innerHTML = ayuda + (f.sinSenal ? '<div class="aviso aviso-info" style="margin-bottom:10px">' + icono('sinsenal') + '<div>Sin señal: las firmas se ven cuando vuelva el internet.</div></div>' : '') + html;
+    });
+  }
   h.$('#ctImprimir').onclick = function () {
     var cont = document.getElementById('impresion');
     if (!cont) { cont = document.createElement('div'); cont.id = 'impresion'; document.body.appendChild(cont); }

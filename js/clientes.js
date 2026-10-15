@@ -260,8 +260,12 @@ var VistaFicha = (function () {
         (txt ? '<div class="tenue chico" style="width:76px;text-align:right">' + txt + '</div>' : '<div style="width:76px"></div>') + '</div>';
     }).join('') + '</div>';
     // Contrato
+    var fCola = firmaEnCola(v.id, v.clave);
     h += '<h3 style="margin-top:16px">Contrato</h3><div class="fila envolver" style="margin-top:8px;gap:8px">' +
+      (v.firmado_en ? '<span class="etiqueta e-verde">' + icono('check', 'ic-chico') + 'Firmado en pantalla el ' + esc(fmtFechaAnio(fechaCaracas(v.firmado_en))) + '</span>'
+        : fCola ? '<span class="etiqueta e-ambar">Firma por enviar</span>' : '') +
       (v.contrato_papel ? '<span class="etiqueta e-gris">En papel N° ' + esc(v.contrato_papel) + '</span>' : '') +
+      (!v.firmado_en && !fCola && v.estado !== 'anulada' ? '<button type="button" class="btn btn-chico" data-firmar="' + v.id + '">' + icono('editar', 'ic-chico') + 'Firmar en la pantalla</button>' : '') +
       (v.foto_contrato ? '<button type="button" class="btn btn-sec btn-chico" data-ver-contrato="' + v.id + '">' + icono('foto', 'ic-chico') + 'Ver foto</button>' : '') +
       '<button type="button" class="btn btn-sec btn-chico" data-foto-contrato="' + v.id + '">' + icono('camara', 'ic-chico') + (v.foto_contrato ? 'Cambiar foto' : 'Tomar foto') + '</button>' +
       '<button type="button" class="btn btn-sec btn-chico" data-imprimir="' + v.id + '">' + icono('imprimir', 'ic-chico') + 'Imprimir contrato</button>' +
@@ -279,6 +283,7 @@ var VistaFicha = (function () {
         (v.mercancia === 'retirada' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="devolver">Devolver mercancía</button>' : '') +
         (v.estado === 'activa' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="cerrar">Cerrar venta</button>' : '') +
         (v.estado === 'cerrada' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="reabrir">Reabrir</button>' : '') +
+        (v.firmado_en ? '<button type="button" class="btn btn-sec btn-chico" data-refirmar="' + v.id + '">Volver a firmar</button>' : '') +
         (v.estado === 'cerrada' && v.mercancia === 'retirada' && !v.reingresada_en && its.some(function (i) { return i.producto_id; }) ?
           '<button type="button" class="btn btn-sec btn-chico" data-accion="reingresar">Volver a la tienda</button>' : '') +
         '<button type="button" class="btn btn-sec btn-chico" data-accion="anular" style="color:var(--rojo)">Anular</button></div>';
@@ -358,6 +363,13 @@ var VistaFicha = (function () {
       return;
     }
     if ((b = e.target.closest('[data-imprimir]'))) { imprimirContrato(ST.ventaPorId.get(Number(b.dataset.imprimir))); return; }
+    if ((b = e.target.closest('[data-firmar]')) || (b = e.target.closest('[data-refirmar]'))) {
+      var vf = ST.ventaPorId.get(Number(b.dataset.firmar || b.dataset.refirmar)), re = !!b.dataset.refirmar;
+      if (re && !(await confirmar({ titulo: 'Volver a firmar', mensaje: 'La firma de antes queda guardada en el historial. ¿Firmar de nuevo?', boton: 'Firmar de nuevo' }))) return;
+      // Se firma el contrato con los datos de hoy (no la copia vieja)
+      hojaFirmar({ d: datosContrato(Object.assign({}, vf, { contrato_firmado: null })), ventaId: vf.id, cliente: c, reemplazar: re, alFirmar: function () { pintar(); } });
+      return;
+    }
     if ((b = e.target.closest('[data-resumen]'))) { enviarResumenVenta(ST.ventaPorId.get(Number(b.dataset.resumen))); return; }
     if ((b = e.target.closest('[data-costo]'))) { hojaCosto(Number(b.dataset.costo)); return; }
     if ((b = e.target.closest('[data-accion]'))) {

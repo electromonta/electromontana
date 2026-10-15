@@ -1,5 +1,21 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 3 — Etapa 3: contrato firmado en la pantalla (2026-10-15)
+
+**Qué hace la app**
+- Al guardar una venta sale el botón **"Firmar el contrato en la pantalla"** (también en la ficha del cliente, en la parte Contrato de cada venta).
+- Primero firma el **cliente** con el dedo (en el teléfono o en la tablet); arriba sale lo que está aceptando en palabras simples (qué se lleva, el total, la inicial, lo que falta) y el botón "Leer el contrato completo". Si el cliente tiene **fiador**, después firma el fiador (o "Sin fiador" si no está).
+- Las firmas se guardan **primero en el teléfono** y suben solas (sirve sin señal, como los abonos).
+- Al llegar a la base se guarda una **copia fija del contrato** (datos del cliente y del fiador, lo que se llevó, las cuotas y las condiciones tal como se leyeron). Si después se cambia la dirección del cliente o las condiciones en Ajustes, el contrato firmado sigue igual.
+- El contrato impreso o en PDF sale con las **dos firmas**, la cédula debajo y "Firmado en la pantalla el … a las …, registrado por …". Sigue cabiendo en una hoja carta.
+- Un contrato firmado no se puede volver a firmar; solo un dueño puede "Volver a firmar" (la firma de antes queda en la auditoría).
+
+**Base**: migración `004_firma.sql` (columnas `ventas.firma_cliente`, `firma_fiador`, `firmado_en`, `firmado_por`, `contrato_firmado`; función `firmar_venta`). Las firmas van al mismo bucket privado de fotos (`cli/<cliente>/firma-….jpg`).
+
+**Pruebas**: 206 escenarios de la base, 27 de cuentas y 55 revisiones del recorrido en teléfono (firma con fiador, contrato con las firmas a la vista, firma sin señal que sube sola).
+
+**Aplicado a la base real el 2026-10-15**: huella de las 58 funciones igual a la probada; nada abierto para `anon`; prueba de cliente + venta + firma dentro de una transacción que se deshizo.
+
 ## Entrega 2 — Etapa 2: mercancía, notas de cobro, recordatorios y reportes (2026-10-15)
 
 **Qué hace la app**

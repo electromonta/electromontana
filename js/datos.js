@@ -390,6 +390,7 @@ async function enviarOp(op) {
   if (op.tipo === 'abono') return rpc('registrar_abono', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'gestion') return rpc('registrar_gestion', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'foto') return subirFotoOp(op);
+  if (op.tipo === 'firma') return subirFirmaOp(op);
   throw { code: 'EM000', message: 'Operación desconocida' };
 }
 
@@ -405,20 +406,53 @@ async function subirFotoOp(op) {
   if (!op.subida) {
     var blob = await BD.get('fotos', op.clave);
     if (!blob) throw { code: 'EM404', message: 'La foto ya no está en el teléfono.' };
-    var up = await sb.storage.from('fotos').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
-    if (up.error) {
-      var msg = String(up.error.message || '');
-      var st = Number(up.error.statusCode || up.error.status || 0);
-      if (/already exists|duplicate/i.test(msg) || st === 409) { /* ya estaba subida */ }
-      else if (st >= 400 && st < 500) throw { code: 'EM4XX', message: 'No se pudo subir la foto: ' + msg };
-      else throw up.error;
-    }
+    await subirAlBucket(ruta, blob);
     op.subida = true;
     await Cola.guardar(op);
   }
   var pid = op.ref_id || ((op.tipo_foto === 'cliente' || op.tipo_foto === 'cedula') ? cli : null);
   await rpc('poner_foto', { p_tipo: op.tipo_foto, p_id: pid, p_clave: pid ? null : (op.ref_clave || null), p_ruta: ruta }, 25000);
   return { ruta: ruta, cliente_id: cli };
+}
+
+// Sube una imagen al bucket privado. Si ya estaba (un reintento), sigue sin error.
+async function subirAlBucket(ruta, blob) {
+  var up = await sb.storage.from('fotos').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+  if (up.error) {
+    var msg = String(up.error.message || '');
+    var st = Number(up.error.statusCode || up.error.status || 0);
+    if (/already exists|duplicate/i.test(msg) || st === 409) return;   // ya estaba subida
+    if (st >= 400 && st < 500) throw { code: 'EM4XX', message: 'No se pudo subir la imagen: ' + msg };
+    throw up.error;
+  }
+}
+
+// Firma del contrato en cola: sube las firmas (cliente y fiador) y luego la anota en la venta
+async function subirFirmaOp(op) {
+  var cli = op.cliente_id;
+  if (!cli && op.cliente_clave) {
+    var rc = await rpc('resolver_clave', { p_clave: op.cliente_clave });
+    if (!rc || !rc.id) throw { code: 'EM404', message: 'No se encontró el cliente de esta firma.' };
+    cli = rc.id;
+  }
+  var rutas = {}, imgs = null;
+  op.subidas = op.subidas || {};
+  for (var k in op.nombres) {
+    if (!op.nombres[k]) continue;
+    rutas[k] = 'cli/' + cli + '/' + op.nombres[k];
+    if (op.subidas[k]) continue;
+    imgs = imgs || await BD.get('fotos', op.clave);
+    if (!imgs || !imgs[k]) throw { code: 'EM404', message: 'La firma ya no está en el teléfono.' };
+    await subirAlBucket(rutas[k], imgs[k]);
+    op.subidas[k] = true;
+    await Cola.guardar(op);
+  }
+  var d = { firma_cliente: rutas.cliente, firma_fiador: rutas.fiador || null, condiciones: op.condiciones, hecho_en: op.hecho_en, reemplazar: !!op.reemplazar };
+  if (op.venta_id) d.venta_id = op.venta_id; else d.venta_clave = op.venta_clave;
+  return rpc('firmar_venta', { p: d, p_clave: op.clave }, 25000);
+}
+function firmaEnCola(ventaId, ventaClave) {
+  return Cola.mias().find(function (o) { return o.tipo === 'firma' && ((ventaId && o.venta_id === ventaId) || (ventaClave && o.venta_clave === ventaClave)); }) || null;
 }
 
 // Agrega una foto a la cola (se guarda en el teléfono hasta que sube)

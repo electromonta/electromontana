@@ -1,12 +1,12 @@
 // Electro Montana — modo sin conexión: guarda la app en el teléfono para que abra sin señal.
 // Los datos NO pasan por aquí (van directo a la base y a la copia del teléfono).
 // En cada entrega: subir VERSION (igual que los ?v= de index.html).
-var VERSION = 'em-2';
+var VERSION = 'em-3';
 var ARCHIVOS = [
-  './', 'index.html', 'manifest.webmanifest?v=1', 'css/app.css?v=2',
-  'js/vendor/supabase-2.49.4.js', 'js/config.js?v=2', 'js/cuentas.js?v=2', 'js/base.js?v=2', 'js/datos.js?v=2',
-  'js/contrato.js?v=2', 'js/cobrar.js?v=2', 'js/clientes.js?v=2', 'js/vender.js?v=2', 'js/abonos.js?v=2',
-  'js/ventas.js?v=2', 'js/notas.js?v=2', 'js/mercancia.js?v=2', 'js/reportes.js?v=2', 'js/entregas.js?v=2', 'js/ajustes.js?v=2', 'js/app.js?v=2',
+  './', 'index.html', 'manifest.webmanifest?v=1', 'css/app.css?v=3',
+  'js/vendor/supabase-2.49.4.js', 'js/config.js?v=3', 'js/cuentas.js?v=3', 'js/base.js?v=3', 'js/datos.js?v=3',
+  'js/contrato.js?v=3', 'js/firma.js?v=3', 'js/cobrar.js?v=3', 'js/clientes.js?v=3', 'js/vender.js?v=3', 'js/abonos.js?v=3',
+  'js/ventas.js?v=3', 'js/notas.js?v=3', 'js/mercancia.js?v=3', 'js/reportes.js?v=3', 'js/entregas.js?v=3', 'js/ajustes.js?v=3', 'js/app.js?v=3',
   'fonts/barlow-400.woff2', 'fonts/barlow-500.woff2', 'fonts/barlow-600.woff2', 'fonts/barlow-700.woff2',
   'fonts/barlow-sc-600.woff2', 'fonts/barlow-sc-700.woff2',
   'img/icono-180.png?v=1', 'img/favicon-32.png?v=1'

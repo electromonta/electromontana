@@ -464,23 +464,30 @@ var VistaVender = (function () {
                      items: datos.items, total: t, inicial: datos.inicial || 0, pagado_antes: datos.pagado_antes || 0,
                      inicial_pagada: !!datos.pago_inicial, frecuencia: datos.frecuencia, cuotas: datos.cuotas, contrato_papel: F.contratoPapel };
     if (r.estado === 'ok' && !c.pendiente) { try { await recargarCliente(c.id); } catch (e) { /* luego */ } }
-    hojaVentaGuardada(r, borrador);
+    hojaVentaGuardada(r, borrador, op.clave);
     F = nuevoFormulario(F.tipo);
     ir('vender');
   }
 
-  function hojaVentaGuardada(r, b) {
+  function hojaVentaGuardada(r, b, claveVenta) {
     var ok = r.estado === 'ok';
     var h = abrirHoja({
       titulo: ok ? (b.origen === 'carga_inicial' ? 'Cliente cargado' : 'Venta #' + b.numero + ' guardada') : 'Guardada en el teléfono',
       html: '<div class="aviso ' + (ok ? 'aviso-ok' : 'aviso-ambar') + '">' + icono(ok ? 'check' : 'nube') + '<div>' +
         (ok ? esc(b.cliente.nombre) + ' debe ' + fmtUSD(r.resultado.saldo) + '.' : 'No hay señal. La venta quedó guardada en este teléfono y se enviará sola cuando vuelva el internet.') + '</div></div>' +
         '<div class="pila" style="margin-top:14px">' +
-        '<button type="button" class="btn btn-ancho" data-resumen>' + icono('chat') + 'Enviar resumen por WhatsApp</button>' +
+        '<button type="button" class="btn btn-ancho" data-firmar>' + icono('editar') + 'Firmar el contrato en la pantalla</button>' +
+        '<button type="button" class="btn btn-sec btn-ancho" data-resumen>' + icono('chat') + 'Enviar resumen por WhatsApp</button>' +
         '<button type="button" class="btn btn-sec btn-ancho" data-imprimir>' + icono('imprimir') + 'Imprimir contrato</button>' +
         (b.cliente.pendiente ? '' : '<button type="button" class="btn btn-sec btn-ancho" data-ver>' + icono('usuario') + 'Ver cliente</button>') + '</div>'
     });
     h.$('[data-resumen]').onclick = function () { enviarResumenVenta(null, b); };
+    h.$('[data-firmar]').onclick = function () {
+      hojaFirmar({ d: b, ventaId: ok ? r.resultado.id : null, ventaClave: claveVenta, cliente: b.cliente, alFirmar: function () {
+        var bt = h.$('[data-firmar]');
+        if (bt) { bt.disabled = true; bt.innerHTML = icono('check') + 'Contrato firmado'; }
+      } });
+    };
     h.$('[data-imprimir]').onclick = function () { imprimirContrato(null, b); };
     var ver = h.$('[data-ver]');
     if (ver) ver.onclick = function () { h.cerrar(); ir('cliente', String(b.cliente.id)); };

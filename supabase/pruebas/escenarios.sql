@@ -330,3 +330,37 @@ do $$ begin insert into public.gestiones (cliente_id, tipo) values (3, 'otro'); 
 exception when others then raise notice 'ok  notas solo por función → %', sqlerrm; end $$;
 reset role;
 select igual('cuadre al final de la etapa 2', $q$ public.cuadre() $q$, 'todo cuadra');
+
+-- ===================== Etapa 3: contrato firmado en la pantalla =====================
+select como('E'); set role authenticated;
+select igual('venta para firmar', $q$ public.registrar_venta(jsonb_build_object('cliente_id',2,'items','[{"descripcion":"Cocina 4 hornillas","precio":100}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',50),jsonb_build_object('fecha',h(14),'monto',50))), '99999999-0000-0000-0000-000000000001')->>'saldo' $q$, '100.00');
+reset role;
+insert into storage.objects (bucket_id, name) values ('fotos', 'cli/2/firma-cliente-a1.jpg'), ('fotos', 'cli/2/firma-fiador-a1.jpg'), ('fotos', 'cli/1/firma-cliente-x.jpg'), ('fotos', 'cli/2/firma-cliente-b2.jpg');
+select como('E'); set role authenticated;
+select t('firmar sin firma', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","condiciones":["Una"]}') $q$, 'Falta la firma del cliente');
+select t('firma de otro cliente', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/1/firma-cliente-x.jpg","condiciones":["Una"]}') $q$, 'no es de este cliente');
+select t('firma no subida', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-nada.jpg","condiciones":["Una"]}') $q$, 'todavía no se ha subido');
+select t('firma con ruta rara', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/../x.jpg","condiciones":["Una"]}') $q$, 'Firma no válida');
+select t('firmar sin condiciones', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-cliente-a1.jpg"}') $q$, 'Faltan las condiciones');
+select t('la misma imagen dos veces', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-cliente-a1.jpg","firma_fiador":"cli/2/firma-cliente-a1.jpg","condiciones":["Una"]}') $q$, 'la misma imagen');
+select igual('firmar (empleado, venta por su clave)', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-cliente-a1.jpg","firma_fiador":"cli/2/firma-fiador-a1.jpg","condiciones":["El precio está en dólares.","Lo abonado no se devuelve."]}', '99999999-0000-0000-0000-0000000000f1')->>'cliente_id' $q$, '2');
+select igual('misma clave no repite la firma', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001"}', '99999999-0000-0000-0000-0000000000f1')->>'cliente_id' $q$, '2');
+select t('firmar dos veces', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-cliente-b2.jpg","condiciones":["Una"]}') $q$, 'ya está firmado');
+select t('empleado no reemplaza la firma', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-cliente-b2.jpg","condiciones":["Una"],"reemplazar":true}') $q$, 'ya está firmado');
+select t('firmar venta de Socopó', $q$ public.firmar_venta(jsonb_build_object('venta_id', v(1), 'firma_cliente', 'cli/1/firma-cliente-x.jpg', 'condiciones', '["Una"]'::jsonb)) $q$, 'no es de tu sede');
+select igual('copia fija del contrato', $q$ (select (contrato_firmado->'cliente'->>'nombre' = (select nombre from public.clientes where id = 2))::text || '/' || jsonb_array_length(contrato_firmado->'cuotas') || '/' ||
+  jsonb_array_length(contrato_firmado->'condiciones') || '/' || (contrato_firmado->'items'->0->>'descripcion') || '/' || firma_fiador || '/' || (firmado_por = auth.uid())::text
+  from public.ventas where clave = '99999999-0000-0000-0000-000000000001') $q$, 'true/2/2/Cocina 4 hornillas/cli/2/firma-fiador-a1.jpg/true');
+do $$ begin update public.ventas set firma_cliente = null where clave = '99999999-0000-0000-0000-000000000001'; raise notice '!!! empleado quitó la firma directo';
+exception when others then raise notice 'ok  la firma solo cambia por función → %', sqlerrm; end $$;
+reset role;
+select como('D'); set role authenticated;
+select t('cambiar el nombre del cliente', $q$ public.guardar_cliente('{"id":2,"nombre":"Nombre Cambiado Después"}') $q$);
+select igual('el contrato firmado no cambia', $q$ (select contrato_firmado->'cliente'->>'nombre' <> 'Nombre Cambiado Después' from public.ventas where clave = '99999999-0000-0000-0000-000000000001')::text $q$, 'true');
+select igual('dueño reemplaza la firma', $q$ public.firmar_venta('{"venta_clave":"99999999-0000-0000-0000-000000000001","firma_cliente":"cli/2/firma-cliente-b2.jpg","condiciones":["Una"],"reemplazar":true}')->>'cliente_id' $q$, '2');
+select igual('lo de antes quedó en auditoría', $q$ (select antes->>'firma_cliente' from public.auditoria where accion = 'reemplazar_firma') || '/' || (select firma_fiador is null from public.ventas where clave = '99999999-0000-0000-0000-000000000001')::text $q$, 'cli/2/firma-cliente-a1.jpg/true');
+reset role;
+set role anon;
+select t('anónimo no firma', $q$ public.firmar_venta('{}') $q$, 'permission denied');
+reset role;
+select igual('cuadre al final de la etapa 3', $q$ public.cuadre() $q$, 'todo cuadra');

@@ -39,6 +39,12 @@ async function entrar(p, usuario) {
 async function cerrarHojas(p) {
   while (await p.locator('.velo').count()) { await p.locator('.velo [data-cerrar]').last().click(); await p.waitForTimeout(150); }
 }
+async function firmarConDedo(p) {
+  const box = await p.locator('.firma-caja canvas').boundingBox();
+  await p.mouse.move(box.x + 30, box.y + 150); await p.mouse.down();
+  for (let i = 0; i <= 24; i++) await p.mouse.move(box.x + 30 + i * 11, box.y + 150 - Math.sin(i / 2) * 45);
+  await p.mouse.up();
+}
 async function tomarFoto(p, selector) {
   const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click(selector)]);
   await fc.setFiles(FOTO);
@@ -355,6 +361,60 @@ async function tomarFoto(p, selector) {
   revisar('reportes', rep.includes('Cobrado por semana') && rep.includes('Ventas por mes') && rep.includes('Licuadora Oster') && rep.includes('Tienda de Pedraza'), rep.slice(0, 300));
   await foto(p, '21-reportes');
   await p.screenshot({ path: path.join(CAPTURAS, '21b-reportes-completo.png'), fullPage: true });
+
+  // 15. Etapa 3 — contrato firmado en la pantalla (dueño, con fiador)
+  await p.click('#navTabs [data-ir="clientes"]');
+  await p.click('.item:has-text("Ana Pérez")');
+  await p.waitForSelector('.venta-det');
+  await p.click('[data-firmar]');
+  await p.waitForSelector('.firma-caja canvas');
+  revisar('texto de lo que firma', (await p.textContent('.firma-texto')).includes('Ana Pérez') && (await p.textContent('.firma-texto')).includes('Nevera Mabe 14 pies'));
+  await p.click('.hoja-pie [data-seguir]');
+  revisar('no deja guardar sin firmar', (await p.textContent('#toasts')).includes('Falta la firma del cliente'));
+  await firmarConDedo(p);
+  await foto(p, '22-firma-cliente');
+  await p.click('.hoja-pie [data-seguir]');
+  await p.waitForSelector('.hoja h2:has-text("Firma del fiador")');
+  revisar('paso del fiador', (await p.textContent('.firma-texto')).includes('Carmen Pérez'));
+  await firmarConDedo(p);
+  await p.click('.hoja-pie [data-seguir]');
+  await p.waitForTimeout(2500);
+  revisar('contrato firmado en la base', sql("select (firmado_en is not null)::text || '/' || (firma_fiador like 'cli/%/firma-fiador-%') || '/' || (contrato_firmado->'cliente'->>'nombre') from ventas where numero = 1") === 'true/true/Ana Pérez');
+  revisar('firmas subidas al bucket', sql("select count(*) from storage.objects where name like 'cli/%/firma-%'") === '2');
+  await p.waitForSelector('.etiqueta:has-text("Firmado en pantalla")');
+  await p.click('[data-imprimir]');
+  await p.waitForSelector('.ct-firma');
+  await p.waitForTimeout(800);
+  revisar('contrato con las dos firmas', await p.locator('.hoja .ct-firma').count() === 2 && (await p.textContent('.hoja .ct')).includes('Firmado en la pantalla'));
+  await p.waitForFunction(() => Array.from(document.querySelectorAll('.hoja .ct-firma')).every(i => i.complete), null, { timeout: 10000 });
+  revisar('las firmas se ven (imagen real)', await p.evaluate(() => Array.from(document.querySelectorAll('.hoja .ct-firma')).every(i => i.naturalWidth > 50 && i.naturalHeight > 10)));
+  await p.setViewportSize({ width: 820, height: 1100 });
+  await p.locator('.hoja .ct-firmas').scrollIntoViewIfNeeded();
+  await foto(p, '23-contrato-firmado');
+  await p.setViewportSize({ width: 390, height: 844 });
+  await cerrarHojas(p);
+
+  // Sin señal: el empleado firma la venta de la licuadora y la firma sube sola al volver
+  await e.click('#navTabs [data-ir="clientes"]');
+  await e.click('.item:has-text("Luis Rojas")');
+  await e.waitForSelector('.ficha-cab');
+  const abrirLic = e.locator('.venta-cab:has-text("Licuadora")');
+  if (!(await e.locator('[data-firmar]').count())) await abrirLic.click();
+  await e.waitForSelector('[data-firmar]');
+  await t2.ctx.setOffline(true);
+  await e.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await e.click('[data-firmar]');
+  await e.waitForSelector('.firma-caja canvas');
+  await firmarConDedo(e);
+  await e.click('.hoja-pie [data-seguir]');
+  await e.waitForTimeout(800);
+  await e.waitForSelector('.velo', { state: 'detached', timeout: 30000 });
+  revisar('firma guardada sin señal', (await e.textContent('#chipCola')).includes('por enviar') && sql("select count(*) from ventas where firmado_en is not null") === '1');
+  await foto(e, '24-firma-sin-senal');
+  await t2.ctx.setOffline(false);
+  await e.evaluate(() => window.dispatchEvent(new Event('online')));
+  await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
+  revisar('al volver la señal se firmó', sql("select count(*) from ventas where firmado_en is not null and firma_fiador is null") === '1');
 
   // Cuadre final en la base
   revisar('cuadre de todas las ventas', sql(`select count(*) from ventas v where v.estado <> 'anulada' and (

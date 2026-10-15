@@ -36,7 +36,7 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 ## Stack
 
 - **Frontend:** HTML/CSS/JavaScript puro, sin frameworks, sin build. `index.html` + `css/app.css` + `js/` (un archivo por sección) + `js/config.js` (URL y key publishable). supabase-js va copiado en `js/vendor/` y las letras en `fonts/` (para que la app abra sin internet).
-  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `entregas.js` (efectivo de Pedraza), `ajustes.js`, `notas.js` (notas de cobro, promesas y recordatorios), `mercancia.js` (existencia de las tiendas), `reportes.js` (solo dueños).
+  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `firma.js` (firma en la pantalla), `entregas.js` (efectivo de Pedraza), `ajustes.js`, `notas.js` (notas de cobro, promesas y recordatorios), `mercancia.js` (existencia de las tiendas), `reportes.js` (solo dueños).
 - **Sin señal:** lo que se registra se guarda primero en la cola del teléfono y `Cola.procesar()` lo manda cuando hay internet (al volver la señal, cada 20 s y al abrir la app). Cada operación lleva su `clave`: si se reintenta, la base devuelve el mismo resultado sin repetir. `sw.js` guarda solo los archivos de la app (nunca datos). La app abre con la última copia de los datos guardada en el teléfono.
 - **Backend:** Supabase (PostgreSQL + Auth + Storage). Migraciones numeradas en `supabase/migrations/`, aplicadas con `apply_migration`. Pruebas de negocio en `supabase/pruebas/`.
 - Sesión con `storageKey: 'electromontana-sesion'`.
@@ -117,6 +117,11 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **Mercancía:** `existencias` (producto + sede, nunca baja de cero) y `movimientos_inventario` (entrada, venta, retiro, ajuste, anulación; con lo que queda). Todo pasa por `interno.mover_stock`. Ventas: cada item puede llevar `sede_salida` (sale de esa tienda y se descuenta); sin ella es mercancía que se busca en Yumana. El empleado solo saca de su tienda y solo ve la existencia de su sede. Dueños: `entrada_mercancia`, `ajustar_existencia` (conteo), `guardar_producto`, `reingresar_mercancia` (venta cerrada con mercancía retirada → vuelve a una tienda, una sola vez).
 - **Notas de cobro:** `gestiones` (visita, llamada, mensaje, promesa con fecha y monto, no_estaba, recordatorio, otro), por `registrar_gestion` con clave (van por la cola). Se quitan con `anular_gestion` (quien la escribió o un dueño). La app trae las de los últimos 120 días. Una promesa se da por cumplida si hay un abono hecho después de prometer (`resumen_abonos_clientes` da la fecha y hora del último abono).
 
+## Base de datos (etapa 3, migración `004_firma.sql`)
+
+- Firma en pantalla: `ventas.firma_cliente`, `firma_fiador` (rutas `cli/<cliente>/firma-….jpg` en el bucket `fotos`), `firmado_en`, `firmado_por` y `contrato_firmado` (copia fija: cliente, fiador, items, cuotas vigentes y condiciones tal como se leyeron). Se firma con `firmar_venta` (clave; acepta `venta_clave` si la venta todavía estaba en la cola). En el teléfono es la operación de cola `firma` (sube las dos imágenes y luego llama la función). Una venta firmada solo la vuelve a firmar un dueño (`reemplazar`), con lo de antes en `auditoria`.
+- El contrato de una venta firmada se dibuja con `contrato_firmado`, no con los datos de hoy.
+
 ## Pruebas (correr antes de cada entrega)
 
 - `supabase/pruebas/correr.sh` → escenarios de la base en un Postgres local (`escenarios.sql`). Todo `ok`.
@@ -131,4 +136,5 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - Respaldos hechos: ninguno todavía (la base no tiene datos reales).
 - **Pedido de Kinan (2026-10-15):** al terminar el sistema completo, hacer una **guía completa de uso** para dársela a Franklin y Daniel y para que Kinan aprenda a mostrarlo.
 - **2026-10-15 — Entrega 2 (etapa 2) hecha y aplicada a la base real** (migración `003_etapa2`, 56 funciones con la misma huella que las probadas): mercancía de las tiendas, venta desde la tienda, notas de cobro y promesas, recordatorios por WhatsApp, reportes.
-- **Siguiente:** Etapa 3: contrato firmado en la pantalla. Etapa 4: dominio (solo documento de pasos).
+- **2026-10-15 — Entrega 3 (etapa 3) hecha y aplicada a la base real** (migración `004_firma`, 58 funciones con la misma huella): contrato firmado en la pantalla, también sin señal.
+- **Siguiente:** Etapa 4: dominio (solo documento de pasos, `docs/DOMINIO.md`). Después: guía completa de uso.
