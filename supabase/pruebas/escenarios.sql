@@ -262,3 +262,71 @@ reset role;
 
 select igual('cuadre final', $q$ public.cuadre() $q$, 'todo cuadra');
 select igual('números sin huecos', $q$ (select string_agg(numero::text, ',' order by numero) from public.ventas) $q$, '1,2,3,4,5');
+
+-- ===================== Etapa 2: mercancía =====================
+create function public.prod(nombre text) returns bigint language sql security definer as $$ select id from public.productos where lower(nombre) = lower($1) $$;
+create function public.exist(nombre text, sede text) returns int language sql security definer as $$
+  select coalesce((select cantidad from public.existencias where producto_id = public.prod($1) and sede = $2), 0) $$;
+grant execute on function public.prod(text), public.exist(text, text) to authenticated;
+select como('D'); set role authenticated;
+select igual('entrada a Pedraza', $q$ public.entrada_mercancia('{"sede":"pedraza","nota":"Llevadas el lunes","items":[{"nombre":"Licuadora Oster","cantidad":3,"costo":25,"precio_sugerido":45},{"nombre":"Ventilador de pie","cantidad":2,"costo":12}]}', '66666666-0000-0000-0000-000000000001')->>'unidades' $q$, '5');
+select igual('misma clave no repite la entrada', $q$ public.entrada_mercancia('{"sede":"pedraza","items":[{"nombre":"X","cantidad":1}]}', '66666666-0000-0000-0000-000000000001')->>'unidades' $q$, '5');
+select igual('existencia licuadoras', $q$ public.exist('Licuadora Oster', 'pedraza') $q$, '3');
+select igual('producto nuevo con costo', $q$ (select pc.costo || '/' || p.precio_sugerido from public.productos p left join public.producto_costos pc on pc.producto_id = p.id where p.id = public.prod('Licuadora Oster')) $q$, '25.00/45.00');
+select igual('entrada a Socopó', $q$ public.entrada_mercancia('{"sede":"socopo","items":[{"nombre":"Plancha","cantidad":1}]}')->>'unidades' $q$, '1');
+select t('entrada sin tienda', $q$ public.entrada_mercancia('{"items":[{"nombre":"X","cantidad":1}]}') $q$, 'Elige a qué tienda');
+reset role;
+
+select como('E'); set role authenticated;
+select igual('empleado ve solo la existencia de Pedraza', $q$ (select count(*) filter (where sede = 'socopo') || '/' || (count(*) > 0)::text from public.existencias) $q$, '0/true');
+select t('empleado no hace entradas', $q$ public.entrada_mercancia('{"sede":"pedraza","items":[{"nombre":"X","cantidad":1}]}') $q$, 'Solo los dueños');
+select t('empleado no saca de Socopó', $q$ public.registrar_venta('{"cliente_id":2,"items":[{"descripcion":"Plancha","precio":25,"sede_salida":"socopo"}],"inicial":25}') $q$, 'Solo puedes sacar mercancía de tu tienda');
+select t('no hay suficientes', $q$ public.registrar_venta('{"cliente_id":2,"items":[{"descripcion":"Licuadora Oster","cantidad":5,"precio":45,"sede_salida":"pedraza"}],"inicial":225}') $q$, 'No hay suficiente "Licuadora Oster" en la tienda de Pedraza (quedan 3)');
+select igual('existencia intacta tras el error', $q$ public.exist('Licuadora Oster', 'pedraza') $q$, '3');
+select igual('venta desde la tienda', $q$ public.registrar_venta(jsonb_build_object('cliente_id',2,'items','[{"descripcion":"Licuadora Oster","cantidad":2,"precio":45,"sede_salida":"pedraza"}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',90))), '77777777-0000-0000-0000-000000000001')->>'saldo' $q$, '90.00');
+select igual('quedó 1 licuadora', $q$ public.exist('Licuadora Oster', 'pedraza') $q$, '1');
+select igual('el movimiento dice venta', $q$ (select tipo || '/' || cantidad || '/' || queda from public.movimientos_inventario where clave = '77777777-0000-0000-0000-000000000001') $q$, 'venta/-2/1');
+select igual('el costo vino de la entrada', $q$ (select count(*) from public.venta_item_costos) $q$, '0');
+reset role;
+select igual('costo de la venta desde la tienda (dueño)', $q$ (select c.costo from public.venta_item_costos c join public.venta_items i on i.id = c.item_id join public.ventas v on v.id = i.venta_id where v.clave = '77777777-0000-0000-0000-000000000001') $q$, '25.00');
+
+select como('D'); set role authenticated;
+select igual('conteo: hay 4', $q$ public.ajustar_existencia(public.prod('Licuadora Oster'), 'pedraza', 4, 'Conteo del día') $q$, '4');
+select t('conteo sin nota', $q$ public.ajustar_existencia(public.prod('Licuadora Oster'), 'pedraza', 2, '') $q$, 'Escribe por qué');
+select t('anular la venta desde la tienda', $q$ (select public.anular_venta((select id from public.ventas where clave = '77777777-0000-0000-0000-000000000001'), 'Se registró por error')) $q$);
+select igual('las 2 licuadoras volvieron', $q$ public.exist('Licuadora Oster', 'pedraza') $q$, '6');
+select t('vender de Socopó sin existencia', $q$ public.registrar_venta('{"cliente_id":1,"items":[{"descripcion":"Ventilador de pie","precio":30,"sede_salida":"socopo"}],"inicial":30}') $q$, 'No hay suficiente');
+-- Lo retirado de una venta cerrada vuelve a la tienda
+select t('reingresar sin retirar', $q$ (select public.reingresar_mercancia(v(2), 'pedraza', 'x')) $q$, 'Solo vuelve a la tienda');
+select t('retirar #2', $q$ (select public.retirar_mercancia(v(2), 'Tres cuotas sin pagar')) $q$);
+select t('cerrar #2', $q$ (select public.cerrar_venta(v(2), 'No volvió a pagar')) $q$);
+select igual('reingresar a Pedraza', $q$ public.reingresar_mercancia(v(2), 'pedraza', 'Se vuelve a vender') $q$, '1');
+select igual('7 licuadoras', $q$ public.exist('Licuadora Oster', 'pedraza') $q$, '7');
+select t('reingresar dos veces', $q$ (select public.reingresar_mercancia(v(2), 'pedraza', 'x')) $q$, 'ya volvió');
+select t('producto con nombre repetido', $q$ public.guardar_producto('{"nombre":"plancha"}') $q$, 'Ya hay un producto');
+select t('editar producto', $q$ public.guardar_producto(jsonb_build_object('id', public.prod('Plancha'), 'precio_sugerido', 28, 'codigo_yumana', 'PL-01', 'costo', 15)) $q$);
+select igual('producto editado', $q$ (select p.precio_sugerido || '/' || p.codigo_yumana || '/' || pc.costo from public.productos p join public.producto_costos pc on pc.producto_id = p.id where p.id = public.prod('Plancha')) $q$, '28.00/PL-01/15.00');
+reset role;
+select igual('existencias = suma de movimientos', $q$ (select count(*) from public.existencias e where e.cantidad <> coalesce((select sum(m.cantidad) from public.movimientos_inventario m where m.producto_id = e.producto_id and m.sede = e.sede), 0)) $q$, '0');
+
+-- ===================== Etapa 2: notas de cobro =====================
+select como('E'); set role authenticated;
+select igual('promesa de pago', $q$ public.registrar_gestion(jsonb_build_object('cliente_id',3,'tipo','promesa','nota','Cobra el viernes','promesa_fecha',h(2),'promesa_monto',20), '88888888-0000-0000-0000-000000000001')->>'cliente_id' $q$, '3');
+select igual('misma clave no repite la nota', $q$ (select public.registrar_gestion('{"cliente_id":3,"tipo":"otro"}', '88888888-0000-0000-0000-000000000001')->>'cliente_id') || '/' || (select count(*) from public.gestiones) $q$, '3/1');
+select t('promesa sin fecha', $q$ public.registrar_gestion('{"cliente_id":3,"tipo":"promesa"}') $q$, 'para cuándo');
+select t('nota a cliente de Socopó', $q$ public.registrar_gestion('{"cliente_id":1,"tipo":"visita"}') $q$, 'no es de tu sede');
+select t('tipo raro', $q$ public.registrar_gestion('{"cliente_id":3,"tipo":"x"}') $q$, 'Elige qué pasó');
+select t('no estaba', $q$ public.registrar_gestion('{"cliente_id":3,"tipo":"no_estaba","nota":"Casa cerrada"}', '88888888-0000-0000-0000-000000000002')->>'cliente_id' $q$);
+select igual('resumen de abonos solo de Pedraza', $q$ (select count(*) filter (where cliente_id = 1) || '/' || (count(*) > 0)::text from public.resumen_abonos_clientes()) $q$, '0/true');
+reset role;
+select como('D'); set role authenticated;
+select igual('dueño ve las notas', $q$ (select count(*) from public.gestiones) $q$, '2');
+select igual('resumen de abonos de todos', $q$ (select count(*) > 1 from public.resumen_abonos_clientes()) $q$, 'true');
+select t('dueño quita la nota', $q$ (select public.anular_gestion((select id from public.gestiones where clave = '88888888-0000-0000-0000-000000000002'))) $q$);
+reset role;
+select como('E'); set role authenticated;
+select t('quitar nota ya quitada', $q$ (select public.anular_gestion((select id from public.gestiones where clave = '88888888-0000-0000-0000-000000000002'))) $q$, 'no existe');
+do $$ begin insert into public.gestiones (cliente_id, tipo) values (3, 'otro'); raise notice '!!! empleado insertó nota directo';
+exception when others then raise notice 'ok  notas solo por función → %', sqlerrm; end $$;
+reset role;
+select igual('cuadre al final de la etapa 2', $q$ public.cuadre() $q$, 'todo cuadra');

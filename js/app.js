@@ -9,6 +9,8 @@ var VISTAS = {
   vender: { v: VistaVender, nombre: 'Vender' },
   cobros: { v: VistaCobros, nombre: 'Cobros' },
   efectivo: { v: VistaEntregas, nombre: 'Efectivo' },
+  mercancia: { v: VistaMercancia, nombre: 'Mercancía' },
+  reportes: { v: VistaReportes, nombre: 'Reportes' },
   ajustes: { v: VistaAjustes, nombre: 'Ajustes' }
 };
 var TABS = [
@@ -93,6 +95,10 @@ function menuMas() {
   var h = abrirHoja({
     titulo: 'Más',
     html: '<div class="lista">' +
+      (esDueno() ? '<button type="button" class="item" data-ir="reportes">' + icono('grafica') + '<div class="crece"><div class="item-tit">Reportes</div><div class="item-sub">Cobrado por semana, ganancia, atrasados</div></div>' + icono('flecha', 'ic-chico') + '</button>' : '') +
+      '<button type="button" class="item" data-ir="mercancia">' + icono('caja') + '<div class="crece"><div class="item-tit">Mercancía</div><div class="item-sub">' +
+        (esDueno() ? 'Lo que hay en la tienda de Pedraza, entradas y conteos' : 'Lo que hay en la tienda') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
+      '<button type="button" class="item" data-recordatorios>' + icono('chat') + '<div class="crece"><div class="item-tit">Recordar por WhatsApp</div><div class="item-sub">A los atrasados y a los que les toca</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
       '<button type="button" class="item" data-ir="efectivo">' + icono('tienda') + '<div class="crece"><div class="item-tit">' +
         (esDueno() ? 'Efectivo de Pedraza' : 'Mi efectivo por entregar') + '</div><div class="item-sub">' +
         (esDueno() ? 'Lo que ha cobrado el empleado y las entregas' : 'Lo que has cobrado en efectivo') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
@@ -108,6 +114,7 @@ function menuMas() {
     var b = e.target.closest('[data-ir]');
     if (b) { h.cerrar(); ir(b.dataset.ir); return; }
     if (e.target.closest('[data-contrato-blanco]')) { h.cerrar(); imprimirContrato(null); return; }
+    if (e.target.closest('[data-recordatorios]')) { h.cerrar(); hojaRecordatorios('atrasados'); return; }
     if (e.target.closest('[data-actualizar]')) { h.cerrar(); actualizarTodo(true); return; }
     if (e.target.closest('[data-salir]')) { h.cerrar(); salir(); }
   });

@@ -43,7 +43,7 @@ var VistaCobrar = (function () {
     if (!cont || !cont.isConnected) return;
     var hoy = hoyCaracas(), en7 = sumarDias(hoy, 7);
     var q = normalizar(busca.trim());
-    var atrasados = [], hoyL = [], proximos = [];
+    var atrasados = [], hoyL = [], proximos = [], promesasHoy = [];
     var total = 0, totalAtraso = 0, nDeben = 0, nAtraso = 0, montoHoy = 0;
     ST.clientes.forEach(function (c) {
       if (c.deleted_at || !pasaFiltro(c)) return;
@@ -53,7 +53,8 @@ var VistaCobrar = (function () {
       if (r.atraso > 0) { totalAtraso += r.atraso; nAtraso++; }
       if (q && normalizar(c.nombre + ' ' + (c.sector || '') + ' ' + (c.cedula || '')).indexOf(q) < 0) return;
       var x = { c: c, r: r };
-      if (r.atraso > 0) atrasados.push(x);
+      if (r.promesa && r.promesa.estado === 'pendiente' && r.promesa.fecha === hoy) promesasHoy.push(x);
+      else if (r.atraso > 0) atrasados.push(x);
       else if (r.proxima && r.proxima.fecha === hoy) { hoyL.push(x); montoHoy += r.proxima.pendiente; }
       else if (r.proxima && r.proxima.fecha > hoy && r.proxima.fecha <= en7) proximos.push(x);
     });
@@ -78,7 +79,9 @@ var VistaCobrar = (function () {
         '<p>Registra una venta nueva o carga los clientes que ya deben desde el botón Vender.</p>' +
         '<button type="button" class="btn" data-ir-vender style="margin-top:8px">' + icono('vender') + 'Vender</button></div>';
     } else {
-      html += seccion('Atrasados', atrasados, 'atrasado', 'Nadie atrasado. Todo al día.');
+      if (promesasHoy.length) html += seccion('Prometieron pagar hoy', promesasHoy, 'hoy', '');
+      html += seccion('Atrasados', atrasados, 'atrasado', 'Nadie atrasado. Todo al día.',
+        atrasados.length ? '<button type="button" class="btn btn-sec btn-chico" data-recordar-todos="atrasados">' + icono('chat', 'ic-chico') + 'Recordar a todos</button>' : '');
       html += seccion('Les toca hoy', hoyL, 'hoy', 'A nadie le toca hoy.');
       html += seccion('Próximos 7 días', proximos, 'proximo', 'Nada en los próximos 7 días.');
     }
@@ -90,8 +93,8 @@ var VistaCobrar = (function () {
     return '<div class="kpi ' + (clase || '') + '"><div class="etq">' + etq + '</div><div class="val">' + val + '</div><div class="sub">' + esc(sub) + '</div></div>';
   }
 
-  function seccion(titulo, lista, clase, vacio) {
-    var h = '<div class="seccion"><div class="seccion-tit"><h2>' + titulo + '</h2><span class="tenue">' + lista.length + '</span></div>';
+  function seccion(titulo, lista, clase, vacio, boton) {
+    var h = '<div class="seccion"><div class="seccion-tit"><h2>' + titulo + ' <span class="tenue">' + lista.length + '</span></h2>' + (boton || '') + '</div>';
     if (!lista.length) return h + '<p class="tenue" style="margin:0 2px">' + vacio + '</p></div>';
     var mostrados = lista.slice(0, 60);
     h += '<div class="lista">' + mostrados.map(function (x) { return tarjeta(x, clase); }).join('') + '</div>';
@@ -107,15 +110,20 @@ var VistaCobrar = (function () {
     if (r.retirada) etq += '<span class="etiqueta e-gris">Mercancía retirada</span>';
     else if (r.cuotasVencidas >= giros) etq += '<span class="etiqueta e-cobre">' + r.cuotasVencidas + ' cuotas sin pagar</span>';
     if (r.enCola > 0) etq += '<span class="etiqueta e-ambar">' + fmtUSD(r.enCola) + ' por enviar</span>';
+    if (r.promesa) etq += '<span class="etiqueta ' + (r.promesa.estado === 'incumplida' ? 'e-rojo' : 'e-info') + '">' + esc(textoPromesa(r.promesa)) + '</span>';
+    if (recordadoHoy(c.id)) etq += '<span class="etiqueta e-gris">Recordado hoy</span>';
+    var nota = r.ultimaNota && r.ultimaNota.nota && r.ultimaNota.tipo !== 'recordatorio' ? r.ultimaNota : null;
     var sub = [c.sector, esDueno() ? nombreSede(c.sede) : '', c.en_exterior ? (c.pais || 'Exterior') : ''].filter(Boolean).join(' · ');
     return '<div class="cobro ' + clase + '">' +
       '<div class="cobro-cuerpo" data-ir-cliente="' + c.id + '"><div class="avatar">' + esc(iniciales(c.nombre)) + '</div>' +
         '<div class="crece"><div class="item-tit">' + esc(c.nombre) + '</div><div class="item-sub">' + esc(sub || '—') + '</div>' +
-        '<div class="fila envolver" style="margin-top:6px;gap:6px">' + etq + '</div></div>' +
+        '<div class="fila envolver" style="margin-top:6px;gap:6px">' + etq + '</div>' +
+        (nota ? '<div class="item-sub cortar" style="margin-top:4px">' + esc(fmtFecha(fechaCaracas(nota.hecho_en || nota.creado_en))) + ': ' + esc(nota.nota) + '</div>' : '') + '</div>' +
         '<div class="item-der"><div class="tenue chico">Debe</div><div class="monto">' + fmtUSD(r.saldo) + '</div></div></div>' +
       '<div class="cobro-acciones">' +
         '<button type="button" class="principal" data-abonar="' + c.id + '">' + icono('moneda', 'ic-chico') + 'Abonar</button>' +
         '<button type="button" data-recordar="' + c.id + '">' + icono('chat', 'ic-chico') + 'Recordar</button>' +
+        '<button type="button" data-nota="' + c.id + '">' + icono('editar', 'ic-chico') + 'Nota</button>' +
         (c.telefono ? '<a href="' + esc(enlaceTel(c.telefono)) + '">' + icono('telefono', 'ic-chico') + 'Llamar</a>' : '') +
       '</div></div>';
   }
@@ -123,7 +131,9 @@ var VistaCobrar = (function () {
   function alTocar(e) {
     var b;
     if ((b = e.target.closest('[data-abonar]'))) { hojaAbono(Number(b.dataset.abonar)); return; }
-    if ((b = e.target.closest('[data-recordar]'))) { recordarPorWhatsApp(Number(b.dataset.recordar)); return; }
+    if ((b = e.target.closest('[data-recordar]'))) { recordarPorWhatsApp(Number(b.dataset.recordar)); setTimeout(pintar, 300); return; }
+    if ((b = e.target.closest('[data-recordar-todos]'))) { hojaRecordatorios(b.dataset.recordarTodos); return; }
+    if ((b = e.target.closest('[data-nota]'))) { hojaGestion(Number(b.dataset.nota)); return; }
     if (e.target.closest('[data-tasa]')) { hojaTasa(); return; }
     if (e.target.closest('[data-actualizar]')) { actualizarTodo(true).then(cargarCobradoHoy); return; }
     if (e.target.closest('[data-ir-vender]')) ir('vender');
@@ -144,21 +154,10 @@ var VistaCobrar = (function () {
   return { mostrar: mostrar, refrescar: function () { pintar(); cargarCobradoHoy(); } };
 })();
 
-// Mensaje de recordatorio listo para WhatsApp
+// Mensaje de recordatorio listo para WhatsApp (queda anotado en las notas del cliente)
 function recordarPorWhatsApp(cliId) {
   var c = ST.cliPorId.get(cliId);
   if (!c) return;
-  var r = resumenCliente(cliId), hoy = hoyCaracas(), txt;
-  var nombre = c.nombre.split(' ')[0];
-  if (r.atraso > 0) {
-    var desde = sumarDias(hoy, -r.dias);
-    txt = 'Hola ' + nombre + ', le saluda Electro Montana. Le recordamos que tiene ' + fmtUSD(r.atraso) +
-      ' en cuotas atrasadas desde el ' + fmtFechaAnio(desde) + '. Su saldo total es ' + fmtUSD(r.saldo) + '. ¿Cuándo podemos pasar a cobrar? Gracias.';
-  } else if (r.proxima) {
-    txt = 'Hola ' + nombre + ', le saluda Electro Montana. ' + (r.proxima.fecha === hoy ? 'Hoy' : 'El ' + fmtFechaAnio(r.proxima.fecha)) +
-      ' le toca su cuota de ' + fmtUSD(r.proxima.pendiente) + '. Su saldo es ' + fmtUSD(r.saldo) + '. Gracias.';
-  } else {
-    txt = 'Hola ' + nombre + ', le saluda Electro Montana.';
-  }
-  abrirWhatsApp(txt, c.telefono || c.contacto_telefono);
+  abrirWhatsApp(textoRecordatorio(c, resumenCliente(cliId)), c.telefono || c.contacto_telefono);
+  if (resumenCliente(cliId).activas) anotarRecordatorio(cliId);
 }

@@ -152,6 +152,16 @@ a { color: var(--azul-2); }
 }
 .cobro-acciones > * + * { border-left: 1px solid var(--borde); }
 .cobro-acciones .principal { color: var(--cobre-osc); }
+.cobro-acciones > * { font-size: 14px; gap: 4px; padding: 0 2px; min-width: 0; }
+
+/* Barras de los reportes */
+.barras { display: flex; flex-direction: column; gap: 8px; }
+.barra-fila { display: grid; grid-template-columns: 104px 1fr 84px; align-items: center; gap: 8px; font-size: 14px; }
+.barra-etq { color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra-pista { height: 14px; background: #efebe4; border-radius: 7px; overflow: hidden; }
+.barra { display: block; height: 100%; background: var(--azul); border-radius: 7px; }
+.barra.actual { background: var(--cobre); }
+.barra-val { text-align: right; font-weight: 600; }
 
 /* Indicadores */
 .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

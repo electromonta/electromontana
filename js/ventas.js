@@ -27,6 +27,8 @@ async function accionVenta(accion, v) {
     } else if (accion === 'reabrir') {
       var m4 = await confirmar({ titulo: 'Reabrir venta', pedir: 'Motivo', boton: 'Reabrir', mensaje: 'La venta vuelve a cobrarse con lo que faltaba.' });
       if (m4) { await rpc('reabrir_venta', { p_venta: v.id, p_motivo: m4 }); hecho = true; }
+    } else if (accion === 'reingresar') {
+      hecho = await hojaReingresar(v);
     } else if (accion === 'anular') {
       var m5 = await confirmar({ titulo: 'Anular venta #' + v.numero, pedir: 'Por qué se anula', boton: 'Anular', peligro: true,
         mensaje: 'Solo para ventas registradas por error. Si tiene abonos, primero hay que anularlos. No se puede deshacer.' });
@@ -59,6 +61,33 @@ function hojaAjuste(v, tipo) {
       if (!motivo) { toast('Escribe el motivo', 'error'); return; }
       await rpc('ajustar_venta', { p_venta: v.id, p_tipo: tipo, p_monto: redondear2(monto), p_motivo: motivo,
                                    p_fecha: tipo === 'recargo' ? (h.$('#ajFecha').value || null) : null });
+      listo = true; h.cerrar(); resolver(true);
+    });
+  });
+}
+
+// La mercancía retirada de una venta cerrada vuelve a la tienda (para venderla otra vez)
+function hojaReingresar(v) {
+  return new Promise(function (resolver) {
+    var listo = false, sede = 'pedraza';
+    var its = (ST.itemsPorVenta.get(v.id) || []).filter(function (i) { return i.producto_id; });
+    var h = abrirHoja({
+      titulo: 'Volver a la tienda',
+      html: '<p>Lo que se le retiró al cliente vuelve a la mercancía de la tienda para venderlo otra vez:</p>' +
+        '<div class="lista" style="margin:8px 0 12px">' + its.map(function (i) { return '<div class="dato"><span>' + i.cantidad + ' ×</span><span class="crece">' + esc(i.descripcion) + '</span></div>'; }).join('') + '</div>' +
+        '<div class="seg" id="riSede"><button type="button" data-s="pedraza" class="activo">Pedraza</button><button type="button" data-s="socopo">Socopó</button></div>' +
+        '<label class="campo" style="margin-top:12px"><span>Nota (opcional)</span><input id="riNota" placeholder="Ej.: en buen estado"></label>',
+      pie: '<button type="button" class="btn btn-ancho" id="riGuardar">Volver a la tienda</button>',
+      alCerrar: function () { if (!listo) resolver(false); }
+    });
+    h.$('#riSede').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-s]'); if (!b) return;
+      sede = b.dataset.s;
+      $$('button', this).forEach(function (x) { x.classList.toggle('activo', x === b); });
+    });
+    protegerBoton(h.$('#riGuardar'), async function () {
+      await rpc('reingresar_mercancia', { p_venta: v.id, p_sede: sede, p_nota: h.$('#riNota').value.trim() });
+      recargarExistencias().catch(function () {});
       listo = true; h.cerrar(); resolver(true);
     });
   });

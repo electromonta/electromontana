@@ -36,7 +36,7 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 ## Stack
 
 - **Frontend:** HTML/CSS/JavaScript puro, sin frameworks, sin build. `index.html` + `css/app.css` + `js/` (un archivo por sección) + `js/config.js` (URL y key publishable). supabase-js va copiado en `js/vendor/` y las letras en `fonts/` (para que la app abra sin internet).
-  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `entregas.js` (efectivo de Pedraza), `ajustes.js`.
+  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `entregas.js` (efectivo de Pedraza), `ajustes.js`, `notas.js` (notas de cobro, promesas y recordatorios), `mercancia.js` (existencia de las tiendas), `reportes.js` (solo dueños).
 - **Sin señal:** lo que se registra se guarda primero en la cola del teléfono y `Cola.procesar()` lo manda cuando hay internet (al volver la señal, cada 20 s y al abrir la app). Cada operación lleva su `clave`: si se reintenta, la base devuelve el mismo resultado sin repetir. `sw.js` guarda solo los archivos de la app (nunca datos). La app abre con la última copia de los datos guardada en el teléfono.
 - **Backend:** Supabase (PostgreSQL + Auth + Storage). Migraciones numeradas en `supabase/migrations/`, aplicadas con `apply_migration`. Pruebas de negocio en `supabase/pruebas/`.
 - Sesión con `storageKey: 'electromontana-sesion'`.
@@ -112,6 +112,11 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - La app reintenta sola (no toma como rechazo) los errores del servidor (5xx, `40001`, `40P01`, `57014`, `PGRST00x`, `PGRST30x`), y usa una sola clave por formulario: tocar Guardar dos veces no duplica.
 - `pg_net` está instalado: sirve para probar desde la base que la entrada de un usuario o la Edge Function responden (el contenedor de Claude no llega directo a Supabase).
 
+## Base de datos (etapa 2, migración `003_etapa2.sql`)
+
+- **Mercancía:** `existencias` (producto + sede, nunca baja de cero) y `movimientos_inventario` (entrada, venta, retiro, ajuste, anulación; con lo que queda). Todo pasa por `interno.mover_stock`. Ventas: cada item puede llevar `sede_salida` (sale de esa tienda y se descuenta); sin ella es mercancía que se busca en Yumana. El empleado solo saca de su tienda y solo ve la existencia de su sede. Dueños: `entrada_mercancia`, `ajustar_existencia` (conteo), `guardar_producto`, `reingresar_mercancia` (venta cerrada con mercancía retirada → vuelve a una tienda, una sola vez).
+- **Notas de cobro:** `gestiones` (visita, llamada, mensaje, promesa con fecha y monto, no_estaba, recordatorio, otro), por `registrar_gestion` con clave (van por la cola). Se quitan con `anular_gestion` (quien la escribió o un dueño). La app trae las de los últimos 120 días. Una promesa se da por cumplida si hay un abono hecho después de prometer (`resumen_abonos_clientes` da la fecha y hora del último abono).
+
 ## Pruebas (correr antes de cada entrega)
 
 - `supabase/pruebas/correr.sh` → escenarios de la base en un Postgres local (`escenarios.sql`). Todo `ok`.
@@ -125,4 +130,5 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **Falta antes de usarla con clientes reales:** (1) pasar la base a **Pro**; (2) que Franklin o Daniel activen GitHub Pages (Settings → Pages → rama `main`, carpeta raíz); (3) apagar el registro público en Supabase (Authentication → Sign In / Providers → "Allow new users to sign up"); (4) crear al empleado de Pedraza desde Ajustes cuando se sepa su nombre; (5) que revisen las condiciones del contrato (Ajustes → Contrato).
 - Respaldos hechos: ninguno todavía (la base no tiene datos reales).
 - **Pedido de Kinan (2026-10-15):** al terminar el sistema completo, hacer una **guía completa de uso** para dársela a Franklin y Daniel y para que Kinan aprenda a mostrarlo.
-- **Siguiente (etapa 2):** mercancía de la tienda de Pedraza, notas de cobro, reportes (ganancia, morosos, cobrado por semana), recordatorios de WhatsApp a los atrasados. Etapa 3: contrato firmado en la pantalla. Etapa 4: dominio.
+- **2026-10-15 — Entrega 2 (etapa 2) hecha y aplicada a la base real** (migración `003_etapa2`, 56 funciones con la misma huella que las probadas): mercancía de las tiendas, venta desde la tienda, notas de cobro y promesas, recordatorios por WhatsApp, reportes.
+- **Siguiente:** Etapa 3: contrato firmado en la pantalla. Etapa 4: dominio (solo documento de pasos).

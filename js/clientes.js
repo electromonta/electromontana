@@ -166,6 +166,8 @@ var VistaFicha = (function () {
         (r.proxima ? '<p class="tenue" style="margin:10px 0 0">Próxima cuota: <b class="num">' + fmtUSD(r.proxima.pendiente) + '</b> el ' + esc(fmtFechaAnio(r.proxima.fecha)) + '</p>' : '') +
         (r.cuotasVencidas >= giros && !r.retirada ? '<div class="aviso aviso-ambar" style="margin-top:10px">' + icono('alerta') + '<div>Lleva ' + r.cuotasVencidas + ' cuotas sin pagar. Según el contrato, se le puede retirar la mercancía.</div></div>' : '') +
         (r.enCola > 0 ? '<div class="aviso aviso-ambar" style="margin-top:10px">' + icono('nube') + '<div>' + fmtUSD(r.enCola) + ' en abonos por enviar (todavía no se restan).</div></div>' : '') +
+        (r.promesa ? '<div class="aviso ' + (r.promesa.estado === 'incumplida' ? 'aviso-error' : 'aviso-info') + '" style="margin-top:10px">' + icono('calendario') + '<div>' + esc(textoPromesa(r.promesa)) +
+          (r.promesa.nota ? ': ' + esc(r.promesa.nota) : '') + '</div></div>' : '') +
         (r.activas ? '<button type="button" class="btn btn-ancho" style="margin-top:14px" data-abonar>' + icono('moneda') + 'Registrar abono</button>' : '') +
         '<div class="acciones-rapidas" style="margin-top:10px">' +
           (tel ? '<a class="accion" href="' + esc(enlaceTel(tel)) + '">' + icono('telefono') + 'Llamar</a>' : '<button type="button" class="accion" disabled>' + icono('telefono') + 'Llamar</button>') +
@@ -178,6 +180,8 @@ var VistaFicha = (function () {
       '<div class="seccion"><div class="seccion-tit"><h2>Ventas</h2><button type="button" class="btn btn-sec btn-chico" data-vender>' + icono('mas', 'ic-chico') + 'Nueva venta</button></div>' +
         (ventas.length ? ventas.map(function (v) { return tarjetaVenta(v); }).join('') : '<p class="tenue">Todavía no tiene ventas.</p>') + '</div>' +
       '<div class="seccion"><div class="seccion-tit"><h2>Abonos</h2></div><div id="fiAbonos"><div class="cargando">Cargando abonos…</div></div></div>' +
+      '<div class="seccion"><div class="seccion-tit"><h2>Notas de cobro</h2><button type="button" class="btn btn-sec btn-chico" data-nota-nueva>' + icono('editar', 'ic-chico') + 'Anotar</button></div>' +
+        htmlNotas(c.id) + '</div>' +
       '<div class="seccion"><div class="seccion-tit"><h2>Datos</h2><button type="button" class="btn btn-sec btn-chico" data-editar>' + icono('editar', 'ic-chico') + 'Editar</button></div>' +
         '<div class="tarjeta">' + datosCliente(c) + '</div></div>';
     pintarAbonos();
@@ -231,6 +235,7 @@ var VistaFicha = (function () {
       var costo = ST.costoPorItem.get(i.id);
       if (costo == null) conCosto = false; else costoTotal += costo * i.cantidad;
       return '<div class="fila-sep" style="padding:4px 0"><div class="crece">' + i.cantidad + ' × ' + esc(i.descripcion) +
+        (i.sede_salida ? '<div class="tenue chico">Salió de la tienda de ' + esc(nombreSede(i.sede_salida)) + '</div>' : '') +
         (dueno ? '<div class="tenue chico">Costo ' + (costo == null ? 'sin anotar' : fmtUSD(costo)) +
           ' <button type="button" class="btn btn-plano btn-chico" style="min-height:28px;padding:0 4px" data-costo="' + i.id + '">' + (costo == null ? 'Poner' : 'Cambiar') + '</button></div>' : '') +
         '</div><div class="num fuerte">' + fmtUSD(i.precio * i.cantidad) + '</div></div>';
@@ -263,6 +268,7 @@ var VistaFicha = (function () {
       '<button type="button" class="btn btn-sec btn-chico" data-resumen="' + v.id + '">' + icono('chat', 'ic-chico') + 'Resumen por WhatsApp</button></div>';
     if (v.notas) h += '<p class="tenue" style="margin-top:10px">Nota: ' + esc(v.notas) + '</p>';
     if (v.motivo_cierre) h += '<p class="tenue" style="margin-top:6px">' + (v.estado === 'cerrada' ? 'Cerrada: ' : '') + esc(v.motivo_cierre) + '</p>';
+    if (v.reingresada_en) h += '<p class="tenue" style="margin-top:6px">La mercancía volvió a la tienda de ' + esc(nombreSede(v.reingresada_sede)) + ' el ' + esc(fmtFechaAnio(fechaCaracas(v.reingresada_en))) + '.</p>';
     h += '<div id="ev-' + v.id + '" style="margin-top:12px"></div>';
     if (dueno && v.estado !== 'anulada') {
       h += '<h3 style="margin-top:16px">Cambios (solo dueños)</h3><div class="fila envolver" style="margin-top:8px;gap:8px">' +
@@ -273,6 +279,8 @@ var VistaFicha = (function () {
         (v.mercancia === 'retirada' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="devolver">Devolver mercancía</button>' : '') +
         (v.estado === 'activa' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="cerrar">Cerrar venta</button>' : '') +
         (v.estado === 'cerrada' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="reabrir">Reabrir</button>' : '') +
+        (v.estado === 'cerrada' && v.mercancia === 'retirada' && !v.reingresada_en && its.some(function (i) { return i.producto_id; }) ?
+          '<button type="button" class="btn btn-sec btn-chico" data-accion="reingresar">Volver a la tienda</button>' : '') +
         '<button type="button" class="btn btn-sec btn-chico" data-accion="anular" style="color:var(--rojo)">Anular</button></div>';
     }
     return h;
@@ -321,7 +329,9 @@ var VistaFicha = (function () {
     if (e.target.closest('[data-vender]')) { ir('vender', String(cliId)); return; }
     if (e.target.closest('[data-editar]')) { hojaCliente(c); return; }
     if (e.target.closest('[data-wa]')) { abrirWhatsApp('', c.telefono || c.contacto_telefono); return; }
-    if (e.target.closest('[data-recordar]')) { recordarPorWhatsApp(cliId); return; }
+    if (e.target.closest('[data-recordar]')) { recordarPorWhatsApp(cliId); setTimeout(pintar, 300); return; }
+    if (e.target.closest('[data-nota-nueva]')) { hojaGestion(cliId); return; }
+    if ((b = e.target.closest('[data-quitar-nota]'))) { quitarNota(Number(b.dataset.quitarNota), cliId); return; }
     if ((b = e.target.closest('[data-ubicar]'))) { guardarUbicacion(c); return; }
     if ((b = e.target.closest('[data-abrir]'))) {
       var id = Number(b.dataset.abrir);

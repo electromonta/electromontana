@@ -8,7 +8,7 @@ var VistaVender = (function () {
     var hoy = hoyCaracas();
     return {
       tipo: tipo || 'nueva', cliente: null,
-      items: [{ descripcion: '', cantidad: 1, precio: null, costo: null, producto_id: null }],
+      items: [{ descripcion: '', cantidad: 1, precio: null, costo: null, producto_id: null, sede: null }],
       inicial: null, pagaInicial: true, metodo: (ST.metodos.find(function (m) { return m.activo; }) || {}).id, refInicial: '',
       fecha: hoy, pagadoAntes: null,
       frecuencia: 'semanal', modo: 'numero', numero: 8, cuota: null, primera: Cuentas.primeraSugerida(hoy, 'semanal'), primeraTocada: false,
@@ -49,7 +49,7 @@ var VistaVender = (function () {
       pintarTodo();
     });
     $('#vMasItem', raiz).addEventListener('click', function () {
-      F.items.push({ descripcion: '', cantidad: 1, precio: null, costo: null, producto_id: null });
+      F.items.push({ descripcion: '', cantidad: 1, precio: null, costo: null, producto_id: null, sede: null });
       pintarItems();
       var ins = $$('#vItems [data-campo="descripcion"]', raiz);
       if (ins.length) ins[ins.length - 1].focus();
@@ -129,7 +129,7 @@ var VistaVender = (function () {
             '<input data-campo="cantidad" inputmode="numeric" value="' + esc(it.cantidad) + '"><button type="button" data-paso="1">' + icono('mas', 'ic-chico') + '</button></div></label>' +
           '<label class="campo"><span>Precio al cliente $</span><input data-campo="precio" inputmode="decimal" value="' + esc(numCampo(it.precio)) + '"></label>' +
           (dueno ? '<label class="campo"><span>Costo $</span><input data-campo="costo" inputmode="decimal" value="' + esc(numCampo(it.costo)) + '"></label>' : '') +
-        '</div></div>';
+        '</div>' + casillasTienda(it) + '</div>';
     }).join('');
     $$('.prod', cont).forEach(function (el) {
       var i = Number(el.dataset.i), it = F.items[i];
@@ -151,8 +151,31 @@ var VistaVender = (function () {
       });
       var q = $('[data-quitar]', el);
       if (q) q.onclick = function () { F.items.splice(i, 1); pintarItems(); };
+      $$('[data-tienda]', el).forEach(function (chk) {
+        chk.addEventListener('change', function () {
+          it.sede = chk.checked ? chk.dataset.tienda : null;
+          $$('[data-tienda]', el).forEach(function (x) { if (x !== chk) x.checked = false; });
+          actualizarCalculos();
+        });
+      });
     });
     actualizarCalculos();
+  }
+
+  // De qué tienda sale (solo si el producto está en el catálogo y hay existencia). Si no se marca, se busca en Yumana.
+  function sedesConMercancia(it) {
+    if (F.tipo !== 'nueva' || !it.producto_id) return [];
+    var sedes = esDueno() ? ['pedraza', 'socopo'] : [ST.yo.sede];
+    return sedes.filter(function (sd) { return existenciaDe(it.producto_id, sd) > 0 || it.sede === sd; });
+  }
+  function casillasTienda(it) {
+    var sedes = sedesConMercancia(it);
+    if (it.sede && sedes.indexOf(it.sede) < 0) it.sede = null;
+    return sedes.map(function (sd) {
+      var hay = existenciaDe(it.producto_id, sd), poco = it.sede === sd && hay < (Number(it.cantidad) || 1);
+      return '<label class="casilla" style="margin-top:8px"><input type="checkbox" data-tienda="' + sd + '"' + (it.sede === sd ? ' checked' : '') + '> Sale de la tienda de ' +
+        nombreSede(sd) + ' <span class="' + (poco ? 'suma-mal' : 'tenue') + '">(hay ' + hay + ')</span></label>';
+    }).join('');
   }
 
   function mostrarSugerencias(el, it) {
@@ -174,6 +197,7 @@ var VistaVender = (function () {
       var b = e.target.closest('[data-p]'); if (!b) return;
       var p = ST.productos.find(function (x) { return x.id === Number(b.dataset.p); });
       it.descripcion = p.nombre; it.producto_id = p.id;
+      if (!esDueno() && F.tipo === 'nueva' && existenciaDe(p.id, ST.yo.sede) > 0) it.sede = ST.yo.sede;   // el empleado vende de su tienda
       if (p.precio_sugerido != null && it.precio == null) it.precio = Number(p.precio_sugerido);
       if (esDueno() && it.costo == null && ST.costoProducto.has(p.id)) it.costo = ST.costoProducto.get(p.id);
       pintarItems();
@@ -379,12 +403,16 @@ var VistaVender = (function () {
       var it = F.items[i];
       if (!it.descripcion.trim()) { toast('Escribe el nombre del producto ' + (i + 1), 'error'); return; }
       if (it.precio == null || it.precio < 0) { toast('Falta el precio de ' + it.descripcion, 'error'); return; }
+      if (F.tipo === 'nueva' && it.sede && it.producto_id && existenciaDe(it.producto_id, it.sede) < it.cantidad && !ST.desdeCache) {
+        toast('En la tienda de ' + nombreSede(it.sede) + ' solo hay ' + existenciaDe(it.producto_id, it.sede) + ' de ' + it.descripcion, 'error'); return;
+      }
     }
     if (!(t > 0)) { toast('El total debe ser mayor que cero', 'error'); return; }
     var datos = {
       origen: F.tipo === 'carga' ? 'carga_inicial' : 'nueva', fecha: F.fecha,
       items: F.items.map(function (it) {
         var x = { producto_id: it.producto_id, descripcion: it.descripcion.trim(), cantidad: it.cantidad, precio: redondear2(it.precio) };
+        if (F.tipo === 'nueva' && it.sede && it.producto_id) x.sede_salida = it.sede;
         if (dueno && it.costo != null) x.costo = redondear2(it.costo);
         return x;
       }),

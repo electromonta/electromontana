@@ -10,6 +10,9 @@ var ST = {
   items: [], itemsPorVenta: new Map(),
   itemCostos: [], costoPorItem: new Map(),
   productos: [], prodCostos: [], costoProducto: new Map(),
+  existencias: [], existencia: new Map(),             // "producto|sede" → cantidad
+  gestiones: [], gestionesPorCliente: new Map(),      // notas de cobro de los últimos meses
+  ultimosAbonos: [], ultimoAbono: new Map(), ultimoAbonoEn: new Map(),   // cliente → fecha (y hora) del último abono
   cargadoEn: null, desdeCache: false
 };
 var _estados = new Map();
@@ -75,6 +78,11 @@ function indexar() {
   ST.itemsPorVenta.forEach(function (l) { l.sort(function (a, b) { return a.orden - b.orden; }); });
   ST.costoPorItem = new Map(ST.itemCostos.map(function (c) { return [c.item_id, Number(c.costo)]; }));
   ST.costoProducto = new Map(ST.prodCostos.map(function (c) { return [c.producto_id, Number(c.costo)]; }));
+  ST.existencia = new Map(ST.existencias.map(function (e) { return [e.producto_id + '|' + e.sede, Number(e.cantidad)]; }));
+  ST.gestiones.sort(function (a, b) { return a.creado_en < b.creado_en ? 1 : -1; });
+  ST.gestionesPorCliente = agrupar(ST.gestiones, 'cliente_id');
+  ST.ultimoAbono = new Map(ST.ultimosAbonos.map(function (x) { return [x.cliente_id, x.ultimo_abono]; }));
+  ST.ultimoAbonoEn = new Map(ST.ultimosAbonos.map(function (x) { return [x.cliente_id, x.ultimo_en]; }));
   ST.clientes.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
   ST.productos.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
 }
@@ -85,12 +93,14 @@ function agrupar(lista, campo) {
 }
 function fotoDatos() {
   return { cfg: ST.cfg, metodos: ST.metodos, usuarios: ST.usuarios, clientes: ST.clientes, ventas: ST.ventas, cuotas: ST.cuotas,
-           items: ST.items, itemCostos: ST.itemCostos, productos: ST.productos, prodCostos: ST.prodCostos, cargadoEn: ST.cargadoEn };
+           items: ST.items, itemCostos: ST.itemCostos, productos: ST.productos, prodCostos: ST.prodCostos,
+           existencias: ST.existencias, gestiones: ST.gestiones, ultimosAbonos: ST.ultimosAbonos, cargadoEn: ST.cargadoEn };
 }
 function aplicarDatos(d) {
   ST.cfg = d.cfg; ST.metodos = d.metodos || []; ST.usuarios = d.usuarios || []; ST.clientes = d.clientes || [];
   ST.ventas = d.ventas || []; ST.cuotas = d.cuotas || []; ST.items = d.items || []; ST.itemCostos = d.itemCostos || [];
   ST.productos = d.productos || []; ST.prodCostos = d.prodCostos || []; ST.cargadoEn = d.cargadoEn;
+  ST.existencias = d.existencias || []; ST.gestiones = d.gestiones || []; ST.ultimosAbonos = d.ultimosAbonos || [];
   indexar();
 }
 var guardarCache = debounce(function () {
@@ -112,8 +122,11 @@ async function cargarTodo() {
     traerTodo('clientes'),
     traerTodo('ventas', '*', function (q) { return q.neq('estado', 'anulada'); }),
     traerTodo('cuotas', 'id,venta_id,plan,n,tipo,fecha,monto', function (q) { return q.eq('vigente', true); }),
-    traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden'),
-    traerTodo('productos', 'id,nombre,precio_sugerido,activo')
+    traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden,sede_salida'),
+    traerTodo('productos', 'id,nombre,precio_sugerido,activo,codigo_yumana'),
+    traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id'),
+    traerGestiones(),
+    traerUltimosAbonos()
   ];
   if (dueno) {
     tareas.push(traerTodo('venta_item_costos', 'item_id,costo', null, 'item_id'));
@@ -121,10 +134,31 @@ async function cargarTodo() {
   }
   var r = await Promise.all(tareas);
   aplicarDatos({ cfg: r[0], metodos: r[1], usuarios: r[2], clientes: r[3], ventas: r[4], cuotas: r[5], items: r[6],
-                 productos: r[7], itemCostos: r[8] || [], prodCostos: r[9] || [], cargadoEn: new Date().toISOString() });
+                 productos: r[7], existencias: r[8], gestiones: r[9], ultimosAbonos: r[10],
+                 itemCostos: r[11] || [], prodCostos: r[12] || [], cargadoEn: new Date().toISOString() });
   ST.desdeCache = false;
   guardarCache();
 }
+
+// Notas de cobro de los últimos 120 días
+function traerGestiones(cliId) {
+  var desde = new Date(Date.now() - 120 * 86400000).toISOString();
+  return traerTodo('gestiones', '*', function (q) {
+    q = q.is('anulada_en', null).gte('creado_en', desde);
+    return cliId ? q.eq('cliente_id', cliId) : q;
+  });
+}
+async function traerUltimosAbonos() {
+  var r = await sb.rpc('resumen_abonos_clientes');
+  if (r.error) throw r.error;
+  return r.data || [];
+}
+async function recargarExistencias() {
+  ST.existencias = await traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id');
+  indexar();
+  guardarCache();
+}
+function existenciaDe(productoId, sede) { return ST.existencia.get(productoId + '|' + sede) || 0; }
 
 // Después de registrar algo, solo se recarga ese cliente (rinde con internet lento)
 async function recargarCliente(id) {
@@ -136,7 +170,7 @@ async function recargarCliente(id) {
   if (ids.length) {
     var r = await Promise.all([
       traerTodo('cuotas', 'id,venta_id,plan,n,tipo,fecha,monto', function (q) { return q.in('venta_id', ids).eq('vigente', true); }),
-      traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden', function (q) { return q.in('venta_id', ids); })
+      traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden,sede_salida', function (q) { return q.in('venta_id', ids); })
     ]);
     cs = r[0]; its = r[1];
     if (esDueno() && its.length) {
@@ -151,6 +185,11 @@ async function recargarCliente(id) {
   ST.cuotas = ST.cuotas.filter(function (c) { return !viejas.has(c.venta_id); }).concat(cs);
   ST.items = ST.items.filter(function (i) { return !viejas.has(i.venta_id); }).concat(its);
   ST.itemCostos = ST.itemCostos.filter(function (c) { return !itemsViejos.has(c.item_id); }).concat(costos);
+  try {
+    var extra = await Promise.all([traerGestiones(id), traerUltimosAbonos()]);
+    ST.gestiones = ST.gestiones.filter(function (g) { return g.cliente_id !== id; }).concat(extra[0]);
+    ST.ultimosAbonos = extra[1];
+  } catch (e) { /* se actualiza en la próxima carga */ }
   indexar();
   guardarCache();
 }
@@ -166,10 +205,11 @@ async function recargarConfig() {
 }
 async function recargarProductos() {
   var r = await Promise.all([
-    traerTodo('productos', 'id,nombre,precio_sugerido,activo'),
-    esDueno() ? traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id') : Promise.resolve([])
+    traerTodo('productos', 'id,nombre,precio_sugerido,activo,codigo_yumana'),
+    esDueno() ? traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id') : Promise.resolve([]),
+    traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id')
   ]);
-  ST.productos = r[0]; ST.prodCostos = r[1];
+  ST.productos = r[0]; ST.prodCostos = r[1]; ST.existencias = r[2];
   indexar();
   guardarCache();
 }
@@ -214,7 +254,29 @@ function resumenCliente(cliId) {
   });
   r.saldo = redondear2(r.saldo); r.atraso = redondear2(r.atraso);
   r.enCola = redondear2(enColaDeCliente(cliId));
+  r.ultimoAbono = ST.ultimoAbono.get(cliId) || null;
+  r.promesa = promesaDe(cliId);
+  r.ultimaNota = (ST.gestionesPorCliente.get(cliId) || [])[0] || null;
   return r;
+}
+
+// La última promesa de pago (de los últimos 30 días) y si ya pagó después de prometer.
+// estado: 'pendiente' (todavía no llega la fecha o es hoy), 'incumplida' (pasó la fecha sin abonar)
+function promesaDe(cliId) {
+  var hoy = hoyCaracas(), hace30 = sumarDias(hoy, -30);
+  var p = (ST.gestionesPorCliente.get(cliId) || []).find(function (g) { return g.tipo === 'promesa' && g.promesa_fecha >= hace30; });
+  if (!p) return null;
+  var ult = ST.ultimoAbonoEn.get(cliId);
+  if (ult && new Date(ult) > new Date(p.hecho_en || p.creado_en)) return null;    // ya abonó después de prometer
+  if (enColaDeCliente(cliId) > 0) return null;
+  return { fecha: p.promesa_fecha, monto: p.promesa_monto != null ? Number(p.promesa_monto) : null, nota: p.nota,
+           estado: p.promesa_fecha >= hoy ? 'pendiente' : 'incumplida' };
+}
+function textoPromesa(pr) {
+  if (!pr) return '';
+  var m = pr.monto ? fmtUSD(pr.monto) + ' ' : '';
+  if (pr.estado === 'incumplida') return 'No cumplió la promesa del ' + fmtFecha(pr.fecha);
+  return 'Prometió ' + m + (pr.fecha === hoyCaracas() ? 'hoy' : 'el ' + fmtFecha(pr.fecha));
 }
 function descripcionVenta(v) {
   var its = ST.itemsPorVenta.get(v.id) || [];
@@ -326,6 +388,7 @@ async function enviarOp(op) {
   if (op.tipo === 'cliente') return rpc('guardar_cliente', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'venta') return rpc('registrar_venta', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'abono') return rpc('registrar_abono', { p: op.datos, p_clave: op.clave }, 25000);
+  if (op.tipo === 'gestion') return rpc('registrar_gestion', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'foto') return subirFotoOp(op);
   throw { code: 'EM000', message: 'Operación desconocida' };
 }

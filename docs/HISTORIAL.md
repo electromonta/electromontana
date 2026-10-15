@@ -1,5 +1,22 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 2 — Etapa 2: mercancía, notas de cobro, recordatorios y reportes (2026-10-15)
+
+**Qué hace la app**
+- **Mercancía** (Más → Mercancía): lo que hay guardado en la tienda de Pedraza (y en Socopó si algún día guardan algo), con buscador y lo que vale a costo. Los dueños anotan la **entrada de mercancía** (lo que traen de Yumana: cantidad, costo y precio sugerido; si el producto es nuevo se agrega al catálogo), **cuentan** (se escribe lo que hay de verdad y la diferencia queda anotada) y **editan** el producto (nombre, precio, costo, código de Yumana, si se sigue vendiendo). Cada producto muestra todo lo que entró y salió y a qué cliente.
+- **Vender desde la tienda**: si el producto está en la tienda, sale la casilla "Sale de la tienda de Pedraza (hay N)"; al guardar se descuenta. Al empleado le sale marcada sola. Si no se marca, es mercancía que se busca en Yumana después (como hasta ahora). Anular la venta devuelve lo que salió de la tienda.
+- **Mercancía retirada que vuelve a la tienda**: en una venta cerrada con la mercancía retirada, el dueño toca "Volver a la tienda" y queda otra vez para vender.
+- **Notas de cobro** (ficha del cliente y botón "Nota" en Cobrar): visita, llamada, no estaba, mensaje, **promesa de pago** (fecha y monto) u otro. Se guardan sin señal como todo lo demás.
+- **Promesas**: en Cobrar aparece la sección "Prometieron pagar hoy" y cada tarjeta dice "Prometió $X el …" o "No cumplió la promesa del …". Si el cliente abona después de prometer, la promesa se da por cumplida.
+- **Recordatorios por WhatsApp**: "Recordar a todos" en Cobrar (y en Más) abre la lista de atrasados, a los que les toca hoy o mañana; se manda uno por uno con el mensaje listo y queda anotado "Recordado hoy".
+- **Reportes** (solo dueños, Más → Reportes): por cobrar, atrasado, cobrado este mes, ganancia del mes; cobrado por semana (8 semanas) y por método; ventas y ganancia por mes (6 meses); cómo van los que deben por días de atraso; lista de atrasados con último abono y última nota; lo más vendido (90 días); lo que vale la mercancía guardada. Filtro Todo / Socopó / Pedraza.
+
+**Base**: migración `003_etapa2.sql` (tablas `existencias`, `movimientos_inventario`, `gestiones`; columnas `venta_items.sede_salida`, `ventas.reingresada_en/sede`; funciones `entrada_mercancia`, `ajustar_existencia`, `reingresar_mercancia`, `guardar_producto`, `registrar_gestion`, `anular_gestion`, `resumen_abonos_clientes`; `registrar_venta` y `anular_venta` reemplazadas con la misma firma). La existencia nunca baja de cero; el empleado solo ve y saca mercancía de su tienda.
+
+**Pruebas**: 186 escenarios de la base, 27 de cuentas y 46 revisiones del recorrido en tamaño teléfono (entrada de mercancía, venta del empleado desde la tienda, promesa, recordatorio, reportes).
+
+**Aplicado a la base real el 2026-10-15**: la base seguía sin clientes (no hizo falta respaldo aparte); huella de las 56 funciones igual a la probada; nada abierto para `anon`; prueba de entrada + venta desde la tienda + promesa dentro de una transacción que se deshizo. El respaldo diario ya incluye las tablas nuevas (recorre todas).
+
 ## Entrega 1 — Etapa 1: cobrar desde el teléfono (2026-10-15)
 
 **Qué hace la app**

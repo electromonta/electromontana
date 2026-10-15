@@ -272,6 +272,90 @@ async function tomarFoto(p, selector) {
   await p.setViewportSize({ width: 390, height: 844 });
   await cerrarHojas(p);
 
+  // 14. Etapa 2 — mercancía de la tienda de Pedraza
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="mercancia"]');
+  await p.waitForSelector('#mcEntrada');
+  await p.click('#mcEntrada');
+  await p.fill('#emFilas [data-c="nombre"]', 'Licuadora Oster');
+  await p.fill('#emFilas [data-c="cantidad"]', '3');
+  await p.fill('#emFilas [data-c="costo"]', '25');
+  await p.fill('#emFilas [data-c="precio"]', '45');
+  await p.fill('#emNota', 'Factura Yumana 1001');
+  await foto(p, '17-entrada-mercancia');
+  await p.click('#emGuardar');
+  await p.waitForTimeout(1500);
+  revisar('entrada de mercancía', sql("select e.cantidad from existencias e join productos p on p.id = e.producto_id where p.nombre = 'Licuadora Oster' and e.sede = 'pedraza'") === '3');
+  revisar('mercancía en la lista', (await p.textContent('#mcLista')).includes('Licuadora Oster'));
+  await foto(p, '18-mercancia');
+
+  // El empleado vende una licuadora de la tienda (la casilla sale marcada sola)
+  await e.click('#navTabs [data-mas]');
+  await e.click('.hoja [data-actualizar]');
+  await e.waitForTimeout(1200);
+  await e.click('#navTabs [data-ir="clientes"]');
+  await e.click('.item:has-text("Luis Rojas")');
+  await e.click('[data-vender]');
+  await e.waitForSelector('#vItems');
+  await e.fill('#vItems [data-campo="descripcion"]', 'licuadora');
+  await e.click('#vItems .sugerencias [data-p]');
+  revisar('casilla de la tienda marcada', await e.isChecked('#vItems [data-tienda="pedraza"]'));
+  revisar('precio sugerido puesto', (await e.inputValue('#vItems [data-campo="precio"]')) === '45,00');
+  await e.click('#vUsarPct');
+  await e.click('#vMetodos [data-m="1"]');
+  await e.fill('#vNumero', '3');
+  await foto(e, '19-venta-desde-tienda');
+  await e.click('#vGuardar');
+  await e.waitForSelector('.hoja h2:has-text("guardada")');
+  await cerrarHojas(e);
+  await e.waitForTimeout(800);
+  revisar('salió de la tienda', sql("select e.cantidad from existencias e join productos p on p.id = e.producto_id where p.nombre = 'Licuadora Oster' and e.sede = 'pedraza'") === '2' &&
+    sql("select sede_salida from venta_items where descripcion = 'Licuadora Oster'") === 'pedraza');
+
+  // Nota de cobro con promesa de pago para hoy
+  await e.click('#navTabs [data-ir="clientes"]');
+  await e.click('.item:has-text("Luis Rojas")');
+  await e.click('[data-nota-nueva]');
+  await e.click('#ngTipos [data-t="promesa"]');
+  await e.fill('#ngFecha', sql("select (now() at time zone 'America/Caracas')::date"));
+  await e.fill('#ngMonto', '50');
+  await e.fill('#ngNota', 'Cobra el viernes, pasar en la tarde');
+  await e.click('#ngGuardar');
+  await e.waitForTimeout(1500);
+  revisar('promesa guardada', sql("select tipo || '/' || promesa_monto from gestiones where cliente_id = (select id from clientes where nombre = 'Luis Rojas')") === 'promesa/50.00');
+  revisar('promesa en la ficha', (await e.textContent('.ficha-cab')).includes('Prometió $50,00 hoy'));
+  await e.click('#navTabs [data-ir="cobrar"]');
+  await e.waitForTimeout(500);
+  revisar('sección de promesas de hoy', (await e.textContent('#cbListas')).includes('Prometieron pagar hoy'));
+  await foto(e, '20-cobrar-promesa');
+
+  // Recordatorio por WhatsApp (queda anotado)
+  await e.click('.cobro:has-text("Luis Rojas") [data-recordar]');
+  const wa = await e.evaluate(() => decodeURIComponent(window.__abiertos.pop() || ''));
+  await e.waitForTimeout(1500);
+  revisar('recordatorio abre WhatsApp', wa.includes('wa.me/584261112233') && wa.includes('Electro Montana'), wa.slice(0, 160));
+  revisar('recordatorio anotado', sql("select count(*) from gestiones where tipo = 'recordatorio'") === '1');
+  await e.click('#navTabs [data-mas]');
+  await e.click('.hoja [data-ir="mercancia"]');
+  await e.waitForSelector('#mcLista');
+  revisar('empleado ve su tienda sin botón de entrada', (await e.textContent('#mcLista')).includes('Licuadora Oster') && await e.locator('#mcEntrada').count() === 0);
+  await e.click('#navTabs [data-mas]');
+  revisar('empleado sin reportes', await e.locator('.hoja [data-ir="reportes"]').count() === 0);
+  await cerrarHojas(e);
+
+  // Reportes (dueño)
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-actualizar]');
+  await p.waitForTimeout(1200);
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="reportes"]');
+  await p.waitForSelector('.barras');
+  await p.waitForTimeout(800);
+  const rep = await p.textContent('#rpCuerpo');
+  revisar('reportes', rep.includes('Cobrado por semana') && rep.includes('Ventas por mes') && rep.includes('Licuadora Oster') && rep.includes('Tienda de Pedraza'), rep.slice(0, 300));
+  await foto(p, '21-reportes');
+  await p.screenshot({ path: path.join(CAPTURAS, '21b-reportes-completo.png'), fullPage: true });
+
   // Cuadre final en la base
   revisar('cuadre de todas las ventas', sql(`select count(*) from ventas v where v.estado <> 'anulada' and (
     abs(v.plan_base + coalesce((select sum(monto) from cuotas q where q.venta_id = v.id and q.vigente), 0) - (v.total + v.ajuste)) > 0.004
