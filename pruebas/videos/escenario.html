@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Escenario de video</title>
+<style>
+/* Video vertical 1080x1920: arriba el tema, al centro el teléfono con la app de verdad, abajo el subtítulo. */
+@font-face { font-family: 'Barlow'; font-weight: 500; src: url('/fonts/barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; src: url('/fonts/barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 700; src: url('/fonts/barlow-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Semi Condensed'; font-weight: 600; src: url('/fonts/barlow-sc-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Semi Condensed'; font-weight: 700; src: url('/fonts/barlow-sc-700.woff2') format('woff2'); }
+:root { --azul: #172b4d; --fondo: #0f1d36; --cobre: #a9541f; --cobre2: #e0904f; --claro: #c9d2e3; }
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--fondo); }
+#esc { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: 'Barlow', Arial, sans-serif;
+  background: radial-gradient(1200px 900px at 50% 45%, #1d3560 0%, var(--fondo) 70%); }
+#cab { position: absolute; left: 0; right: 0; top: 0; height: 170px; display: flex; align-items: center; gap: 24px; padding: 0 60px; z-index: 6;
+  background: linear-gradient(var(--fondo) 75%, rgba(15, 29, 54, 0)); color: #fff; }
+#cab svg { width: 86px; height: 86px; flex: none; }
+#cab small { display: block; font: 600 22px 'Barlow Semi Condensed'; letter-spacing: .32em; color: var(--cobre2); }
+#cab b { display: block; font: 700 50px/1.05 'Barlow Semi Condensed'; }
+#zona { position: absolute; left: 0; right: 0; top: 170px; height: 1410px; overflow: hidden; }
+#tel { position: absolute; left: 0; top: 0; width: 390px; height: 844px; transform-origin: 0 0; border-radius: 42px; overflow: hidden; background: #fff;
+  box-shadow: 0 0 0 11px #070d19, 0 0 0 13px #34466a, 0 50px 90px rgba(0, 0, 0, .55);
+  transition: transform 1s cubic-bezier(.65, 0, .35, 1); }
+#tel iframe { border: 0; width: 390px; height: 844px; display: block; }
+#marco { position: absolute; border: 6px solid var(--cobre2); border-radius: 20px; opacity: 0; z-index: 3; pointer-events: none;
+  box-shadow: 0 0 0 3000px rgba(7, 13, 25, .38); transition: opacity .45s ease; }
+#marco.si { opacity: 1; animation: latido 1.4s ease-in-out infinite; }
+@keyframes latido { 50% { border-color: #f4b98a; } }
+#dedo { position: absolute; left: 540px; top: 1200px; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; z-index: 4; pointer-events: none;
+  background: rgba(224, 144, 79, .38); border: 5px solid var(--cobre2); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); opacity: 0;
+  transition: left .55s cubic-bezier(.45, 0, .2, 1), top .55s cubic-bezier(.45, 0, .2, 1), opacity .3s ease, transform .15s ease; }
+#dedo.si { opacity: 1; }
+#dedo.toca { transform: scale(.72); }
+#dedo.rapido { transition: left .04s linear, top .04s linear, opacity .3s ease; }
+.onda { position: absolute; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; border: 6px solid var(--cobre2);
+  z-index: 4; pointer-events: none; animation: onda .7s ease-out forwards; }
+@keyframes onda { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.8); opacity: 0; } }
+#sub { position: absolute; left: 0; right: 0; top: 1560px; height: 360px; display: flex; align-items: center; justify-content: center;
+  padding: 0 70px; z-index: 6; background: linear-gradient(rgba(15, 29, 54, 0), var(--fondo) 24%); }
+#texto { font: 600 52px/1.25 'Barlow', Arial, sans-serif; color: #fff; text-align: center; text-wrap: balance; max-width: 940px;
+  transition: opacity .35s ease, transform .35s ease; }
+#texto.fuera { opacity: 0; transform: translateY(26px); }
+#texto b { color: var(--cobre2); font-weight: 700; }
+#wa { position: absolute; left: 90px; right: 90px; top: 260px; z-index: 5; background: #efe7dc; border-radius: 34px; padding: 34px 34px 40px;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .55); opacity: 0; transform: translateY(60px) scale(.96); transition: opacity .5s ease, transform .5s ease; }
+#wa.si { opacity: 1; transform: none; }
+#wa .eti { font: 700 30px 'Barlow Semi Condensed'; letter-spacing: .12em; text-transform: uppercase; color: #5b6474; margin-bottom: 20px; }
+#wa .burbuja { background: #fff; border-radius: 0 26px 26px 26px; padding: 26px 30px; font: 500 34px/1.38 'Barlow', Arial, sans-serif; color: #18202e;
+  white-space: pre-wrap; max-height: 980px; overflow: hidden; }
+#portada { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  padding: 0 100px; color: #fff; background: radial-gradient(1100px 900px at 50% 40%, #1f3a6a 0%, var(--azul) 55%, var(--fondo) 100%); transition: opacity .7s ease; }
+#portada.oculta { opacity: 0; }
+#portada svg { width: 250px; height: 250px; animation: entra 1s cubic-bezier(.2, .8, .2, 1) both; }
+#portada .rayo { animation: rayo 1.6s ease-in-out .5s both; }
+@keyframes entra { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes rayo { 0% { opacity: 0; } 20% { opacity: 1; } 30% { opacity: .2; } 40%, 100% { opacity: 1; } }
+#portada .num { margin-top: 56px; font: 600 32px 'Barlow Semi Condensed'; letter-spacing: .34em; color: var(--cobre2); animation: sube .8s .35s both; }
+#portada h1 { margin: 22px 0 0; font: 700 104px/1.02 'Barlow Semi Condensed'; text-wrap: balance; animation: sube .8s .5s both; }
+#portada p { margin: 30px 0 0; font: 500 44px/1.35 'Barlow', Arial, sans-serif; color: var(--claro); text-wrap: balance; animation: sube .8s .7s both; }
+#portada .lema { position: absolute; bottom: 120px; font: 600 30px 'Barlow Semi Condensed'; letter-spacing: .3em; color: var(--claro); text-transform: uppercase; }
+@keyframes sube { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="esc">
+  <header id="cab">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#fff" stroke-width="2.6"/><path d="M9 46 L23 23 L31 34 L40 26 L55 46" fill="none" stroke="#fff" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M35 8.5 L27.5 22 L32.5 22 L30 31 L38.5 17 L33.5 17 L37 8.5 Z" fill="#e0904f"/></svg>
+    <div><small>Electro Montana</small><b id="capitulo"></b></div>
+  </header>
+  <div id="zona">
+    <div id="tel"><iframe id="app" src="/" title="App"></iframe></div>
+    <div id="marco"></div>
+    <div id="dedo"></div>
+    <div id="wa"><div class="eti">Así le llega por WhatsApp</div><div class="burbuja" id="waTexto"></div></div>
+  </div>
+  <div id="sub"><div id="texto" class="fuera"></div></div>
+  <div id="portada" class="oculta">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M9 46 L23 23 L31 34 L40 26 L55 46" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path class="rayo" d="M35 8.5 L27.5 22 L32.5 22 L30 31 L38.5 17 L33.5 17 L37 8.5 Z" fill="#e0904f"/></svg>
+    <div class="num" id="pNum"></div>
+    <h1 id="pTit"></h1>
+    <p id="pSub"></p>
+    <div class="lema">Todo a tu alcance</div>
+  </div>
+</div>
+<script>
+'use strict';
+var W = 1080, ZH = 1410, AW = 390, AH = 844, BASE = (ZH - 70) / AH;
+var S = BASE, X = 0, Y = 0;
+function $(id) { return document.getElementById(id); }
+function aplicar() { $('tel').style.transform = 'translate(' + X + 'px,' + Y + 'px) scale(' + S + ')'; }
+function encajar() {
+  if (AW * S <= W) X = (W - AW * S) / 2; else X = Math.min(0, Math.max(W - AW * S, X));
+  if (AH * S <= ZH) Y = (ZH - AH * S) / 2; else Y = Math.min(0, Math.max(ZH - AH * S, Y));
+}
+window.esc = {
+  base: function () { S = BASE; encajar(); aplicar(); },
+  // r: rectángulo en pixeles de la app {x, y, w, h}
+  acercar: function (r, z) { S = BASE * z; X = W / 2 - (r.x + r.w / 2) * S; Y = ZH / 2 - (r.y + r.h / 2) * S; encajar(); aplicar(); },
+  punto: function (px, py) { return { x: X + px * S, y: Y + py * S }; },
+  dedo: function (px, py, rapido) {
+    var d = $('dedo'), p = this.punto(px, py);
+    d.classList.toggle('rapido', !!rapido);
+    d.style.left = p.x + 'px'; d.style.top = p.y + 'px'; d.classList.add('si');
+  },
+  sinDedo: function () { $('dedo').classList.remove('si'); },
+  apretar: function (si) { $('dedo').classList.toggle('toca', si); },
+  onda: function (px, py) {
+    var p = this.punto(px, py), o = document.createElement('div');
+    o.className = 'onda'; o.style.left = p.x + 'px'; o.style.top = p.y + 'px';
+    $('zona').appendChild(o); setTimeout(function () { o.remove(); }, 800);
+  },
+  marco: function (r) {
+    var m = $('marco');
+    if (!r) { m.classList.remove('si'); return; }
+    var a = this.punto(r.x - 6, r.y - 6), b = this.punto(r.x + r.w + 6, r.y + r.h + 6);
+    m.style.left = a.x + 'px'; m.style.top = a.y + 'px'; m.style.width = (b.x - a.x) + 'px'; m.style.height = (b.y - a.y) + 'px';
+    m.classList.add('si');
+  },
+  texto: function (html) {
+    var t = $('texto');
+    t.classList.add('fuera');
+    setTimeout(function () { t.innerHTML = html || ''; if (html) t.classList.remove('fuera'); }, 330);
+  },
+  capitulo: function (txt) { $('capitulo').textContent = txt; },
+  whatsapp: function (txt) {
+    if (txt == null) { $('wa').classList.remove('si'); return; }
+    $('waTexto').textContent = txt.replace(/\*([^*\n]+)\*/g, '$1');
+    $('wa').classList.add('si');
+  },
+  portada: function (num, tit, sub) {
+    var p = $('portada');
+    $('pNum').textContent = num || ''; $('pTit').textContent = tit || ''; $('pSub').textContent = sub || '';
+    // reinicia las animaciones
+    p.querySelectorAll('svg, .num, h1, p, .rayo').forEach(function (el) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+    p.classList.remove('oculta');
+  },
+  quitarPortada: function () { $('portada').classList.add('oculta'); }
+};
+esc.base();
+</script>
+</body>
+</html>
