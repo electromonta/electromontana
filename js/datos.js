@@ -11,6 +11,7 @@ var ST = {
   itemCostos: [], costoPorItem: new Map(),
   productos: [], prodCostos: [], costoProducto: new Map(),
   existencias: [], existencia: new Map(),             // "producto|sede" → cantidad
+  solicitudes: [],                                    // cambios que esperan (o tuvieron) la aprobación del otro socio
   gestiones: [], gestionesPorCliente: new Map(),      // notas de cobro de los últimos meses
   ultimosAbonos: [], ultimoAbono: new Map(), ultimoAbonoEn: new Map(),   // cliente → fecha (y hora) del último abono
   cargadoEn: null, desdeCache: false
@@ -104,13 +105,14 @@ function agrupar(lista, campo) {
 function fotoDatos() {
   return { cfg: ST.cfg, metodos: ST.metodos, usuarios: ST.usuarios, clientes: ST.clientes, ventas: ST.ventas, cuotas: ST.cuotas,
            items: ST.items, itemCostos: ST.itemCostos, productos: ST.productos, prodCostos: ST.prodCostos,
-           existencias: ST.existencias, gestiones: ST.gestiones, ultimosAbonos: ST.ultimosAbonos, cargadoEn: ST.cargadoEn };
+           existencias: ST.existencias, gestiones: ST.gestiones, ultimosAbonos: ST.ultimosAbonos, solicitudes: ST.solicitudes, cargadoEn: ST.cargadoEn };
 }
 function aplicarDatos(d) {
   ST.cfg = d.cfg; ST.metodos = d.metodos || []; ST.usuarios = d.usuarios || []; ST.clientes = d.clientes || [];
   ST.ventas = d.ventas || []; ST.cuotas = d.cuotas || []; ST.items = d.items || []; ST.itemCostos = d.itemCostos || [];
   ST.productos = d.productos || []; ST.prodCostos = d.prodCostos || []; ST.cargadoEn = d.cargadoEn;
   ST.existencias = d.existencias || []; ST.gestiones = d.gestiones || []; ST.ultimosAbonos = d.ultimosAbonos || [];
+  ST.solicitudes = d.solicitudes || [];
   indexar();
 }
 var guardarCache = debounce(function () {
@@ -128,7 +130,7 @@ async function cargarTodo() {
   var tareas = [
     sb.from('config').select('*').eq('id', 1).single().then(_uno),
     traerTodo('metodos_pago', '*', null, 'orden'),
-    traerTodo('usuarios', 'id,usuario,nombre,rol,sede,activo', null, 'nombre'),
+    traerTodo('usuarios', 'id,usuario,nombre,rol,sede,activo,puede_aprobar', null, 'nombre'),
     traerTodo('clientes'),
     traerTodo('ventas', '*', function (q) { return q.neq('estado', 'anulada'); }),
     traerTodo('cuotas', 'id,venta_id,plan,n,tipo,fecha,monto', function (q) { return q.eq('vigente', true); }),
@@ -141,11 +143,12 @@ async function cargarTodo() {
   if (dueno) {
     tareas.push(traerTodo('venta_item_costos', 'item_id,costo', null, 'item_id'));
     tareas.push(traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id'));
+    tareas.push(traerTodo('solicitudes'));
   }
   var r = await Promise.all(tareas);
   aplicarDatos({ cfg: r[0], metodos: r[1], usuarios: r[2], clientes: r[3], ventas: r[4], cuotas: r[5], items: r[6],
                  productos: r[7], existencias: r[8], gestiones: r[9], ultimosAbonos: r[10],
-                 itemCostos: r[11] || [], prodCostos: r[12] || [], cargadoEn: new Date().toISOString() });
+                 itemCostos: r[11] || [], prodCostos: r[12] || [], solicitudes: r[13] || [], cargadoEn: new Date().toISOString() });
   ST.desdeCache = false;
   guardarCache();
 }
@@ -212,7 +215,7 @@ async function recargarConfig() {
   var r = await Promise.all([
     sb.from('config').select('*').eq('id', 1).single().then(_uno),
     traerTodo('metodos_pago', '*', null, 'orden'),
-    traerTodo('usuarios', 'id,usuario,nombre,rol,sede,activo', null, 'nombre')
+    traerTodo('usuarios', 'id,usuario,nombre,rol,sede,activo,puede_aprobar', null, 'nombre')
   ]);
   ST.cfg = r[0]; ST.metodos = r[1]; ST.usuarios = r[2];
   indexar();

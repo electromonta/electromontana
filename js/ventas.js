@@ -21,20 +21,25 @@ async function accionVenta(accion, v) {
         mensajeHtml: debe ? '<p>Todavía debe <b>' + fmtUSD(e.saldo) + '</b>.</p>' : '<p>Ya pagó todo. Se anota que se le devolvió el artículo.</p>' });
       if (m2 !== null && m2 !== false) { await rpc('devolver_mercancia', { p_venta: v.id, p_nota: m2 || '' }); hecho = true; }
     } else if (accion === 'cerrar') {
-      var m3 = await confirmar({ titulo: 'Cerrar venta', pedir: 'Por qué se cierra', boton: 'Cerrar venta', peligro: true,
-        mensajeHtml: '<p>Se deja de cobrar lo que falta (<b>' + fmtUSD(e.saldo) + '</b>). Lo abonado no se devuelve.</p><p>Úsalo cuando el cliente no va a pagar más (por ejemplo, la mercancía se retiró y se volvió a vender). Se puede reabrir después.</p>' });
-      if (m3) { await rpc('cerrar_venta', { p_venta: v.id, p_motivo: m3 }); hecho = true; }
+      var k3 = nuevaClave();
+      var m3 = await confirmar({ titulo: 'Cerrar venta', pedir: 'Por qué se cierra', boton: 'Pedir aprobación', peligro: true,
+        mensajeHtml: '<p>Se deja de cobrar lo que falta (<b>' + fmtUSD(e.saldo) + '</b>). Lo abonado no se devuelve.</p><p>Úsalo cuando el cliente no va a pagar más (por ejemplo, la mercancía se retiró y se volvió a vender). Se puede reabrir después.</p>' +
+          '<p>Lo tiene que aprobar <b>' + esc(nombreOtroSocio()) + '</b>; hasta entonces no cambia nada.</p>' });
+      if (m3) { await pedirAprobacion({ tipo: 'cerrar_venta', venta_id: v.id, motivo: m3 }, k3); hecho = 'pedido'; }
     } else if (accion === 'reabrir') {
       var m4 = await confirmar({ titulo: 'Reabrir venta', pedir: 'Motivo', boton: 'Reabrir', mensaje: 'La venta vuelve a cobrarse con lo que faltaba.' });
       if (m4) { await rpc('reabrir_venta', { p_venta: v.id, p_motivo: m4 }); hecho = true; }
     } else if (accion === 'reingresar') {
       hecho = await hojaReingresar(v);
     } else if (accion === 'anular') {
-      var m5 = await confirmar({ titulo: 'Anular venta #' + v.numero, pedir: 'Por qué se anula', boton: 'Anular', peligro: true,
-        mensaje: 'Solo para ventas registradas por error. Si tiene abonos, primero hay que anularlos. No se puede deshacer.' });
-      if (m5) { await rpc('anular_venta', { p_venta: v.id, p_motivo: m5 }); hecho = true; }
+      var k5 = nuevaClave();
+      var m5 = await confirmar({ titulo: 'Anular venta #' + v.numero, pedir: 'Por qué se anula', boton: 'Pedir aprobación', peligro: true,
+        mensajeHtml: '<p>Solo para ventas registradas por error. Si tiene abonos, primero hay que anularlos. No se puede deshacer.</p>' +
+          '<p>Lo tiene que aprobar <b>' + esc(nombreOtroSocio()) + '</b>; hasta entonces no cambia nada.</p>' });
+      if (m5) { await pedirAprobacion({ tipo: 'anular_venta', venta_id: v.id, motivo: m5 }, k5); hecho = 'pedido'; }
     }
   } catch (err) { toast(errMsg(err), 'error'); return; }
+  if (hecho === 'pedido') { repintar(); return; }   // el aviso ya salió: falta la aprobación del otro socio
   if (hecho) {
     try { await recargarCliente(v.cliente_id); } catch (err) { /* luego */ }
     toast('Listo', 'ok');
@@ -44,23 +49,28 @@ async function accionVenta(accion, v) {
 
 function hojaAjuste(v, tipo) {
   return new Promise(function (resolver) {
-    var e = estadoDe(v), listo = false;
+    var e = estadoDe(v), listo = false, clave = nuevaClave();   // una clave por hoja: tocar dos veces no lo repite
     var h = abrirHoja({
       titulo: tipo === 'recargo' ? 'Recargo por demora' : 'Descuento',
       html: '<p class="tenue">' + (tipo === 'recargo' ? 'Se suma a lo que debe y queda como una cuota en la fecha que pongas.' : 'Se resta de lo que debe, empezando por las últimas cuotas.') +
-        ' Debe ahora ' + fmtUSD(e.saldo) + '.</p><div class="pila">' +
+        ' Debe ahora ' + fmtUSD(e.saldo) + '.</p>' +
+        (tipo === 'descuento' ? '<div class="aviso aviso-info" style="margin-bottom:12px">' + icono('candado') + '<div>El descuento lo tiene que aprobar <b>' + esc(nombreOtroSocio()) + '</b>. Hasta entonces la deuda no cambia.</div></div>' : '') +
+        '<div class="pila">' +
         '<label class="campo"><span>Monto $</span><input id="ajMonto" inputmode="decimal"></label>' +
         (tipo === 'recargo' ? '<label class="campo"><span>Para cobrar el</span><input type="date" id="ajFecha" value="' + hoyCaracas() + '"></label>' : '') +
         '<label class="campo"><span>Motivo</span><input id="ajMotivo" placeholder="' + (tipo === 'recargo' ? 'Ej.: 2 semanas de atraso' : 'Ej.: pagó todo antes') + '"></label></div>',
-      pie: '<button type="button" class="btn btn-ancho" id="ajGuardar">Guardar</button>',
+      pie: '<button type="button" class="btn btn-ancho" id="ajGuardar">' + (tipo === 'descuento' ? 'Pedir aprobación' : 'Guardar') + '</button>',
       alCerrar: function () { if (!listo) resolver(false); }
     });
     protegerBoton(h.$('#ajGuardar'), async function () {
       var monto = parseNum(h.$('#ajMonto').value), motivo = h.$('#ajMotivo').value.trim();
       if (!(monto > 0)) { toast('Escribe el monto', 'error'); return; }
       if (!motivo) { toast('Escribe el motivo', 'error'); return; }
-      await rpc('ajustar_venta', { p_venta: v.id, p_tipo: tipo, p_monto: redondear2(monto), p_motivo: motivo,
-                                   p_fecha: tipo === 'recargo' ? (h.$('#ajFecha').value || null) : null });
+      if (tipo === 'descuento') {
+        await pedirAprobacion({ tipo: 'descuento', venta_id: v.id, monto: redondear2(monto), motivo: motivo }, clave);
+        listo = true; h.cerrar(); resolver('pedido'); return;
+      }
+      await rpc('recargo_venta', { p_venta: v.id, p_monto: redondear2(monto), p_motivo: motivo, p_fecha: h.$('#ajFecha').value || null, p_clave: clave });
       listo = true; h.cerrar(); resolver(true);
     });
   });

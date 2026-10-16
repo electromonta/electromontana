@@ -113,6 +113,9 @@ function menuMas() {
       '<button type="button" class="item" data-ir="efectivo">' + icono('tienda') + '<div class="crece"><div class="item-tit">' +
         (esDueno() ? 'Efectivo de Pedraza' : 'Mi efectivo por entregar') + '</div><div class="item-sub">' +
         (esDueno() ? 'Lo que ha cobrado el empleado y las entregas' : 'Lo que has cobrado en efectivo') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
+      (esDueno() ? '<button type="button" class="item" data-aprobaciones>' + icono('candado') + '<div class="crece"><div class="item-tit">Aprobaciones' +
+          (porAprobar().length ? ' <span class="etiqueta e-ambar">' + porAprobar().length + '</span>' : '') + '</div><div class="item-sub">Anular, descontar o cerrar lo aprueba el otro socio</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
+        '<button type="button" class="item" data-historial>' + icono('reloj') + '<div class="crece"><div class="item-tit">Historial de cambios</div><div class="item-sub">Quién cambió qué y cuándo (no se borra)</div></div>' + icono('flecha', 'ic-chico') + '</button>' : '') +
       '<a class="item" href="guia.html" target="_blank" rel="noopener">' + icono('info') + '<div class="crece"><div class="item-tit">Guía de uso</div><div class="item-sub">Cómo se usa cada pantalla, paso a paso</div></div>' + icono('flecha', 'ic-chico') + '</a>' +
       '<button type="button" class="item" data-contrato-blanco>' + icono('contrato') + '<div class="crece"><div class="item-tit">Contrato en blanco</div><div class="item-sub">Para imprimir y llenar a mano</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
       '<button type="button" class="item" data-ir="ajustes">' + icono('ajustes') + '<div class="crece"><div class="item-tit">Ajustes</div><div class="item-sub">' +
@@ -120,13 +123,15 @@ function menuMas() {
       '<button type="button" class="item" data-actualizar>' + icono('refrescar') + '<div class="crece"><div class="item-tit">Actualizar datos</div><div class="item-sub">' +
         (ST.cargadoEn ? 'Última vez ' + esc(haceCuanto(ST.cargadoEn)) : '') + '</div></div></button>' +
       '<button type="button" class="item" data-salir>' + icono('salir') + '<div class="crece"><div class="item-tit">Salir</div></div></button>' +
-      '</div><p class="tenue centro" style="margin-top:16px">' + esc(ST.yo.nombre) + ' · ' + (esDueno() ? 'Dueño' : 'Empleado de ' + nombreSede(ST.yo.sede)) + '</p>'
+      '</div><p class="tenue centro" style="margin-top:16px">' + esc(ST.yo.nombre) + ' · ' + (esDueno() ? (ST.yo.puede_aprobar ? 'Socio' : 'Dueño') : 'Empleado de ' + nombreSede(ST.yo.sede)) + '</p>'
   });
   h.cuerpo.addEventListener('click', function (e) {
     var b = e.target.closest('[data-ir]');
     if (b) { h.cerrar(); ir(b.dataset.ir); return; }
     if (e.target.closest('[data-contrato-blanco]')) { h.cerrar(); imprimirContrato(null); return; }
     if (e.target.closest('[data-recordatorios]')) { h.cerrar(); hojaRecordatorios('atrasados'); return; }
+    if (e.target.closest('[data-aprobaciones]')) { h.cerrar(); hojaAprobaciones(); return; }
+    if (e.target.closest('[data-historial]')) { h.cerrar(); hojaHistorial(); return; }
     if (e.target.closest('[data-actualizar]')) { h.cerrar(); actualizarTodo(true); return; }
     if (e.target.closest('[data-salir]')) { h.cerrar(); salir(); }
   });

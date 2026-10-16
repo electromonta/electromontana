@@ -2,6 +2,8 @@
 // Usa la llave de servicio, que solo existe en el servidor de Supabase (nunca en la app ni en el repo).
 //   accion "crear": un dueño crea un usuario (dueño o empleado) con una clave temporal.
 //   accion "clave": un dueño le pone una clave nueva a un usuario (al entrar se le pide cambiarla).
+//     La clave de un socio (Franklin, Daniel) solo la cambia él mismo: si no, uno podría entrar como el otro
+//     y aprobarse sus propios cambios. Si un socio olvida la clave, se la pone soporte desde el panel de Supabase.
 // Los usuarios entran con un nombre corto ("franklin"); por dentro es franklin@electromontana.app.
 // Nunca se mandan correos: las cuentas se crean ya confirmadas.
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -87,8 +89,11 @@ Deno.serve(async (req) => {
 
   if (accion === "clave") {
     const id = String(b.id ?? "");
-    const { data: destino } = await admin.from("usuarios").select("id").eq("id", id).maybeSingle();
+    const { data: destino } = await admin.from("usuarios").select("id, puede_aprobar").eq("id", id).maybeSingle();
     if (!destino) return responder({ error: "Ese usuario no existe." }, 404);
+    if (destino.puede_aprobar && id !== yo.id) {
+      return responder({ error: "La clave de un socio solo la cambia él mismo (Ajustes → Cambiar mi clave). Si la olvidó, habla con soporte." }, 403);
+    }
     if (clave.length < 6) return responder({ error: "La clave debe tener al menos 6 caracteres." }, 400);
     const { error } = await admin.auth.admin.updateUserById(id, { password: clave });
     if (error) return responder({ error: error.message }, 400);

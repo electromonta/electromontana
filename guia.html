@@ -115,6 +115,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     <li><a href="#reportes">Reportes</a></li>
     <li><a href="#ajustes">Ajustes</a></li>
     <li><a href="#copias">Copias de seguridad</a></li>
+    <li><a href="#socios">Seguridad entre los socios</a></li>
     <li><a href="#senal">Sin señal</a></li>
     <li><a href="#empleado">Lo que puede hacer el empleado</a></li>
     <li><a href="#preguntas">Preguntas frecuentes</a></li>
@@ -215,7 +216,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li>Toca <span class="boton">Enviar recibo por WhatsApp</span>: le llega el recibo con lo que abonó y lo que le falta.</li>
       </ol>
       <div class="nota ojo"><b>Importante</b>El botón de guardar se bloquea al primer toque: aunque lo toques dos veces, el abono se guarda una sola vez. Si la referencia ya se usó en otro pago, la app avisa y pregunta si guardar igual.</div>
-      <p><b>Anular un abono</b> (solo dueños): ficha del cliente → Abonos → toca el abono → <span class="boton">Anular</span> y escribe el motivo. Nada se borra: queda anotado quién lo anuló y por qué.</p>
+      <p><b>Anular un abono</b> (solo dueños): ficha del cliente → Abonos → toca el abono → <span class="boton">Pedir anulación</span> y escribe el motivo. Lo aprueba el otro socio (ver <a href="#socios">Seguridad entre los socios</a>). Nada se borra: queda anotado quién lo pidió, quién lo aprobó y por qué.</p>
     </div>
     <figure class="tel"><img src="guia/05-abono.jpg" alt="Ventana de abono en bolívares con su equivalente en dólares" width="780" height="1688" loading="lazy"><figcaption>Abono en bolívares: muestra el equivalente</figcaption></figure>
     <figure class="tel"><img src="guia/06-abono-guardado.jpg" alt="Abono registrado con el botón de recibo por WhatsApp" width="780" height="1688" loading="lazy"><figcaption>Listo: mandar el recibo</figcaption></figure>
@@ -328,20 +329,20 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 
 <section class="cap" id="nopagan">
   <h2><span class="n">8</span>Cuando no pagan (solo dueños)</h2>
-  <p class="intro">En la ficha del cliente, toca la venta y baja hasta <b>Cambios (solo dueños)</b>. Todo cambio pide un motivo y queda en el historial de la venta.</p>
+  <p class="intro">En la ficha del cliente, toca la venta y baja hasta <b>Cambios (solo dueños)</b>. Todo cambio pide un motivo y queda en el historial. Los que bajan la deuda (<b>descuento, cerrar y anular</b>) los aprueba el otro socio.</p>
   <div class="bloque">
     <div>
       <div class="tabla"><table>
         <thead><tr><th>Botón</th><th>Qué hace</th></tr></thead>
         <tbody>
           <tr><td><b>Recargo</b></td><td>Suma un monto por demora. Queda como una cuota más en la fecha que pongas.</td></tr>
-          <tr><td><b>Descuento</b></td><td>Resta de lo que debe, empezando por las últimas cuotas.</td></tr>
+          <tr><td><b>Descuento</b></td><td>Resta de lo que debe, empezando por las últimas cuotas. <b>Lo aprueba el otro socio.</b></td></tr>
           <tr><td><b>Más tiempo</b></td><td>Arma un calendario nuevo para lo que falta (por ejemplo, 4 cuotas semanales desde la próxima semana).</td></tr>
           <tr><td><b>Retirar mercancía</b></td><td>Como dice el contrato: se le retira el artículo y <b>sigue debiendo</b>. Se le devuelve cuando termine de pagar.</td></tr>
           <tr><td><b>Devolver mercancía</b></td><td>Anota que se le devolvió el artículo.</td></tr>
-          <tr><td><b>Cerrar venta</b></td><td>Se deja de cobrar lo que falta (por ejemplo, se retiró y se va a vender a otro). Se puede reabrir.</td></tr>
+          <tr><td><b>Cerrar venta</b></td><td>Se deja de cobrar lo que falta (por ejemplo, se retiró y se va a vender a otro). Se puede reabrir. <b>Lo aprueba el otro socio.</b></td></tr>
           <tr><td><b>Volver a la tienda</b></td><td>En una venta cerrada con la mercancía retirada: el artículo vuelve a la mercancía de la tienda para venderlo otra vez.</td></tr>
-          <tr><td><b>Anular</b></td><td>Solo para una venta registrada por error y sin abonos.</td></tr>
+          <tr><td><b>Anular</b></td><td>Solo para una venta registrada por error y sin abonos. <b>Lo aprueba el otro socio.</b></td></tr>
         </tbody>
       </table></div>
       <p>También desde la venta, los dueños pueden <b>poner o cambiar el costo</b> de cada producto.</p>
@@ -476,8 +477,51 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
   <figure style="margin:18px 0 0;max-width:860px"><img src="guia/36-computadora.jpg" alt="La app en la computadora, con el menú a la izquierda" width="1920" height="1200" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid var(--borde);box-shadow:0 6px 18px rgba(23,43,77,.12)"><figcaption style="font-size:14px;color:var(--tenue);margin-top:8px">Así se ve en la computadora: el menú a la izquierda y la ficha del cliente en dos partes.</figcaption></figure>
 </section>
 
+<section class="cap" id="socios">
+  <h2><span class="n">15</span>Seguridad entre los socios</h2>
+  <p class="intro">El sistema es de dos dueños. Por eso lo que <b>baja una deuda o borra un pago</b> no lo puede hacer uno solo: lo pide uno y lo aprueba el otro. Y todo cambio queda en un historial que nadie puede borrar.</p>
+  <div class="bloque">
+    <div>
+      <h3>Lo que necesita la aprobación del otro socio</h3>
+      <ul>
+        <li><b>Anular un abono</b> (ficha → Abonos → tocar el abono → <span class="boton">Pedir anulación</span>).</li>
+        <li><b>Descuento</b> en una venta.</li>
+        <li><b>Cerrar una venta</b> (dejar de cobrar lo que falta).</li>
+        <li><b>Anular una venta</b>.</li>
+      </ul>
+      <p>El recargo, más tiempo, retirar y devolver la mercancía no la necesitan (no bajan lo que deben), pero también quedan en el historial.</p>
+      <h3>Cómo se pide y cómo se aprueba</h3>
+      <ol class="pasos">
+        <li>Franklin, por ejemplo, toca <span class="boton">Descuento</span>, escribe el monto y el motivo, y toca <span class="boton">Pedir aprobación</span>. <b>Todavía no cambia nada.</b></li>
+        <li>A Daniel le sale arriba en <b>Cobrar</b> un aviso amarillo: "Un cambio espera tu aprobación". También en <b>Más → Aprobaciones</b>.</li>
+        <li>Daniel ve qué se pidió, a qué cliente, el motivo y quién lo pidió. Toca <span class="boton">Aprobar</span> (el cambio se hace en ese momento) o <span class="boton">Rechazar</span> (escribe por qué y no cambia nada).</li>
+        <li>Mientras nadie responde, quien lo pidió lo puede <span class="boton">Cancelar</span>.</li>
+      </ol>
+      <div class="nota ojo"><b>Ojo</b>Nadie se aprueba a sí mismo. Solo Franklin y Daniel aprueban; otra cuenta de dueño (una nueva, o la de soporte) puede pedir, pero no aprobar. La cuenta de un socio (su rol, su acceso y su clave) solo la cambia él mismo.</div>
+    </div>
+    <figure class="tel"><img src="guia/37-pedir.jpg" alt="Pedir un descuento: queda esperando la aprobación del otro socio" width="780" height="1688" loading="lazy"><figcaption>Se pide con el motivo</figcaption></figure>
+  </div>
+  <div class="bloque">
+    <figure class="tel"><img src="guia/38-aviso-aprobar.jpg" alt="Aviso en Cobrar: un cambio espera tu aprobación" width="780" height="1688" loading="lazy"><figcaption>El otro socio ve el aviso</figcaption></figure>
+    <figure class="tel"><img src="guia/39-aprobaciones.jpg" alt="Lista de aprobaciones con los botones Aprobar y Rechazar" width="780" height="1688" loading="lazy"><figcaption>Aprobar o rechazar</figcaption></figure>
+  </div>
+  <div class="bloque">
+    <div>
+      <h3>El historial de cambios</h3>
+      <p><b>Más → Historial de cambios</b> (solo dueños): quién cambió qué y cuándo. Abonos anulados, descuentos, recargos, ventas cerradas, datos de clientes que cambiaron (con lo de antes y lo de después), usuarios, ajustes, copias de seguridad, y cada pedido con quién lo pidió y quién lo aprobó.</p>
+      <ul>
+        <li><b>No se puede borrar ni cambiar</b>, ni desde la app ni desde la base.</li>
+        <li><b>Nada se borra en el sistema:</b> se anula, y lo anulado sigue a la vista.</li>
+        <li>Si alguien cambiara algo <b>directo en la base de datos</b> (por fuera de la app), también queda anotado, en rojo, con lo de antes y lo de después. El filtro <span class="boton">Por fuera de la app</span> los muestra.</li>
+      </ul>
+      <div class="nota dato"><b>Dato</b>Cada recibo va al cliente por WhatsApp. Si un cliente dice que pagó y no tiene recibo, ese pago no se registró. Pídanle siempre el recibo.</div>
+    </div>
+    <figure class="tel"><img src="guia/40-historial.jpg" alt="Historial de cambios con quién pidió, quién aprobó y qué cambió" width="780" height="1688" loading="lazy"><figcaption>Historial de cambios</figcaption></figure>
+  </div>
+</section>
+
 <section class="cap" id="senal">
-  <h2><span class="n">15</span>Sin señal</h2>
+  <h2><span class="n">16</span>Sin señal</h2>
   <p class="intro">En la calle la señal es lenta o se va. La app está hecha para eso: <b>nada de lo que se registra se pierde</b>.</p>
   <div class="bloque dos-fotos">
     <div>
@@ -496,7 +540,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="empleado">
-  <h2><span class="n">16</span>Lo que puede hacer el empleado de Pedraza</h2>
+  <h2><span class="n">17</span>Lo que puede hacer el empleado de Pedraza</h2>
   <div class="bloque">
     <div>
       <p>Entra con su propio usuario y solo ve los <b>clientes de Pedraza</b>.</p>
@@ -520,9 +564,9 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="preguntas">
-  <h2><span class="n">17</span>Preguntas frecuentes</h2>
+  <h2><span class="n">18</span>Preguntas frecuentes</h2>
   <h3>Me equivoqué en un abono. ¿Lo borro?</h3>
-  <p>Nada se borra. Un dueño lo <b>anula</b> (ficha → Abonos → tocar el abono → Anular) y se registra de nuevo bien. La deuda se recalcula sola.</p>
+  <p>Nada se borra. Un dueño pide anularlo (ficha → Abonos → tocar el abono → Pedir anulación), el otro socio lo aprueba, y se registra de nuevo bien. La deuda se recalcula sola.</p>
   <h3>Un cliente pagó en bolívares y la tasa de hoy no está puesta.</h3>
   <p>Un dueño pone la tasa (tocando la tasa arriba) y se registra el abono. El empleado no puede cobrar en bolívares sin la tasa de ustedes.</p>
   <h3>El cliente pagó de más.</h3>
@@ -530,7 +574,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
   <h3>Cambié de teléfono.</h3>
   <p>Instala la app en el nuevo y entra con tu usuario: todos los datos están en la base, no en el teléfono. Solo revisa antes que el viejo no tenga nada "por enviar".</p>
   <h3>Se me olvidó la clave.</h3>
-  <p>Un dueño entra a <b>Ajustes → Usuarios</b>, toca a la persona y le pone una clave nueva temporal.</p>
+  <p>Si es el empleado: un dueño entra a <b>Ajustes → Usuarios</b>, toca a la persona y le pone una clave nueva temporal. Si es Franklin o Daniel: se la pone soporte (Kinan), porque la clave de un socio no la puede cambiar el otro.</p>
   <h3>No me sale un cliente.</h3>
   <p>Busca por parte del nombre o por la cédula. Si eres el empleado, solo ves los de Pedraza. Si se acaba de crear sin señal, sale como "por enviar".</p>
   <h3>¿Cómo sé que la app está al día?</h3>
@@ -538,7 +582,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="mostrar">
-  <h2><span class="n">18</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
+  <h2><span class="n">19</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
   <p class="intro">Un recorrido para enseñarlo a Franklin y Daniel con un cliente de prueba. Al final se anula lo que se hizo.</p>
   <div class="guion">
     <ol class="pasos">
@@ -552,7 +596,8 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
       <li><b>Cambios de dueño.</b> En la venta: recargo y más tiempo, para que vean que todo pide motivo y queda en el historial.</li>
       <li><b>Pedraza.</b> Muestra Mercancía (entrada y venta desde la tienda) y Efectivo de Pedraza (recibir entrega). Si ya existe el usuario del empleado, entra con él en otro teléfono: solo ve Pedraza y no ve costos.</li>
       <li><b>Reportes.</b> Más → Reportes: cobrado por semana, ganancia y atrasados.</li>
-      <li><b>Limpiar.</b> Anula los abonos de prueba y después la venta (ficha → venta → Anular), y quita el cliente de prueba.</li>
+      <li><b>Dos socios.</b> Pide anular uno de los abonos de prueba y muestra cómo le llega al otro para aprobar; después, Más → Historial de cambios. <span class="di">"Lo que baja una deuda no lo hace uno solo, y todo queda anotado."</span></li>
+      <li><b>Limpiar.</b> Anula los abonos de prueba y después la venta (con la aprobación del otro), y quita el cliente de prueba.</li>
     </ol>
   </div>
   <div class="nota ojo"><b>Antes de usarlo con clientes reales</b>

@@ -121,6 +121,17 @@ async function firmar(p) {
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
   await mas(p, '[data-ir="efectivo"]'); await p.waitForSelector('[data-recibir]'); await foto(p, '33-efectivo');
   await p.click('[data-recibir]'); await espera(400); await foto(p, '34-recibir'); await cerrar(p);
+  // Seguridad entre socios: Franklin pide un descuento; Daniel lo ve en Cobrar, lo aprueba y queda en el historial
+  await cliente(p, 'Jesús Contreras');
+  const vj = p.locator('.venta-cab').first(); if (!(await p.locator('.venta-det [data-accion="descuento"]').count())) await vj.click();
+  await espera(500); await p.click('[data-accion="descuento"]'); await p.fill('#ajMonto', '20'); await p.fill('#ajMotivo', 'Pagó 3 cuotas juntas');
+  await foto(p, '37-pedir'); await p.click('#ajGuardar'); await espera(1500); await cerrar(p);
+  const t3 = await tel(b); const d = t3.p;
+  await entrar(d, 'daniel'); await d.waitForSelector('[data-aprobaciones]'); await foto(d, '38-aviso-aprobar');
+  await d.click('[data-aprobaciones]'); await d.waitForSelector('[data-aprobar]'); await foto(d, '39-aprobaciones');
+  await d.click('[data-aprobar]'); await d.click('#cfSi'); await d.waitForFunction(() => !document.querySelector('[data-aprobar]'));
+  await d.click('.hoja [data-historial]'); await d.waitForFunction(() => /Descuento de/.test(document.body.textContent)); await foto(d, '40-historial');
+  await t3.ctx.close();
   // En la computadora
   const pc = await b.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, locale: 'es-VE', timezoneId: 'America/Caracas' });
   const q = await pc.newPage();

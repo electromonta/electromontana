@@ -130,6 +130,13 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **Salir nunca borra lo "por enviar"** (queda en el teléfono y se envía cuando esa persona vuelve a entrar). Sin señal, salir borra la sesión del teléfono igual (la librería no lo hace sola).
 - Todo sobre respaldos y cómo recuperar: `docs/RESPALDOS.md`. **Pendiente el "dale" de Kinan** para limitar la copia de cada noche (30 días + una por mes); hasta entonces no se borra ninguna.
 
+## Base de datos (migración `006_seguridad.sql`): seguridad entre los socios
+
+- **Doble aprobación:** anular abono, descuento, anular venta y cerrar venta van por `pedir_aprobacion(p, clave)` y los hace `responder_aprobacion` cuando **otro** socio aprueba (tabla `solicitudes`). Solo aprueban usuarios con `puede_aprobar` (franklin y daniel; se pone por SQL, nunca desde la app). Al pedir se hace un ensayo del cambio y se deshace (avisa de una vez si no se puede). `anular_abono`, `ajustar_venta`, `anular_venta` y `cerrar_venta` ya solo responden "necesita aprobación". El recargo es `recargo_venta` (con clave).
+- **Nada se borra ni se esconde:** todas las tablas de `public` tienen disparadores `no_borrar` (DELETE) y `no_vaciar` (TRUNCATE); `auditoria` además `no_cambiar` (UPDATE). El disparador `vigilar` anota en `auditoria` (`directo_insert/update/delete`, `_servicio` con la llave de servicio) todo cambio que no venga de la app (la app escribe solo por funciones, con el rol `authenticated`). Para corregir algo por SQL, el rastro queda: es lo que se quiere.
+- La cuenta de un socio solo la cambia él mismo (`actualizar_usuario` y la función `usuarios` lo revisan). Si un socio olvida la clave: Supabase → Authentication → Users → el usuario → poner clave, y avisarle que la cambie.
+- App: `js/aprobaciones.js` (aviso en Cobrar, Más → Aprobaciones, Más → Historial de cambios).
+
 ## Pruebas (correr antes de cada entrega)
 
 - `supabase/pruebas/correr.sh` → escenarios de la base en un Postgres local (`escenarios.sql`). Todo `ok`.
@@ -141,7 +148,7 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 
 - **2026-10-15 — Entrega 1 (etapa 1) hecha y aplicada a la base real** (migraciones `001_base` y `002_respaldo_diario`, las 47 funciones con la misma huella que las probadas; Edge Function `usuarios` desplegada). Cuentas creadas: `franklin` y `daniel` (dueños, clave temporal que Kinan les pasa; al entrar la cambian). La base no tiene clientes todavía. Detalle en `docs/HISTORIAL.md`.
 - **Falta antes de usarla con clientes reales:** (1) pasar la base a **Pro**; (2) ~~activar GitHub Pages~~ hecho el 2026-10-16; (3) apagar el registro público en Supabase (Authentication → Sign In / Providers → "Allow new users to sign up"); (4) crear al empleado de Pedraza desde Ajustes cuando se sepa su nombre; (5) que revisen las condiciones del contrato (Ajustes → Contrato).
-- Respaldos hechos: ninguno todavía (la base no tiene datos reales).
+- Respaldos hechos: `respaldo_20261016` (antes de la migración 006; la base solo tenía la venta de prueba de Kinan, anulada).
 - **Pedido de Kinan (2026-10-15):** al terminar el sistema completo, hacer una **guía completa de uso** para dársela a Franklin y Daniel y para que Kinan aprenda a mostrarlo.
 - **2026-10-15 — Entrega 2 (etapa 2) hecha y aplicada a la base real** (migración `003_etapa2`, 56 funciones con la misma huella que las probadas): mercancía de las tiendas, venta desde la tienda, notas de cobro y promesas, recordatorios por WhatsApp, reportes.
 - **2026-10-15 — Entrega 3 (etapa 3) hecha y aplicada a la base real** (migración `004_firma`, 58 funciones con la misma huella): contrato firmado en la pantalla, también sin señal.
@@ -152,4 +159,5 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **2026-10-16 — Entrega 7:** copia de seguridad descargable (Ajustes) con aviso semanal, lista de clientes para Excel, pantallas para computadora e iPad horizontal, salir sin perder lo por enviar y cerrar sesión sin señal. Migración `005_copias` aplicada (59 funciones, misma huella). Guía con 18 capítulos.
 - **Usuarios en la base real:** `franklin`, `daniel` (dueños, todavía con clave temporal) y `kinan` (dueño, creado el 2026-10-16 para probar y enseñar; se puede desactivar en Ajustes → Usuarios). Las claves temporales nunca van al repo.
 - **2026-10-16 — Entrega 8:** contrato en PDF (Compartir → WhatsApp o Archivos; en la computadora se descarga; Imprimir queda abajo) y arreglos de la revisión independiente de la app (abrir sin señal con la sesión vencida, cola que espera la sesión, memoria del teléfono que se reabre, copia de seguridad en dos toques en el iPhone).
+- **2026-10-16 — Entrega 9:** seguridad entre los socios (doble aprobación, historial que no se borra, cambios directos anotados) y arreglos de la revisión de la base. Migración `006_seguridad` aplicada (70 funciones, misma huella; respaldo antes en `respaldo_20261016`). Función `usuarios` versión 2.
 - **Sistema completo (etapas 1 a 4 + guía). Lo que falta lo hacen los dueños o Kinan (ver la lista de arriba y `docs/DOMINIO.md`).

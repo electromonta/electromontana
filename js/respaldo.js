@@ -8,7 +8,7 @@ var TABLAS_COPIA = [
   ['config', 'id'], ['usuarios', 'id'], ['metodos_pago', 'id'], ['tasas', 'id'], ['clientes', 'id'],
   ['productos', 'id'], ['producto_costos', 'producto_id'], ['existencias', 'producto_id,sede'], ['movimientos_inventario', 'id'],
   ['ventas', 'id'], ['venta_items', 'id'], ['venta_item_costos', 'item_id'], ['cuotas', 'id'], ['abonos', 'id'],
-  ['entregas', 'id'], ['eventos_venta', 'id'], ['gestiones', 'id'], ['auditoria', 'id']
+  ['entregas', 'id'], ['eventos_venta', 'id'], ['gestiones', 'id'], ['solicitudes', 'id'], ['auditoria', 'id']
 ];
 var DIAS_AVISO_COPIA = 7;
 

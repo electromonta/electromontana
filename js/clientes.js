@@ -278,7 +278,11 @@ var VistaFicha = (function () {
     if (v.reingresada_en) h += '<p class="tenue" style="margin-top:6px">La mercancía volvió a la tienda de ' + esc(nombreSede(v.reingresada_sede)) + ' el ' + esc(fmtFechaAnio(fechaCaracas(v.reingresada_en))) + '.</p>';
     h += '<div id="ev-' + v.id + '" style="margin-top:12px"></div>';
     if (dueno && v.estado !== 'anulada') {
-      h += '<h3 style="margin-top:16px">Cambios (solo dueños)</h3><div class="fila envolver" style="margin-top:8px;gap:8px">' +
+      var pend = solicitudesPendientes().filter(function (s) { return s.venta_id === v.id; });
+      h += '<h3 style="margin-top:16px">Cambios (solo dueños)</h3>' + pend.map(function (s) {
+          return '<button type="button" class="aviso aviso-info" style="width:100%;border:0;text-align:left;margin-top:8px;cursor:pointer" data-aprobaciones>' + icono('reloj') +
+            '<div><b>' + esc(TIPOS_SOLICITUD[s.tipo]) + ':</b> lo pidió ' + esc(nombreUsuario(s.pedida_por)) + ', espera la aprobación de ' + esc(nombreOtroSocio(s.pedida_por)) + '.</div></button>';
+        }).join('') + '<div class="fila envolver" style="margin-top:8px;gap:8px">' +
         (v.estado === 'activa' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="recargo">Recargo</button>' +
           '<button type="button" class="btn btn-sec btn-chico" data-accion="descuento">Descuento</button>' +
           '<button type="button" class="btn btn-sec btn-chico" data-accion="tiempo">Más tiempo</button>' : '') +
@@ -375,6 +379,7 @@ var VistaFicha = (function () {
     }
     if ((b = e.target.closest('[data-resumen]'))) { enviarResumenVenta(ST.ventaPorId.get(Number(b.dataset.resumen))); return; }
     if ((b = e.target.closest('[data-costo]'))) { hojaCosto(Number(b.dataset.costo)); return; }
+    if (e.target.closest('[data-aprobaciones]')) { hojaAprobaciones(); return; }
     if ((b = e.target.closest('[data-accion]'))) {
       var venta = ST.ventaPorId.get(Number(b.closest('[data-venta]').dataset.venta));
       accionVenta(b.dataset.accion, venta);

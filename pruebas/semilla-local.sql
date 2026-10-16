@@ -8,8 +8,8 @@ insert into auth.users (id, email, clave) values
  ('00000000-0000-0000-0000-00000000000a', 'franklin@electromontana.app', 'prueba123'),
  ('00000000-0000-0000-0000-00000000000b', 'daniel@electromontana.app', 'prueba123'),
  ('00000000-0000-0000-0000-00000000000e', 'pedraza@electromontana.app', 'prueba123');
-insert into public.usuarios (id, usuario, nombre, rol, sede, activo, debe_cambiar_clave) values
- ('00000000-0000-0000-0000-00000000000a', 'franklin', 'Franklin', 'dueno', null, true, false),
- ('00000000-0000-0000-0000-00000000000b', 'daniel', 'Daniel', 'dueno', null, true, true),
- ('00000000-0000-0000-0000-00000000000e', 'pedraza', 'José (Pedraza)', 'empleado', 'pedraza', true, false);
+insert into public.usuarios (id, usuario, nombre, rol, sede, activo, debe_cambiar_clave, puede_aprobar) values
+ ('00000000-0000-0000-0000-00000000000a', 'franklin', 'Franklin', 'dueno', null, true, false, true),
+ ('00000000-0000-0000-0000-00000000000b', 'daniel', 'Daniel', 'dueno', null, true, true, true),
+ ('00000000-0000-0000-0000-00000000000e', 'pedraza', 'José (Pedraza)', 'empleado', 'pedraza', true, false, false);
 notify pgrst, 'reload schema';

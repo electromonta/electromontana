@@ -44,3 +44,5 @@ begin
   perform public.registrar_gestion(jsonb_build_object('cliente_id',c6,'tipo','llamada','nota','Dice que se quedó sin trabajo, pidió más tiempo'));
 end $$;
 reset role;
+-- Daniel ya cambió su clave (para las capturas de las aprobaciones); sigue como si fuera por la app
+update public.usuarios set debe_cambiar_clave = false where usuario = 'daniel';

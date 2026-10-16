@@ -1,5 +1,19 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 9 — Seguridad entre los dos socios (2026-10-16)
+
+Pedido de Kinan: que entre los dos dueños todo sea riguroso, que nadie pueda borrar ni cambiar datos sin que quede registrado, y que no se puedan anular abonos así no más.
+
+- **Doble aprobación:** anular un abono, hacer un descuento, anular una venta y cerrar una venta (dejar de cobrar) ahora **los pide un dueño y los aprueba el otro socio**. Hasta que el otro aprueba, no cambia nada. Nadie se aprueba a sí mismo. Solo aprueban las cuentas marcadas como socio (`franklin`, `daniel`); la cuenta `kinan` (soporte) y cualquier dueño nuevo pueden pedir pero no aprobar. Quien pidió puede cancelar mientras nadie responda; el que rechaza escribe por qué.
+- Aviso en **Cobrar** ("Un cambio espera tu aprobación") y **Más → Aprobaciones**.
+- **Historial de cambios** (Más → Historial de cambios, solo dueños): quién cambió qué y cuándo, con lo de antes y lo de después. En la base: la tabla `auditoria` no se puede cambiar, borrar ni vaciar; **ninguna tabla acepta DELETE ni TRUNCATE**; y lo que alguien cambie **directo en la base** (panel de Supabase, SQL, llave de servicio) queda anotado como "Por fuera de la app".
+- La cuenta de un socio solo la cambia él mismo: el otro no le quita el rol, no la desactiva y no le pone clave nueva (la base y la función `usuarios` lo revisan). Si un socio olvida la clave, la pone soporte desde el panel de Supabase.
+- **Arreglos de la revisión independiente de la base:** el recargo lleva clave (con internet lento, tocar Guardar dos veces ya no lo duplica); no se puede devolver al cliente ni anular una venta cuya mercancía ya volvió a la tienda (se contaba dos veces). La tasa del empleado (acepta una tasa de los últimos 8 días) se deja así a propósito, por lo que queda en la cola sin señal; en la app el empleado no puede cambiar la tasa.
+- Base: migración `006_seguridad.sql` (columna `usuarios.puede_aprobar`, tabla `solicitudes`, funciones `pedir_aprobacion`, `responder_aprobacion`, `cancelar_aprobacion`, `recargo_venta`; `anular_abono`, `ajustar_venta`, `anular_venta` y `cerrar_venta` quedan pero ya no lo hacen directo; `devolver_mercancia` y `actualizar_usuario` reemplazadas con la misma firma; 60 disparadores de protección). Función `usuarios` versión 2.
+- **Aplicado a la base real el 2026-10-16:** respaldo antes en `respaldo_20261016` (20 tablas, mismos conteos; sin acceso para la app). Huella de las 70 funciones igual a la probada; nada abierto para `anon`. Prueba en la base real dentro de una transacción que se deshizo: Franklin pide, ni él ni `kinan` pueden aprobar, Daniel aprueba y la deuda vuelve a subir; el recargo repetido no se duplica; borrar está bloqueado; un cambio directo queda anotado.
+- Guía: capítulo nuevo "Seguridad entre los socios" (19 capítulos, 40 capturas). Versión 8 de la app.
+- Pruebas: 267 escenarios de base, 29 de cuentas, 75 del recorrido en teléfono (Franklin pide anular un abono, Daniel lo aprueba desde su teléfono, sale en el historial).
+
 ## Entrega 8 — Contrato en PDF y arreglos de la revisión independiente (2026-10-16)
 
 - **Contrato en PDF para WhatsApp:** el botón del contrato (en la venta guardada y en la ficha: **Contrato PDF**) ya no abre la ventana de imprimir. Arma un PDF tamaño carta con las firmas y en el teléfono abre "Compartir": WhatsApp (el chat del cliente, o el propio para imprimirlo después) o Guardar en Archivos. En la computadora se descarga. **Imprimir** queda abajo como segunda opción. El PDF se arma en el mismo teléfono (`js/pdf.js`, sin librerías): el contrato sin firmar sale aun sin señal; el firmado necesita internet para traer las firmas, salvo que estén en el mismo teléfono por enviar.

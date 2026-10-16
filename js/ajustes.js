@@ -1,7 +1,7 @@
 // Electro Montana — ajustes: tasa, reglas, contrato, usuarios, métodos de pago y este teléfono.
 'use strict';
 
-var VERSION_APP = '7';
+var VERSION_APP = '8';
 
 var VistaAjustes = (function () {
   var raiz = null;
@@ -119,6 +119,8 @@ async function funcionUsuarios(cuerpo) {
 function hojaUsuario(u) {
   var nuevo = !u;
   u = u || { rol: 'empleado', sede: 'pedraza', activo: true };
+  // La cuenta de un socio solo la cambia él mismo (la base y la función de usuarios también lo revisan)
+  var socioAjeno = !nuevo && u.puede_aprobar && u.id !== ST.yo.id;
   var h = abrirHoja({
     titulo: nuevo ? 'Nuevo usuario' : u.nombre,
     html: '<div class="pila">' +
@@ -129,8 +131,10 @@ function hojaUsuario(u) {
         '<button type="button" data-v="dueno"' + (u.rol === 'dueno' ? ' class="activo"' : '') + '>Dueño</button></div></div>' +
       '<div class="campo" id="usSedeCampo"' + (u.rol === 'dueno' ? ' hidden' : '') + '><span>Sede (solo ve los clientes de aquí)</span><div class="seg" id="usSede">' +
         ['pedraza', 'socopo'].map(function (s) { return '<button type="button" data-v="' + s + '"' + (u.sede === s ? ' class="activo"' : '') + '>' + nombreSede(s) + '</button>'; }).join('') + '</div></div>' +
-      (nuevo ? '' : '<label class="casilla"><input type="checkbox" id="usActivo"' + (u.activo ? ' checked' : '') + '> Puede entrar</label>' +
-        '<button type="button" class="btn btn-sec" id="usClaveNueva">' + icono('candado') + 'Ponerle una clave nueva</button>') +
+      (nuevo ? '' : socioAjeno
+        ? '<div class="aviso aviso-info">' + icono('candado') + '<div>' + esc(u.nombre) + ' es socio: aprueba los cambios de dinero. Su rol, su acceso y su clave solo los cambia él mismo (si olvida la clave, habla con soporte).</div></div>'
+        : '<label class="casilla"><input type="checkbox" id="usActivo"' + (u.activo ? ' checked' : '') + '> Puede entrar</label>' +
+          '<button type="button" class="btn btn-sec" id="usClaveNueva">' + icono('candado') + 'Ponerle una clave nueva</button>') +
       '</div>',
     pie: '<button type="button" class="btn btn-ancho" id="usGuardar">' + (nuevo ? 'Crear usuario' : 'Guardar') + '</button>'
   });
@@ -162,7 +166,7 @@ function hojaUsuario(u) {
       await funcionUsuarios({ accion: 'crear', usuario: usuario, nombre: nombre, clave: clave, rol: rol, sede: rol === 'empleado' ? sede : null });
       toast('Usuario creado. Entra con "' + usuario + '" y la clave que pusiste.', 'ok', 6000);
     } else {
-      await rpc('actualizar_usuario', { p_id: u.id, p_nombre: nombre, p_rol: rol, p_sede: rol === 'empleado' ? sede : null, p_activo: h.$('#usActivo').checked });
+      await rpc('actualizar_usuario', { p_id: u.id, p_nombre: nombre, p_rol: rol, p_sede: rol === 'empleado' ? sede : null, p_activo: h.$('#usActivo') ? h.$('#usActivo').checked : u.activo });
       toast('Guardado', 'ok');
     }
     await recargarConfig();

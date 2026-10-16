@@ -214,7 +214,7 @@ function hojaDetalleAbono(filas, alCambiar) {
     pie: '<div class="pila">' + (!a.anulado_en && a.tipo !== 'antes_del_sistema' ? '<button type="button" class="btn btn-ancho" id="daRecibo">' + icono('chat') + 'Enviar recibo por WhatsApp</button>' : '') +
       '<div class="botonera">' +
         (a.comprobante ? '<button type="button" class="btn btn-sec" id="daVerFoto">' + icono('foto') + 'Comprobante</button>' : '<button type="button" class="btn btn-sec" id="daFoto">' + icono('camara') + 'Comprobante</button>') +
-        (esDueno() && !a.anulado_en ? '<button type="button" class="btn btn-sec" id="daAnular" style="color:var(--rojo)">Anular</button>' : '') +
+        (esDueno() && !a.anulado_en && !pendienteDe('anular_abono', { grupo: a.grupo }) ? '<button type="button" class="btn btn-sec" id="daAnular" style="color:var(--rojo)">Pedir anulación</button>' : '') +
       '</div></div>'
   });
   var b = h.$('#daRecibo');
@@ -231,12 +231,14 @@ function hojaDetalleAbono(filas, alCambiar) {
     toast('Foto guardada. Se sube sola.', 'ok'); h.cerrar();
   };
   if ((b = h.$('#daAnular'))) b.onclick = async function () {
-    var motivo = await confirmar({ titulo: 'Anular abono', mensaje: 'El abono de ' + fmtUSD(usd) + ' deja de contar y la deuda vuelve a subir.', pedir: 'Por qué se anula', boton: 'Anular', peligro: true });
+    var clave = nuevaClave();
+    var motivo = await confirmar({ titulo: 'Pedir anulación', pedir: 'Por qué se anula', boton: 'Pedir aprobación', peligro: true,
+      mensajeHtml: '<p>Anular el abono de <b>' + fmtUSD(usd) + '</b> lo tiene que aprobar <b>' + esc(nombreOtroSocio()) + '</b>.</p>' +
+        '<p>Cuando lo apruebe, el abono deja de contar y la deuda vuelve a subir. Hasta entonces no cambia nada.</p>' });
     if (!motivo) return;
     try {
-      await rpc('anular_abono', { p_grupo: a.grupo, p_motivo: motivo });
-      await recargarCliente(c.id);
-      h.cerrar(); toast('Abono anulado', 'ok');
+      await pedirAprobacion({ tipo: 'anular_abono', grupo: a.grupo, motivo: motivo }, clave);
+      h.cerrar();
       if (alCambiar) alCambiar();
       repintar();
     } catch (e) { toast(errMsg(e), 'error'); }

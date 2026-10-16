@@ -6,7 +6,9 @@ Resumen para Kinan y para cualquier sesión futura que tenga que recuperar algo.
 
 | Protección | Qué cubre | Dónde queda | Quién la hace |
 |---|---|---|---|
-| **Nada se borra** | Ventas, abonos, clientes y notas se **anulan** (con quién y por qué), nunca se borran. Todo cambio de dinero queda en `auditoria`. | En la base | La app, siempre |
+| **Nada se borra** | Ventas, abonos, clientes y notas se **anulan** (con quién y por qué), nunca se borran. La base rechaza DELETE y TRUNCATE en todas las tablas (migración `006`). | En la base | La base, siempre |
+| **Historial que no se borra** | `auditoria` guarda cada cambio con quién y cuándo; no se puede cambiar ni borrar. Lo que alguien cambie directo en la base (por fuera de la app) también queda anotado. | En la base | La base, siempre |
+| **Doble aprobación** | Anular un abono, descuento, anular o cerrar una venta los aprueba el otro socio (`solicitudes`). | En la base | Los socios |
 | **Cola del teléfono** | Lo que se registra sin señal se guarda en el teléfono y se envía solo, sin repetirse. Salir del usuario **no** lo borra. | En el teléfono | La app, siempre |
 | **Copia de cada noche** | Una copia de todas las tablas (y la lista de fotos y usuarios) cada día a las 2:30 a. m. de Venezuela. Sirve para deshacer un error de un día. | Dentro de la misma base: `respaldo_diario.copias` | Automática (`pg_cron`, migración `002`) |
 | **Copia descargada** | Archivo `.json` con **todas las tablas** que ve un dueño. Queda **fuera de Supabase** (teléfono, computadora, Drive, WhatsApp). La app avisa si pasa una semana sin bajarla. | Donde la guarde el dueño | Un dueño, desde Ajustes → Copia de seguridad (migración `005`) |

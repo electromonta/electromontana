@@ -488,6 +488,51 @@ async function tomarFoto(p, selector) {
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
   revisar('lo de antes de salir se envió al volver', sql("select count(*) from abonos") === String(Number(antesSalir) + 1));
 
+  // Seguridad entre socios: Franklin pide anular un abono; no cambia nada hasta que Daniel lo aprueba desde su teléfono
+  await p.click('#navTabs [data-ir="clientes"]');
+  await p.click('.item:has-text("Ana Pérez")');
+  await p.waitForSelector('.ficha-cab');
+  await p.waitForSelector('[data-grupo]', { timeout: 15000 });
+  const grupoAna = await p.locator('[data-grupo]').first().getAttribute('data-grupo');
+  const saldoAntes = sql("select sum(saldo) from ventas where cliente_id = (select id from clientes where nombre = 'Ana Pérez') and estado <> 'anulada'");
+  await p.locator('[data-grupo]').first().click();
+  await p.click('#daAnular');
+  await p.waitForSelector('#cfValor');
+  revisar('anular pide la aprobación del otro socio', (await p.textContent('.hoja:has(#cfValor)')).includes('Daniel'));
+  await p.fill('#cfValor', 'Lo anoté dos veces');
+  await p.click('#cfSi');
+  await p.waitForTimeout(1500);
+  revisar('pedido guardado; el abono sigue vivo', sql("select count(*) from solicitudes where estado = 'pendiente' and tipo = 'anular_abono'") === '1' &&
+    sql("select count(*) from abonos where grupo = '" + grupoAna + "' and anulado_en is null") !== '0');
+  await cerrarHojas(p);
+  const tDaniel = await nuevoTelefono(b);
+  const d = tDaniel.p;
+  await d.goto(URL_APP);   // Daniel ya cambió su clave más arriba
+  await d.fill('#loginUsuario', 'daniel');
+  await d.fill('#loginClave', 'nueva123');
+  await d.click('#btnEntrar');
+  await d.waitForSelector('#app:not([hidden])');
+  await d.waitForSelector('[data-aprobaciones]', { timeout: 15000 });
+  revisar('Daniel ve el aviso en Cobrar', (await d.textContent('[data-aprobaciones]')).includes('espera tu aprobación'));
+  await d.click('[data-aprobaciones]');
+  await d.waitForSelector('[data-aprobar]');
+  await foto(d, '25-aprobaciones');
+  revisar('lo que pidió Franklin, con el motivo', (await d.textContent('.hoja')).includes('Lo anoté dos veces') && (await d.textContent('.hoja')).includes('Franklin'));
+  await d.click('[data-aprobar]');
+  await d.click('#cfSi');
+  await d.waitForFunction(() => !document.querySelector('[data-aprobar]'), null, { timeout: 15000 });
+  revisar('aprobado: el abono quedó anulado y la deuda subió', sql("select count(*) from abonos where grupo = '" + grupoAna + "' and anulado_en is null") === '0' &&
+    Number(sql("select sum(saldo) from ventas where cliente_id = (select id from clientes where nombre = 'Ana Pérez') and estado <> 'anulada'")) > Number(saldoAntes) &&
+    sql("select estado || '/' || (select usuario from usuarios where id = resuelta_por) from solicitudes where tipo = 'anular_abono'") === 'aprobada/daniel');
+  await d.click('.hoja [data-historial]');
+  await d.waitForSelector('.hoja h2:has-text("Historial de cambios")');
+  await d.waitForFunction(() => /Anuló un abono/.test(document.body.textContent), null, { timeout: 15000 });
+  await foto(d, '26-historial');
+  const txtHist = await d.textContent('.hoja:has(h2:has-text("Historial"))');
+  revisar('historial: quién pidió, quién aprobó y la anulación', txtHist.includes('Anuló un abono') && txtHist.includes('Pidió: anular un abono') && txtHist.includes('Aprobó: anular un abono'));
+  revisar('historial: el cambio hecho por fuera de la app también sale', txtHist.includes('Cambio hecho por fuera de la app'));
+  await tDaniel.ctx.close();
+
   // Sin señal y con el permiso de la sesión vencido (la app estuvo cerrada más de 1 hora): abre igual con
   // lo del teléfono, guarda en la cola, y al volver la señal renueva la sesión y envía.
   const antesVencida = sql("select count(*) from abonos");

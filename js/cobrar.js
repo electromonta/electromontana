@@ -62,7 +62,7 @@ var VistaCobrar = (function () {
     proximos.sort(function (a, b) { return a.r.proxima.fecha < b.r.proxima.fecha ? -1 : 1; });
 
     // Avisos
-    var av = '';
+    var av = esDueno() ? htmlAvisoAprobaciones() : '';
     if (esDueno() && !tasaDeHoy()) av += '<button type="button" class="aviso aviso-ambar" style="width:100%;border:0;text-align:left;margin-bottom:12px;cursor:pointer" data-tasa>' + icono('alerta') + '<div>Todavía no se ha puesto la tasa de hoy. Toca aquí para ponerla.</div></button>';
     if (tocaCopia()) av += '<button type="button" class="aviso aviso-ambar" style="width:100%;border:0;text-align:left;margin-bottom:12px;cursor:pointer" data-ir-copia>' + icono('nube') +
       '<div>' + (diasSinCopia() == null ? 'Todavía no se ha descargado una copia de seguridad.' : 'Hace ' + plural(diasSinCopia(), 'día', 'días') + ' que no se descarga una copia de seguridad.') +
@@ -139,6 +139,7 @@ var VistaCobrar = (function () {
     if ((b = e.target.closest('[data-nota]'))) { hojaGestion(Number(b.dataset.nota)); return; }
     if (e.target.closest('[data-tasa]')) { hojaTasa(); return; }
     if (e.target.closest('[data-ir-copia]')) { ir('ajustes', 'copia'); return; }
+    if (e.target.closest('[data-aprobaciones]')) { hojaAprobaciones(); return; }
     if (e.target.closest('[data-actualizar]')) { actualizarTodo(true).then(cargarCobradoHoy); return; }
     if (e.target.closest('[data-ir-vender]')) ir('vender');
   }
