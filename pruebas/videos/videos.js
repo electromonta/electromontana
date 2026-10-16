@@ -104,6 +104,7 @@ const VIDEOS = [
     await v.tocar('#navTabs [data-ir="clientes"]', { despues: 900 });
     await v.decir('En <b>Clientes</b>, toca <b>Nuevo cliente</b>.', 800);
     await v.tocar('[data-nuevo]', { despues: 900 });
+    await v.acercar('#fNombre', 1.6, 900);
     await v.decir('Solo el nombre es obligatorio, pero llena todo lo que puedas.', 300);
     await v.escribir('#fNombre', 'Daniela Torres');
     await v.escribir('#fCedula', '23456789');
@@ -113,15 +114,18 @@ const VIDEOS = [
     await v.tocar('#fSede [data-v="socopo"]');
     await v.alejar(700);
     await v.decir('Dónde vive: sector, dirección y un punto de referencia.', 300);
+    await v.acercar('#fDireccion', 1.5, 900);
     await v.escribir('#fSector', 'El Progreso');
     await v.escribir('#fDireccion', 'Calle 9, casa 3');
     await v.escribir('#fReferencia', 'Frente a la cancha');
     await v.escribir('#fTrabajo', 'Enfermera');
     await v.decir('El <b>fiador</b>: quien paga si el cliente no paga.', 300);
+    await v.acercar('#fFiNombre', 1.6, 900);
     await v.escribir('#fFiNombre', 'Luis Torres');
     await v.escribir('#fFiCedula', '9876001');
     await v.escribir('#fFiTel', '0424-5551212');
     await v.soltar();
+    await v.alejar(700);
     await v.decir('Toma la foto de la <b>cédula</b> con la cámara.', 300);
     await v.foto('[data-tomar="cedula"]', path.join(RAIZ, 'img', 'icono-512.png'));
     await v.decir('Estando en su casa, guarda la <b>ubicación</b> para encontrarla en el mapa.', 300);
@@ -159,8 +163,8 @@ const VIDEOS = [
     await v.decir('Si la pagó en el momento, elige cómo pagó.', 300);
     await v.tocar('#vMetodos [data-m="1"]', { despues: 1400 });
     await v.alejar(700);
-    await v.acercar('#vCuotas', 1.35);
     await v.decir('<b>Cuotas</b>: semanal, quincenal o mensual, y cuántas.', 300);
+    await v.acercar('#vCuotas', 1.35);
     await v.tocar('#vFrec [data-f="semanal"]');
     await v.escribir('#vNumero', '6', { lento: true });
     await v.soltar();
