@@ -20,15 +20,26 @@ var TABS = [
   { k: 'cobros', icono: 'cobros', nombre: 'Cobros' }
 ];
 
+// En pantallas anchas (computadora, iPad horizontal) el menú va a la izquierda y muestra también lo de "Más"
+var PANTALLA_ANCHA = window.matchMedia ? window.matchMedia('(min-width: 1024px)') : { matches: false };
+if (PANTALLA_ANCHA.addEventListener) PANTALLA_ANCHA.addEventListener('change', function () { if (ST.yo) pintarNav(); });
+else if (PANTALLA_ANCHA.addListener) PANTALLA_ANCHA.addListener(function () { if (ST.yo) pintarNav(); });
+
 function pintarNav() {
   var actual = (VISTAS[_vistaNombre] && VISTAS[_vistaNombre].padre) || _vistaNombre;
-  var enMas = TABS.every(function (t) { return t.k !== actual; });
+  var ancha = PANTALLA_ANCHA.matches && ST.yo;
+  var extra = ancha ? [['mercancia', 'caja', 'Mercancía'], esDueno() ? ['reportes', 'grafica', 'Reportes'] : null,
+    ['efectivo', 'tienda', esDueno() ? 'Efectivo de Pedraza' : 'Mi efectivo'], ['ajustes', 'ajustes', 'Ajustes']].filter(Boolean) : [];
+  var enMas = TABS.every(function (t) { return t.k !== actual; }) && extra.every(function (t) { return t[0] !== actual; });
   $('#navTabs').innerHTML = '<div class="tabs">' + TABS.map(function (t) {
     if (t.k === 'vender') {
       return '<button type="button" class="tab-vender" data-ir="vender"><span class="burbuja">' + icono('vender') + '</span><span>Vender</span></button>';
     }
     return '<button type="button" data-ir="' + t.k + '"' + (t.k === actual ? ' class="activo"' : '') + '>' + icono(t.icono) + '<span>' + t.nombre + '</span></button>';
-  }).join('') + '<button type="button" data-mas' + (enMas ? ' class="activo"' : '') + '>' + icono('menu') + '<span>Más</span></button></div>';
+  }).join('') + extra.map(function (t) {
+    return '<button type="button" class="tab-extra' + (t[0] === actual ? ' activo' : '') + '" data-ir="' + t[0] + '">' + icono(t[1]) + '<span>' + t[2] + '</span></button>';
+  }).join('') + '<button type="button" data-mas' + (enMas ? ' class="activo"' : '') + '>' + icono('menu') + '<span>Más</span></button></div>' +
+    (ancha ? '<div class="menu-pie">' + esc(ST.yo.nombre) + ' · ' + (esDueno() ? 'Dueño' : 'Empleado de ' + nombreSede(ST.yo.sede)) + '</div>' : '');
 }
 
 function pintarTasa() {
@@ -283,6 +294,8 @@ async function entrar() {
 }
 
 function mostrarApp() {
+  // Pide al navegador que no borre lo guardado en el teléfono (cola por enviar y copia de los datos)
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) { /* nada */ }
   $('#pantallaLogin').hidden = true;
   $('#app').hidden = false;
   pintarTasa(); pintarCola();
@@ -291,15 +304,20 @@ function mostrarApp() {
 }
 
 async function salir() {
+  // Lo que está por enviar NUNCA se borra al salir: queda en el teléfono y se envía cuando
+  // esa misma persona vuelva a entrar y haya señal.
   var pend = Cola.mias();
   if (pend.length && !(await confirmar({
-    titulo: 'Salir', peligro: true, boton: 'Salir y perderlas',
-    mensaje: 'Hay ' + plural(pend.length, 'operación', 'operaciones') + ' sin enviar en este teléfono. Si sales, se pierden. Mejor busca señal primero.'
+    titulo: 'Salir', boton: 'Salir igual',
+    mensaje: 'Hay ' + plural(pend.length, 'operación', 'operaciones') + ' sin enviar en este teléfono. No se pierden: quedan guardadas aquí y se envían solas cuando vuelvas a entrar con tu usuario y haya señal. Lo mejor es buscar señal antes de salir.'
   }))) return;
   var uid = ST.yo && ST.yo.id;
-  for (var i = 0; i < pend.length; i++) await Cola.quitar(pend[i].clave);
   try { if (uid) await BD.del('cache', 'datos:' + uid); } catch (e) { /* nada */ }
-  await sb.auth.signOut();
+  // Sin señal, la librería no borra la sesión (intenta avisar al servidor y se rinde): se borra aquí igual.
+  if (navigator.onLine !== false) {
+    try { await Promise.race([sb.auth.signOut(), new Promise(function (ok) { setTimeout(ok, 6000); })]); } catch (e) { /* sin señal */ }
+  }
+  try { localStorage.removeItem('electromontana-sesion'); localStorage.removeItem('electromontana-sesion-code-verifier'); } catch (e) { /* nada */ }
   ST.yo = null;
   location.hash = '';
   location.reload();

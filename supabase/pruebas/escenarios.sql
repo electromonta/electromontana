@@ -364,3 +364,17 @@ set role anon;
 select t('anónimo no firma', $q$ public.firmar_venta('{}') $q$, 'permission denied');
 reset role;
 select igual('cuadre al final de la etapa 3', $q$ public.cuadre() $q$, 'todo cuadra');
+
+-- ===================== Copia de seguridad descargada =====================
+select como('E'); set role authenticated;
+select t('el empleado no anota copias', $q$ public.anotar_copia('{"clientes":3}') $q$, 'Solo los dueños');
+reset role;
+select como('F'); set role authenticated;
+select t('el dueño anota la copia', $q$ public.anotar_copia('{"clientes":3,"ventas":5}') $q$);
+select igual('queda la fecha y quién', $q$ (select (ultima_copia_en is not null)::text || '/' || (ultima_copia_por = auth.uid())::text from public.config) $q$, 'true/true');
+select igual('y en la auditoría', $q$ (select despues->>'ventas' from public.auditoria where accion = 'descargar_copia' order by id desc limit 1) $q$, '5');
+select t('resumen raro no rompe', $q$ public.anotar_copia('"x"') $q$);
+reset role;
+set role anon;
+select t('anónimo no anota copias', $q$ public.anotar_copia('{}') $q$, 'permission denied');
+reset role;

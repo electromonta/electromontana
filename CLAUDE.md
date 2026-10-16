@@ -36,7 +36,8 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 ## Stack
 
 - **Frontend:** HTML/CSS/JavaScript puro, sin frameworks, sin build. `index.html` + `css/app.css` + `js/` (un archivo por sección) + `js/config.js` (URL y key publishable). supabase-js va copiado en `js/vendor/` y las letras en `fonts/` (para que la app abra sin internet).
-  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `firma.js` (firma en la pantalla), `entregas.js` (efectivo de Pedraza), `ajustes.js`, `notas.js` (notas de cobro, promesas y recordatorios), `mercancia.js` (existencia de las tiendas), `reportes.js` (solo dueños).
+  - `cuentas.js` calendario de cuotas y atraso (solo para mostrar; también corre en node) · `base.js` utilidades · `datos.js` memoria, copia en el teléfono (IndexedDB) y **cola de envío** · `app.js` arranque y navegación · `cobrar.js`, `clientes.js` (lista, ficha, formulario), `vender.js` (venta y "Ya debía"), `abonos.js` (abono, recibo, Cobros), `ventas.js` (cambios de dueño), `contrato.js` (contrato imprimible y resumen), `firma.js` (firma en la pantalla), `entregas.js` (efectivo de Pedraza), `ajustes.js`, `notas.js` (notas de cobro, promesas y recordatorios), `mercancia.js` (existencia de las tiendas), `reportes.js` (solo dueños), `respaldo.js` (copia de seguridad descargable).
+- **Pantallas anchas (≥ 1024 px: computadora, iPad horizontal):** menú a la izquierda con lo de "Más" a la vista (`pintarNav` en `app.js`), contenido hasta 1180 px, listas en dos columnas y la ficha del cliente en dos partes (al final de `css/app.css`). Teléfono e iPad vertical no cambian.
 - **Sin señal:** lo que se registra se guarda primero en la cola del teléfono y `Cola.procesar()` lo manda cuando hay internet (al volver la señal, cada 20 s y al abrir la app). Cada operación lleva su `clave`: si se reintenta, la base devuelve el mismo resultado sin repetir. `sw.js` guarda solo los archivos de la app (nunca datos). La app abre con la última copia de los datos guardada en el teléfono.
 - **Backend:** Supabase (PostgreSQL + Auth + Storage). Migraciones numeradas en `supabase/migrations/`, aplicadas con `apply_migration`. Pruebas de negocio en `supabase/pruebas/`.
 - Sesión con `storageKey: 'electromontana-sesion'`.
@@ -123,6 +124,12 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - Firma en pantalla: `ventas.firma_cliente`, `firma_fiador` (rutas `cli/<cliente>/firma-….jpg` en el bucket `fotos`), `firmado_en`, `firmado_por` y `contrato_firmado` (copia fija: cliente, fiador, items, cuotas vigentes y condiciones tal como se leyeron). Se firma con `firmar_venta` (clave; acepta `venta_clave` si la venta todavía estaba en la cola). En el teléfono es la operación de cola `firma` (sube las dos imágenes y luego llama la función). Una venta firmada solo la vuelve a firmar un dueño (`reemplazar`), con lo de antes en `auditoria`.
 - El contrato de una venta firmada se dibuja con `contrato_firmado`, no con los datos de hoy.
 
+## Base de datos (migración `005_copias.sql`) y protección de datos
+
+- `config.ultima_copia_en` / `ultima_copia_por` y la función `anotar_copia` (solo dueños; deja rastro en `auditoria`). La app (`respaldo.js`) arma un `.json` con todas las tablas que ve un dueño y una lista `.csv` para Excel; en el teléfono usa "Compartir", en la computadora descarga. Si hay clientes y pasan 7 días sin copia, Cobrar avisa a los dueños.
+- **Salir nunca borra lo "por enviar"** (queda en el teléfono y se envía cuando esa persona vuelve a entrar). Sin señal, salir borra la sesión del teléfono igual (la librería no lo hace sola).
+- Todo sobre respaldos y cómo recuperar: `docs/RESPALDOS.md`. **Pendiente el "dale" de Kinan** para limitar la copia de cada noche (30 días + una por mes); hasta entonces no se borra ninguna.
+
 ## Pruebas (correr antes de cada entrega)
 
 - `supabase/pruebas/correr.sh` → escenarios de la base en un Postgres local (`escenarios.sql`). Todo `ok`.
@@ -142,4 +149,6 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **2026-10-16 — Entrega 5:** guía completa de uso (`guia.html`, 17 capítulos con 34 capturas y el recorrido de 10 minutos para que Kinan lo muestre). Arreglo: con atraso, la ficha y el recibo muestran la siguiente cuota que viene (antes salía una fecha pasada).
 - **2026-10-16 — Entrega 6:** arreglo en "Recordar por WhatsApp" (quedaba "Enviar" un momento después de enviar). Videos cortos de la guía: `pruebas/videos/` (`NODE_PATH=/opt/node22/lib/node_modules node pruebas/videos/videos.js <carpeta> [números]`; necesita ffmpeg). Los MP4 no van al repo.
 - **2026-10-16 — GitHub Pages activado** por la cuenta `electromonta` (rama `main`, raíz, HTTPS). La app vive en **https://electromonta.github.io/electromontana/** y la guía en `.../guia.html`. Cada push a `main` se publica solo en 1 o 2 minutos (Actions → "pages build and deployment"). Comprobado desde la base con `pg_net`: todo responde 200.
-- **Sistema completo (etapas 1 a 4 + guía).** Lo que falta lo hacen los dueños o Kinan (ver la lista de arriba y `docs/DOMINIO.md`).
+- **2026-10-16 — Entrega 7:** copia de seguridad descargable (Ajustes) con aviso semanal, lista de clientes para Excel, pantallas para computadora e iPad horizontal, salir sin perder lo por enviar y cerrar sesión sin señal. Migración `005_copias` aplicada (59 funciones, misma huella). Guía con 18 capítulos.
+- **Usuarios en la base real:** `franklin`, `daniel` (dueños, todavía con clave temporal) y `kinan` (dueño, creado el 2026-10-16 para probar y enseñar; se puede desactivar en Ajustes → Usuarios). Las claves temporales nunca van al repo.
+- **Sistema completo (etapas 1 a 4 + guía). Lo que falta lo hacen los dueños o Kinan (ver la lista de arriba y `docs/DOMINIO.md`).

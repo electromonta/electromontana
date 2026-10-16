@@ -102,6 +102,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     <li><a href="#cuentas">Cobros y efectivo de Pedraza</a></li>
     <li><a href="#reportes">Reportes</a></li>
     <li><a href="#ajustes">Ajustes</a></li>
+    <li><a href="#copias">Copias de seguridad</a></li>
     <li><a href="#senal">Sin señal</a></li>
     <li><a href="#empleado">Lo que puede hacer el empleado</a></li>
     <li><a href="#preguntas">Preguntas frecuentes</a></li>
@@ -128,6 +129,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li><b>Android:</b> abre la dirección en Chrome → menú de los tres puntos → <b>Instalar app</b>.</li>
       </ul>
       <p>Queda un ícono con la montaña y el rayo. Ábrela siempre desde ese ícono.</p>
+      <p><b>En la computadora o el iPad:</b> se abre la misma dirección en el navegador (Chrome, Safari o Edge) y se entra con el mismo usuario. En pantalla ancha el menú va a la izquierda y las listas salen en dos columnas.</p>
       <h3>Cómo está armada</h3>
       <ul>
         <li><b>Abajo</b> están las cinco partes: <b>Cobrar</b> (la de inicio), <b>Clientes</b>, <b>Vender</b> (el botón redondo cobre), <b>Cobros</b> y <b>Más</b>.</li>
@@ -429,6 +431,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li><b>Condiciones del contrato:</b> una por línea. Revísenlas antes de empezar. Se pueden volver a las de fábrica.</li>
         <li><b>Usuarios:</b> crear al empleado (usuario, nombre y clave temporal), cambiarle la clave o desactivarlo.</li>
         <li><b>Métodos de pago:</b> quitar o agregar formas de pago.</li>
+        <li><b>Copia de seguridad:</b> descargar todos los datos (ver el capítulo siguiente).</li>
         <li><b>Mi cuenta:</b> cambiar la clave.</li>
         <li><b>Este teléfono:</b> si hay algo por enviar y la versión de la app.</li>
       </ul>
@@ -438,8 +441,30 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
   </div>
 </section>
 
+<section class="cap" id="copias">
+  <h2><span class="n">14</span>Copias de seguridad</h2>
+  <p class="intro">Para que nunca se pierdan los datos. Hay dos copias: una que el sistema hace solo cada noche, y otra que ustedes descargan una vez por semana.</p>
+  <div class="bloque">
+    <div>
+      <h3>La copia de cada noche (automática)</h3>
+      <p>Todas las noches a las 2:30 a. m. el sistema guarda solo una copia de todos los datos. No hay que tocar nada. Sirve para recuperar lo de un día anterior si alguien se equivoca.</p>
+      <h3>La copia de la semana (la descargan ustedes)</h3>
+      <ol class="pasos">
+        <li>Entra a <b>Más → Ajustes → Copia de seguridad</b>. (Si pasa una semana sin copia, en Cobrar sale un aviso amarillo: tócalo y te lleva ahí.)</li>
+        <li>Toca <span class="boton">Descargar copia completa</span>. En el teléfono se abre "Compartir": guárdala en <b>Archivos</b>, en <b>Drive</b> o mándatela por <b>WhatsApp</b>. En la computadora se descarga sola.</li>
+        <li>Listo. La app anota la fecha y quién la hizo.</li>
+      </ol>
+      <p>Esta copia queda <b>fuera del sistema</b>: si algún día le pasara algo a la base, con ese archivo se recupera todo.</p>
+      <p><span class="boton">Lista de clientes y saldos (Excel)</span> baja una lista con cada cliente, lo que debe, lo atrasado y su próxima cuota, para abrir en Excel o en Google Sheets.</p>
+      <div class="nota dato"><b>Dato</b>Las fotos (cédulas, contratos y firmas) quedan guardadas aparte en el almacenamiento del sistema; la copia guarda dónde está cada una.</div>
+    </div>
+    <figure class="tel"><img src="guia/35-copia.jpg" alt="Sección de copia de seguridad en Ajustes" width="780" height="1688" loading="lazy"><figcaption>Ajustes → Copia de seguridad</figcaption></figure>
+  </div>
+  <figure style="margin:18px 0 0;max-width:860px"><img src="guia/36-computadora.jpg" alt="La app en la computadora, con el menú a la izquierda" width="1920" height="1200" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid var(--borde);box-shadow:0 6px 18px rgba(23,43,77,.12)"><figcaption style="font-size:14px;color:var(--tenue);margin-top:8px">Así se ve en la computadora: el menú a la izquierda y la ficha del cliente en dos partes.</figcaption></figure>
+</section>
+
 <section class="cap" id="senal">
-  <h2><span class="n">14</span>Sin señal</h2>
+  <h2><span class="n">15</span>Sin señal</h2>
   <p class="intro">En la calle la señal es lenta o se va. La app está hecha para eso: <b>nada de lo que se registra se pierde</b>.</p>
   <div class="bloque dos-fotos">
     <div>
@@ -450,7 +475,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li>Tocando "por enviar" se ve la lista y el botón <span class="boton">Enviar ahora</span>.</li>
       </ul>
       <div class="nota ojo"><b>Importante</b>Si arriba dice <b>"con error"</b>, la base rechazó algo (por ejemplo, una referencia repetida). Toca el aviso: se puede <b>Reintentar</b>, <b>Guardar igual</b> o <b>Descartar</b>. Los abonos guardados sin señal todavía no se restan de la deuda hasta que se envían.</div>
-      <div class="nota ojo"><b>Importante</b>No borres la app ni cambies de teléfono si dice "por enviar". Primero espera a que se envíe todo.</div>
+      <div class="nota ojo"><b>Importante</b>No borres la app ni cambies de teléfono si dice "por enviar". Primero espera a que se envíe todo. Si sales de tu usuario (Más → Salir), lo que está por enviar <b>no se pierde</b>: se envía cuando vuelvas a entrar con tu usuario.</div>
     </div>
     <figure class="tel"><img src="guia/31-sin-senal.jpg" alt="Abono guardado en el teléfono sin señal" width="780" height="1688" loading="lazy"><figcaption>Sin señal: queda en el teléfono</figcaption></figure>
     <figure class="tel"><img src="guia/32-por-enviar.jpg" alt="Aviso de un abono por enviar" width="780" height="1688" loading="lazy"><figcaption>"1 por enviar" hasta que vuelve la señal</figcaption></figure>
@@ -458,7 +483,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="empleado">
-  <h2><span class="n">15</span>Lo que puede hacer el empleado de Pedraza</h2>
+  <h2><span class="n">16</span>Lo que puede hacer el empleado de Pedraza</h2>
   <div class="bloque">
     <div>
       <p>Entra con su propio usuario y solo ve los <b>clientes de Pedraza</b>.</p>
@@ -482,7 +507,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="preguntas">
-  <h2><span class="n">16</span>Preguntas frecuentes</h2>
+  <h2><span class="n">17</span>Preguntas frecuentes</h2>
   <h3>Me equivoqué en un abono. ¿Lo borro?</h3>
   <p>Nada se borra. Un dueño lo <b>anula</b> (ficha → Abonos → tocar el abono → Anular) y se registra de nuevo bien. La deuda se recalcula sola.</p>
   <h3>Un cliente pagó en bolívares y la tasa de hoy no está puesta.</h3>
@@ -500,7 +525,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="mostrar">
-  <h2><span class="n">17</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
+  <h2><span class="n">18</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
   <p class="intro">Un recorrido para enseñarlo a Franklin y Daniel con un cliente de prueba. Al final se anula lo que se hizo.</p>
   <div class="guion">
     <ol class="pasos">
@@ -518,10 +543,10 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     </ol>
   </div>
   <div class="nota ojo"><b>Antes de usarlo con clientes reales</b>
-    1) Pasar la base de datos al plan con respaldo automático. 2) Que el dueño del repositorio active la publicación (ver <code>docs/DOMINIO.md</code>). 3) Apagar el registro público en Supabase. 4) Crear al empleado de Pedraza en Ajustes → Usuarios. 5) Que Franklin y Daniel revisen las condiciones del contrato en Ajustes.
+    1) Pasar la base de datos al plan Pro de Supabase (respaldo automático diario y nunca se pausa). 2) Apagar el registro público en Supabase. 3) Crear al empleado de Pedraza en Ajustes → Usuarios. 4) Que Franklin y Daniel revisen las condiciones del contrato en Ajustes. 5) Descargar la primera copia de seguridad cuando ya estén los clientes.
   </div>
 </section>
 
 </div></main>
 
-<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 5 de la app (octubre de 2026).</div></footer>
+<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 6 de la app (octubre de 2026).</div></footer>

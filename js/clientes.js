@@ -100,6 +100,7 @@ var VistaFicha = (function () {
 
   function mostrar(c, arg) {
     raiz = document.createElement('div');
+    raiz.className = 'ficha';
     c.appendChild(raiz);
     abonos = null; abonosError = null;
     if (String(arg).indexOf('c-') === 0) { mostrarPendiente(arg.slice(2)); return; }

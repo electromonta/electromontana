@@ -1,5 +1,16 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 7 — Copias de seguridad y pantallas grandes (2026-10-16)
+
+- **Copia de seguridad descargable** (Más → Ajustes → Copia de seguridad, solo dueños): un archivo con **todos** los datos que queda fuera del sistema (en el teléfono se abre "Compartir": Archivos, Drive o WhatsApp; en la computadora se descarga). La app anota la fecha y quién la hizo, y si hay clientes y pasan 7 días sin copia, Cobrar avisa. También **lista de clientes y saldos** para Excel o Google Sheets.
+- **Salir del usuario ya no borra** lo que está por enviar: queda en el teléfono y se envía cuando esa persona vuelve a entrar. Y sin señal, salir ahora sí cierra la sesión del teléfono (antes la dejaba abierta sin avisar).
+- **Computadora e iPad horizontal:** menú a la izquierda (con Mercancía, Reportes, Efectivo y Ajustes a la vista), listas en dos columnas, ficha del cliente en dos partes y reportes en dos columnas. El teléfono no cambia.
+- `docs/RESPALDOS.md`: qué protege los datos, límites del plan gratis y cómo recuperar.
+- Base: migración `005_copias.sql` (dos columnas en `config` y la función `anotar_copia`), aplicada a la base real; huella de las 59 funciones igual a la probada.
+- Guía: capítulo nuevo "Copias de seguridad" y cómo se ve en la computadora (18 capítulos, 36 capturas).
+- Pruebas: 212 escenarios de base, 29 de cuentas, 64 del recorrido en teléfono (copia completa, lista para Excel, salir con algo por enviar).
+- Cuenta `kinan` (dueño) creada en la base real para probar y enseñar el sistema.
+
 ## Publicación (2026-10-16)
 
 - La cuenta `electromonta` activó GitHub Pages (rama `main`, carpeta raíz, HTTPS obligatorio). La app quedó en **https://electromonta.github.io/electromontana/**. Primera publicación correcta; la página, los archivos de la app (versión 5), la guía y las letras responden bien.

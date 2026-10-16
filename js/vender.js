@@ -19,6 +19,7 @@ var VistaVender = (function () {
 
   function mostrar(c, arg) {
     raiz = document.createElement('div');
+    raiz.className = 'formulario';
     c.appendChild(raiz);
     F = nuevoFormulario();
     if (arg) ponerCliente(arg);

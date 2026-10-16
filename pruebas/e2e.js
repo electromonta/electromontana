@@ -436,6 +436,49 @@ async function tomarFoto(p, selector) {
   revisar('sigue Enviado después de guardarse', await p.locator('.hoja .etiqueta.e-verde').count() === antesEnv + 1);
   await cerrarHojas(p);
 
+  // Copia de seguridad (dueño): aviso en Cobrar, archivo completo y lista para Excel
+  await p.click('#navTabs [data-ir="cobrar"]');
+  await p.waitForTimeout(500);
+  revisar('aviso de copia pendiente', await p.locator('[data-ir-copia]').count() === 1);
+  await p.click('[data-ir-copia]');
+  await p.waitForSelector('#ajCopia');
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('#ajCopia')]);
+  const copia = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
+  revisar('copia completa con todo', copia.sistema === 'Electro Montana' && copia.datos.clientes.length === Number(sql("select count(*) from clientes")) &&
+    copia.datos.abonos.length === Number(sql("select count(*) from abonos")) && copia.datos.cuotas.length === Number(sql("select count(*) from cuotas")) &&
+    /^electromontana-copia-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()), JSON.stringify(copia.conteo));
+  await p.waitForTimeout(800);
+  revisar('copia anotada en la base', sql("select (ultima_copia_en is not null)::text from config") === 'true');
+  const [dl2] = await Promise.all([p.waitForEvent('download', { timeout: 15000 }), p.click('#ajCsv')]);
+  const csv = fs.readFileSync(await dl2.path(), 'utf8');
+  revisar('lista para Excel', csv.includes('Ana Pérez') && csv.split('\r\n')[0].includes('Debe $;Atrasado $'));
+  await p.click('#navTabs [data-ir="cobrar"]');
+  await p.waitForTimeout(500);
+  revisar('ya no pide copia', await p.locator('[data-ir-copia]').count() === 0);
+
+  // Salir con algo por enviar: no se pierde; se envía al volver a entrar
+  const antesSalir = sql("select count(*) from abonos");
+  await t2.ctx.setOffline(true);
+  await e.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await e.click('#navTabs [data-ir="clientes"]');
+  await e.click('.item:has-text("Luis Rojas")');
+  await e.click('.ficha-cab [data-abonar]');
+  await e.click('#abMetodos [data-m="1"]');
+  await e.fill('#abMonto', '3');
+  await e.click('#abGuardar');
+  await e.waitForSelector('.hoja h2:has-text("Guardado en el teléfono")', { timeout: 20000 });
+  await cerrarHojas(e);
+  await e.click('#navTabs [data-mas]');
+  await e.click('.hoja [data-salir]');
+  await e.waitForSelector('#cfSi');
+  revisar('al salir avisa que no se pierde', (await e.textContent('.hoja')).includes('No se pierden'));
+  await e.click('#cfSi');
+  await e.waitForSelector('#pantallaLogin:not([hidden])', { timeout: 15000 });
+  await t2.ctx.setOffline(false);
+  await entrar(e, 'pedraza');
+  await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
+  revisar('lo de antes de salir se envió al volver', sql("select count(*) from abonos") === String(Number(antesSalir) + 1));
+
   // Cuadre final en la base
   revisar('cuadre de todas las ventas', sql(`select count(*) from ventas v where v.estado <> 'anulada' and (
     abs(v.plan_base + coalesce((select sum(monto) from cuotas q where q.venta_id = v.id and q.vigente), 0) - (v.total + v.ajuste)) > 0.004

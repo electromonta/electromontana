@@ -99,6 +99,7 @@ async function firmar(p) {
   await mas(p, '[data-ir="reportes"]'); await p.waitForSelector('.barras'); await espera(800); await foto(p, '27-reportes');
   await p.locator('.seccion-tit:has-text("Ventas por mes")').scrollIntoViewIfNeeded(); await foto(p, '28-reportes-ventas');
   await mas(p, '[data-ir="ajustes"]'); await foto(p, '29-ajustes');
+  await p.evaluate(() => ir('ajustes', 'copia')); await espera(900); await foto(p, '35-copia');
 
   // Empleado de Pedraza: su pantalla, cobro en efectivo sin señal
   const t2 = await tel(b); const e = t2.p;
@@ -112,5 +113,13 @@ async function firmar(p) {
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
   await mas(p, '[data-ir="efectivo"]'); await p.waitForSelector('[data-recibir]'); await foto(p, '33-efectivo');
   await p.click('[data-recibir]'); await espera(400); await foto(p, '34-recibir'); await cerrar(p);
+  // En la computadora
+  const pc = await b.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, locale: 'es-VE', timezoneId: 'America/Caracas' });
+  const q = await pc.newPage();
+  await entrar(q, 'franklin');
+  await q.click('#navTabs [data-ir="clientes"]'); await espera(500);
+  await q.click('.item:has-text("María González")'); await q.waitForSelector('.ficha-cab'); await espera(900);
+  await foto(q, '36-computadora');
+  await pc.close();
   await b.close();
 })().catch(e => { console.error('SE DETUVO:', e.message); process.exit(2); });

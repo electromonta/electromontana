@@ -1,16 +1,20 @@
 // Electro Montana — ajustes: tasa, reglas, contrato, usuarios, métodos de pago y este teléfono.
 'use strict';
 
-var VERSION_APP = '5';
+var VERSION_APP = '6';
 
 var VistaAjustes = (function () {
   var raiz = null;
 
-  function mostrar(c) {
+  function mostrar(c, arg) {
     raiz = document.createElement('div');
     c.appendChild(raiz);
     raiz.addEventListener('click', alTocar);
     pintar();
+    if (arg === 'copia') {
+      var s = $('#seccionCopia', raiz);
+      if (s) setTimeout(function () { s.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); }, 50);
+    }
   }
 
   function pintar() {
@@ -42,6 +46,7 @@ var VistaAjustes = (function () {
             (m.en_mano ? ' · efectivo' : '') + (m.pide_referencia ? ' · pide referencia' : '') + '</span></span><input type="checkbox" data-metodo="' + m.id + '"' + (m.activo ? ' checked' : '') + '></label>';
         }).join('') + '<p class="tenue chico" style="margin-top:8px">Desmarca un método para que no salga al cobrar.</p></div></div>';
     }
+    if (dueno) h += htmlSeccionCopia();
     var mias = Cola.mias();
     h += '<div class="seccion"><div class="seccion-tit"><h2>Mi cuenta</h2></div><div class="tarjeta">' +
       '<div class="dato"><span>Usuario</span><span class="crece">' + esc(ST.yo.usuario) + '</span></div>' +
@@ -53,6 +58,7 @@ var VistaAjustes = (function () {
       '<div class="dato"><span>Versión</span><span class="crece">' + VERSION_APP + '</span></div>' +
       '<p class="tenue chico" style="margin-top:8px">Para instalarla en el iPhone: en Safari toca Compartir y luego "Agregar a inicio". En Android: menú del navegador, "Instalar app".</p></div></div>';
     raiz.innerHTML = h;
+    activarSeccionCopia(raiz);
     var b;
     if ((b = $('#ajGuardarReglas', raiz))) protegerBoton(b, guardarReglas);
     if ((b = $('#ajGuardarCond', raiz))) protegerBoton(b, async function () {

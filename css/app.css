@@ -355,3 +355,55 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--tenue) 
 .firma-aqui { position: absolute; left: 18px; bottom: 26px; color: var(--tenue); font-size: 15px; pointer-events: none; }
 @media (min-width: 700px) { .firma-caja { height: 300px; } }
 a.item { text-decoration: none; }
+
+/* ---------- Pantallas anchas: computadora e iPad horizontal ----------
+   El menú pasa a la izquierda (con lo de "Más" a la vista), el contenido se ensancha
+   y las listas van en dos columnas. En el teléfono y el iPad vertical no cambia nada. */
+.tab-extra, .menu-pie { display: none; }
+@media (min-width: 1024px) {
+  :root { --ancho-menu: 236px; }
+  .app { padding-bottom: 0; padding-left: var(--ancho-menu); }
+  #barraLogo { display: none; }
+  .barra-sup { padding-left: 28px; padding-right: 28px; }
+  .barra-sup h1 { font-size: 23px; }
+  .barra-tabs {
+    top: 0; bottom: 0; right: auto; width: var(--ancho-menu); flex-direction: column; justify-content: flex-start;
+    border-top: 0; border-right: 1px solid var(--borde); padding: 0; overflow-y: auto;
+  }
+  .barra-tabs::before {
+    content: "ELECTRO MONTANA"; display: flex; align-items: center; height: 62px; padding: 0 22px; flex: none;
+    background: var(--azul); color: #fff; font: 700 17px var(--titulo); letter-spacing: .14em;
+  }
+  .barra-tabs .tabs { flex-direction: column; max-width: none; padding: 14px 12px; gap: 4px; }
+  .barra-tabs button, .barra-tabs .tab-extra {
+    display: flex; flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 48px; padding: 0 14px;
+    border-radius: 10px; font-size: 16px; color: var(--texto); text-align: left;
+  }
+  .barra-tabs button:hover { background: #f3f0ea; }
+  .barra-tabs button.activo { background: #e9eef6; color: var(--azul); }
+  .barra-tabs .tab-vender { order: -1; background: var(--cobre); color: #fff; margin-bottom: 10px; justify-content: center; font-size: 17px; }
+  .barra-tabs .tab-vender:hover { background: var(--cobre-osc); }
+  .barra-tabs .tab-vender .burbuja { width: auto; height: auto; margin: 0; background: none; box-shadow: none; border: 0; color: inherit; }
+  .menu-pie { display: block; margin-top: auto; padding: 14px 22px 20px; color: var(--tenue); font-size: 14px; border-top: 1px solid var(--borde); }
+  .contenido { max-width: 1180px; padding: 26px 32px 48px; }
+  .resumen-fijo { bottom: 0; margin-left: -32px; margin-right: -32px; padding-left: 32px; padding-right: 32px; }
+  .formulario { max-width: 820px; margin: 0 auto; }
+  /* Listas en dos columnas */
+  #cbListas .lista, #clLista, #mcLista, #clPendientes .lista { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  #clLista > .mas, #mcLista > .mas, #clLista > .vacio, #mcLista > .vacio { grid-column: 1 / -1; }
+  /* Ficha del cliente: a la izquierda lo que debe y los botones; a la derecha ventas, abonos, notas y datos */
+  .ficha { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 0 28px; align-items: start; }
+  .ficha > .ficha-cab { grid-column: 1; grid-row: 1 / span 8; position: sticky; top: 86px; }
+  .ficha > .seccion { grid-column: 2; }
+  .ficha > .ficha-cab + .seccion { margin-top: 0; }
+  /* Reportes en dos columnas */
+  #rpCuerpo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; align-items: start; }
+  #rpCuerpo > .kpis { grid-column: 1 / -1; }
+  /* Ventanas: centradas y de buen tamaño */
+  .hoja { max-width: 720px; }
+  .hoja.completa { max-width: 860px; }
+  .toasts { left: var(--ancho-menu); }
+}
+@media (min-width: 1024px) and (hover: hover) {
+  .item:hover, .cobro-cuerpo:hover { background: #faf8f5; }
+}
