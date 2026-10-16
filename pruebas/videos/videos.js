@@ -344,8 +344,12 @@ const VIDEOS = [
     await v.decir('<b>Retirar la mercancía</b>, como dice su contrato: sigue debiendo y se le devuelve al terminar de pagar.', 1500);
     await v.escribir('#cfValor', 'No ha vuelto a pagar');
     await v.tocar('#cfSi', { despues: 2200 });
-    await v.acercar('.venta', 1.25);
-    await v.decir('La venta queda <b>Retirada</b>, con su calendario nuevo y todo anotado.', 4000);
+    await v.acercar('.venta .venta-cab', 1.7);
+    await v.marco('.venta .venta-cab .etiqueta:has-text("Retirada")');
+    await v.decir('La venta queda <b>Retirada</b>: sigue debiendo y todo queda anotado.', 3200);
+    await v.marco(null);
+    await v.acercar('.venta-det .cuotas', 1.35);
+    await v.decir('Y con su <b>calendario nuevo</b>, que ya incluye el recargo.', 3200);
     await v.alejar();
     await v.cierre('Cuando no pagan', 'Siguiente: mercancía y efectivo de Pedraza');
   } },
