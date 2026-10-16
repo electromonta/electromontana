@@ -19,7 +19,8 @@ psql -q -d postgres -c "drop database if exists em_pruebas" -c "create database 
 P="psql -q -v ON_ERROR_STOP=1 -d em_pruebas"
 $P -f supabase/pruebas/stubs.sql >/dev/null
 for m in supabase/migrations/*.sql; do
-  if grep -q "cron.schedule" "$m"; then echo "(se salta $m: usa pg_cron)"; continue; fi
+  # pg_cron no existe aquí: de esa migración se aplica todo menos lo de cron
+  if grep -q "cron.schedule" "$m"; then grep -v -E "pg_cron|schema cron|cron\.schedule" "$m" | $P >/dev/null; continue; fi
   $P -f "$m" >/dev/null
 done
 SALIDA="$(psql -d em_pruebas -f supabase/pruebas/escenarios.sql 2>&1 || true)"

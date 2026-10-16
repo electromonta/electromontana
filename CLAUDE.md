@@ -128,7 +128,7 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 
 - `config.ultima_copia_en` / `ultima_copia_por` y la función `anotar_copia` (solo dueños; deja rastro en `auditoria`). La app (`respaldo.js`) arma un `.json` con todas las tablas que ve un dueño y una lista `.csv` para Excel; en el teléfono usa "Compartir", en la computadora descarga. Si hay clientes y pasan 7 días sin copia, Cobrar avisa a los dueños.
 - **Salir nunca borra lo "por enviar"** (queda en el teléfono y se envía cuando esa persona vuelve a entrar). Sin señal, salir borra la sesión del teléfono igual (la librería no lo hace sola).
-- Todo sobre respaldos y cómo recuperar: `docs/RESPALDOS.md`. **Pendiente el "dale" de Kinan** para limitar la copia de cada noche (30 días + una por mes); hasta entonces no se borra ninguna.
+- Todo sobre respaldos y cómo recuperar: `docs/RESPALDOS.md`. Kinan dio el "dale" (2026-10-16) para limitar la copia de cada noche a 30 días + una por mes: migración `007_copias_limpieza.sql`, probada en local. **FALTA APLICARLA en la base real** (el conector pide confirmación por el DELETE de la función y no le llegó desde el teléfono; aplicarla con la confirmación aprobada o desde Supabase → SQL Editor). Hasta entonces no se borra ninguna copia.
 
 ## Base de datos (migración `006_seguridad.sql`): seguridad entre los socios
 

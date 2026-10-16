@@ -495,3 +495,21 @@ set role anon;
 select t('anónimo no pide aprobaciones', $q$ public.pedir_aprobacion('{}', null) $q$, 'permission denied');
 select t('anónimo no aprueba', $q$ public.responder_aprobacion(1, true, null) $q$, 'permission denied');
 reset role;
+
+-- ===================== Copia de cada noche: 30 días completos y una por mes (migración 007) =====================
+reset role;
+select set_config('request.jwt.claims', '', false);
+insert into respaldo_diario.copias (fecha, tabla, filas, datos)
+select d::date, 'prueba', 0, '[]'::jsonb from generate_series(date '2026-01-01', date '2026-10-16', interval '1 day') d;
+select igual('había una copia por día', $q$ (select count(*) from respaldo_diario.copias where tabla = 'prueba') $q$, '289');
+select igual('la limpieza borra las de más de 30 días que no son la primera del mes', $q$ respaldo_diario.limpiar(date '2026-10-16') $q$, '249');
+select igual('quedan los 31 días y el primero de cada mes', $q$ (select count(*) || ' / ' || min(fecha) || ' / ' ||
+  (select string_agg(to_char(fecha, 'MM-DD'), ',' order by fecha) from respaldo_diario.copias where tabla = 'prueba' and fecha < date '2026-09-16')
+  from respaldo_diario.copias where tabla = 'prueba') $q$, '40 / 2026-01-01 / 01-01,02-01,03-01,04-01,05-01,06-01,07-01,08-01,09-01');
+select igual('los últimos 30 días quedan completos', $q$ (select count(*) from respaldo_diario.copias where tabla = 'prueba' and fecha >= date '2026-09-16') $q$, '31');
+select igual('correrla otra vez no borra más', $q$ respaldo_diario.limpiar(date '2026-10-16') $q$, '0');
+select t('la copia de cada noche sigue funcionando (y limpia al final)', $q$ respaldo_diario.respaldar() > 0 $q$);
+select igual('la copia de hoy tiene la tabla de solicitudes', $q$ (select count(*) from respaldo_diario.copias where tabla = 'solicitudes' and fecha = (now() at time zone 'America/Caracas')::date) $q$, '1');
+set role authenticated;
+select t('la app no puede limpiar copias', $q$ respaldo_diario.limpiar(date '2026-10-16') $q$, 'permission denied');
+reset role;

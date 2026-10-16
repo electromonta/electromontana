@@ -1,5 +1,13 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 10 — Límite a la copia de cada noche (2026-10-16) — FALTA APLICARLA EN LA BASE REAL
+
+- Kinan dio el "dale": la copia de cada noche guarda **todas las de los últimos 30 días** y, de ahí para atrás, **la primera de cada mes**. La limpieza corre sola cada noche, después de guardar la copia del día y en la misma transacción (si la copia falla, no se borra nada). Solo toca `respaldo_diario.copias`, nunca los datos del negocio.
+- Migración `007_copias_limpieza.sql` (función `respaldo_diario.limpiar` y `respaldar()` con la limpieza al final). Probada en local: 289 copias diarias de prueba → quedan 40 (los 31 días y el primero de cada mes); correrla dos veces no borra más; la app no la puede llamar.
+- Las pruebas locales ahora aplican también la migración `002` (todo menos lo de pg_cron), así la copia de cada noche se prueba.
+- Pruebas: 275 escenarios de base, 29 de cuentas, 75 del recorrido en teléfono.
+- **Pendiente:** aplicarla a la base real. El conector pide una confirmación de la persona porque la función contiene un DELETE, y esa confirmación no le llegó a Kinan desde el teléfono (dos intentos; no se aplicó nada). Se aplica desde la app de Claude en una computadora aprobando la confirmación, o pegando el archivo en Supabase → SQL Editor → Run. No es urgente: solo importa cuando haya más de 30 días de copias.
+
 ## Entrega 9 — Seguridad entre los dos socios (2026-10-16)
 
 Pedido de Kinan: que entre los dos dueños todo sea riguroso, que nadie pueda borrar ni cambiar datos sin que quede registrado, y que no se puedan anular abonos así no más.

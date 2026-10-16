@@ -18,7 +18,9 @@ fi
 psql -q -d postgres -c "drop database if exists em_local with (force)" -c "create database em_local" >/dev/null
 P="psql -q -v ON_ERROR_STOP=1 -d em_local"
 $P -f supabase/pruebas/stubs.sql >/dev/null
-for m in supabase/migrations/*.sql; do grep -q "cron.schedule" "$m" || $P -f "$m" >/dev/null; done
+for m in supabase/migrations/*.sql; do   # pg_cron no existe aquí: se aplica todo menos lo de cron
+  if grep -q "cron.schedule" "$m"; then grep -v -E "pg_cron|schema cron|cron\.schedule" "$m" | $P >/dev/null; else $P -f "$m" >/dev/null; fi
+done
 $P -f pruebas/semilla-local.sql >/dev/null
 if [ ! -x "$DIR/postgrest" ]; then
   curl -sSL -o "$DIR/pgrst.tar.xz" https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz

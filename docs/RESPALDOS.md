@@ -23,7 +23,7 @@ Resumen para Kinan y para cualquier sesión futura que tenga que recuperar algo.
 - Se **pausa** si pasa una semana casi sin uso (se reactiva desde el panel hasta 90 días después).
 - Plan Pro: 8 GB de base, 100 GB de fotos, copia diaria (7 días) y nunca se pausa.
 
-**Pendiente de decisión de Kinan:** la copia de cada noche guarda todo cada día y nunca borra nada. Con datos reales llenaría los 500 MB del plan gratis en uno o dos meses. Propuesta: guardar cada día del último mes y, de ahí para atrás, solo una por mes. Para eso hay que borrar copias viejas, así que **no se hace sin el "dale" de Kinan**.
+**Copias de cada noche: 30 días + una por mes** ("dale" de Kinan, 2026-10-16). La migración `007_copias_limpieza.sql` guarda todas las copias de los últimos 30 días y, de ahí para atrás, la primera de cada mes; la limpieza corre sola después de cada copia. **Falta aplicarla en la base real** (ver `docs/HISTORIAL.md`, entrega 10); mientras tanto no se borra ninguna copia.
 
 ## Cómo recuperar
 
