@@ -1,5 +1,12 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 5 — Guía de uso (2026-10-16)
+
+- **Guía completa** en `guia.html` (dentro de la app: **Más → Guía de uso**): para empezar, Cobrar, abonos, clientes, vender, firmar el contrato, clientes que ya debían, cuando no pagan, notas y recordatorios, mercancía, cobros y efectivo de Pedraza, reportes, ajustes, sin señal, lo que puede hacer el empleado, preguntas frecuentes y "cómo mostrarlo en 10 minutos" para Kinan. 34 capturas de la app con clientes inventados.
+- La guía se rehace con `pruebas/guia/armar.sh`.
+- Arreglo: cuando el cliente está atrasado, la ficha decía "Próxima cuota" con una fecha ya pasada. Ahora dice lo atrasado y "Además, la próxima cuota" con la que viene. El recibo por WhatsApp también dice "Atrasado: $X" y la próxima cuota que viene.
+- Pruebas: 206 escenarios de base, 29 de cuentas, 55 del recorrido en teléfono.
+
 ## Entrega 4 — Etapa 4: pasos del dominio (2026-10-15)
 
 - `docs/DOMINIO.md`: activar GitHub Pages (Settings → Pages → `main` / raíz), instalar la app en iPhone y Android, comprar un dominio (recomendado `app.<dominio>` con un CNAME a `electromonta.github.io`), Enforce HTTPS, verificar el dominio, avisarle a Supabase, y cómo pasar cada teléfono a la dirección nueva sin perder lo que esté "por enviar".

@@ -44,6 +44,7 @@ Quien desarrolla y da las instrucciones es **Kinan** (colaborador del repo). El 
 - **En cada entrega:** subir los `?v=N` de `index.html`, la lista de `sw.js` y su `VERSION` (Safari y el modo sin conexión guardan los archivos viejos), y `VERSION_APP` en `js/ajustes.js`.
 - **Usuarios:** entran con un nombre corto (`franklin`); por dentro es `franklin@electromontana.app` (nunca se mandan correos). Los crea un dueño desde Ajustes con la Edge Function `usuarios` (`supabase/functions/usuarios`, `verify_jwt` apagado porque revisa la sesión por dentro). Al entrar por primera vez se obliga a cambiar la clave. Las claves temporales nunca van al repo.
 - Historial de entregas: `docs/HISTORIAL.md`.
+- **Guía de uso:** `guia.html` (en la raíz, se abre desde Más → Guía de uso) con capturas en `guia/`. Se rehace con `pruebas/guia/armar.sh` (datos inventados de `pruebas/guia/demo.sql`, textos en `pruebas/guia/cuerpo.html`). Si cambia una pantalla, actualizar la guía en la misma entrega.
 
 ## Diseño
 
@@ -138,4 +139,5 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **2026-10-15 — Entrega 2 (etapa 2) hecha y aplicada a la base real** (migración `003_etapa2`, 56 funciones con la misma huella que las probadas): mercancía de las tiendas, venta desde la tienda, notas de cobro y promesas, recordatorios por WhatsApp, reportes.
 - **2026-10-15 — Entrega 3 (etapa 3) hecha y aplicada a la base real** (migración `004_firma`, 58 funciones con la misma huella): contrato firmado en la pantalla, también sin señal.
 - **2026-10-15 — Entrega 4 (etapa 4):** `docs/DOMINIO.md` con los pasos para activar GitHub Pages, comprar y apuntar un dominio, y pasar los teléfonos a la dirección nueva sin perder lo "por enviar". Lo hacen los dueños (Claude no puede comprar ni activar Pages).
-- **Siguiente:** guía completa de uso para Franklin, Daniel y Kinan.
+- **2026-10-16 — Entrega 5:** guía completa de uso (`guia.html`, 17 capítulos con 34 capturas y el recorrido de 10 minutos para que Kinan lo muestre). Arreglo: con atraso, la ficha y el recibo muestran la siguiente cuota que viene (antes salía una fecha pasada).
+- **Sistema completo (etapas 1 a 4 + guía).** Lo que falta lo hacen los dueños o Kinan (ver la lista de arriba y `docs/DOMINIO.md`).

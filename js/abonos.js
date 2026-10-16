@@ -180,7 +180,11 @@ function textoRecibo(rec) {
   if (rec.referencia) lineas.push('Referencia: ' + rec.referencia);
   (rec.ventas || []).forEach(function (id) { var v = ST.ventaPorId.get(id); if (v) lineas.push('Contrato #' + v.numero + ': ' + descripcionVenta(v)); });
   lineas.push('Saldo pendiente: *' + fmtUSD(rec.saldo) + '*' + (rec.aproximado ? ' (aproximado)' : ''));
-  if (r.proxima && rec.saldo > 0.004 && !rec.aproximado) lineas.push('Próxima cuota: ' + fmtUSD(r.proxima.pendiente) + ' el ' + fmtFechaAnio(r.proxima.fecha));
+  if (rec.saldo > 0.004 && !rec.aproximado) {
+    if (r.atraso > 0) lineas.push('Atrasado: ' + fmtUSD(r.atraso));
+    var sig = r.atraso > 0 ? r.siguiente : r.proxima;
+    if (sig) lineas.push('Próxima cuota: ' + fmtUSD(sig.pendiente) + ' el ' + fmtFechaAnio(sig.fecha));
+  }
   if (rec.saldo <= 0.004) lineas.push('Su cuenta quedó pagada. ¡Gracias por su confianza!');
   lineas.push('Recibido por: ' + nombreUsuario(rec.recibido_por), '', 'Gracias por su pago.');
   return lineas.join('\n');

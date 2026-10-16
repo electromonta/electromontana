@@ -33,6 +33,7 @@ igual('debe 210', e.saldo, 210);
 igual('atrasado 30 (la del 8/10); la del 15/10 vence hoy', [e.atraso, e.diasAtraso], [30, 7]);
 igual('próxima: la del 8/10 (la más vieja sin pagar)', [e.proxima.fecha, e.proxima.pendiente], ['2026-10-08', 30]);
 igual('cuotas vencidas: 1', e.cuotas.filter(c => c.vencida).length, 1);
+igual('siguiente: la de hoy (la que todavía no vence)', [e.siguiente.fecha, e.siguiente.pendiente], ['2026-10-15', 30]);
 e = C.estadoVenta(Object.assign({}, venta, { pagado: 120 }), cuotas, '2026-10-15');
 igual('pagó la del 8: al día y le toca hoy', [e.atraso, e.diasAtraso, e.proxima.fecha], [0, 0, '2026-10-15']);
 e = C.estadoVenta(Object.assign({}, venta, { pagado: 105 }), cuotas, '2026-10-15');
@@ -43,6 +44,7 @@ e = C.estadoVenta(Object.assign({}, venta, { pagado: 300 }), cuotas, '2026-12-30
 igual('pagada: sin saldo ni atraso', [e.saldo, e.atraso, e.proxima], [0, 0, null]);
 e = C.estadoVenta(Object.assign({}, venta, { pagado: 150 }), cuotas, '2026-12-30');
 igual('plazo vencido', [e.plazoVencido, e.atraso], [true, 150]);
+igual('plazo vencido: no hay siguiente', e.siguiente, null);
 e = C.estadoVenta(Object.assign({}, venta, { estado: 'cerrada' }), cuotas, '2026-12-30');
 igual('venta cerrada no cuenta', [e.saldo, e.atraso], [0, 0]);
 // Más tiempo: ya pagó 150 (base), calendario nuevo de 2 cuotas de 75

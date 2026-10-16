@@ -102,6 +102,7 @@ function menuMas() {
       '<button type="button" class="item" data-ir="efectivo">' + icono('tienda') + '<div class="crece"><div class="item-tit">' +
         (esDueno() ? 'Efectivo de Pedraza' : 'Mi efectivo por entregar') + '</div><div class="item-sub">' +
         (esDueno() ? 'Lo que ha cobrado el empleado y las entregas' : 'Lo que has cobrado en efectivo') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
+      '<a class="item" href="guia.html" target="_blank" rel="noopener">' + icono('info') + '<div class="crece"><div class="item-tit">Guía de uso</div><div class="item-sub">Cómo se usa cada pantalla, paso a paso</div></div>' + icono('flecha', 'ic-chico') + '</a>' +
       '<button type="button" class="item" data-contrato-blanco>' + icono('contrato') + '<div class="crece"><div class="item-tit">Contrato en blanco</div><div class="item-sub">Para imprimir y llenar a mano</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
       '<button type="button" class="item" data-ir="ajustes">' + icono('ajustes') + '<div class="crece"><div class="item-tit">Ajustes</div><div class="item-sub">' +
         (esDueno() ? 'Tasa, usuarios, métodos de pago, contrato' : 'Tu clave y lo que falta por enviar') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +

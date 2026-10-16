@@ -163,7 +163,9 @@ var VistaFicha = (function () {
         '<div class="deuda-caja"><div><div class="tenue chico">Debe</div><div class="monto-grande">' + fmtUSD(r.saldo) + '</div></div>' +
           '<div><div class="tenue chico">Atrasado</div><div class="monto-grande" style="color:' + (r.atraso > 0 ? 'var(--rojo)' : 'var(--verde)') + '">' + fmtUSD(r.atraso) + '</div>' +
           '<div class="tenue chico">' + (r.atraso > 0 ? 'desde hace ' + textoDias(r.dias) : 'al día') + '</div></div></div>' +
-        (r.proxima ? '<p class="tenue" style="margin:10px 0 0">Próxima cuota: <b class="num">' + fmtUSD(r.proxima.pendiente) + '</b> el ' + esc(fmtFechaAnio(r.proxima.fecha)) + '</p>' : '') +
+        (r.atraso > 0 ? (r.siguiente ? '<p class="tenue" style="margin:10px 0 0">Además, la próxima cuota: <b class="num">' + fmtUSD(r.siguiente.pendiente) + '</b> el ' + esc(fmtFechaAnio(r.siguiente.fecha)) + '</p>'
+          : r.plazoVencido ? '<p class="tenue" style="margin:10px 0 0">Ya pasó la fecha de la última cuota.</p>' : '')
+          : r.proxima ? '<p class="tenue" style="margin:10px 0 0">Próxima cuota: <b class="num">' + fmtUSD(r.proxima.pendiente) + '</b> el ' + esc(fmtFechaAnio(r.proxima.fecha)) + '</p>' : '') +
         (r.cuotasVencidas >= giros && !r.retirada ? '<div class="aviso aviso-ambar" style="margin-top:10px">' + icono('alerta') + '<div>Lleva ' + r.cuotasVencidas + ' cuotas sin pagar. Según el contrato, se le puede retirar la mercancía.</div></div>' : '') +
         (r.enCola > 0 ? '<div class="aviso aviso-ambar" style="margin-top:10px">' + icono('nube') + '<div>' + fmtUSD(r.enCola) + ' en abonos por enviar (todavía no se restan).</div></div>' : '') +
         (r.promesa ? '<div class="aviso ' + (r.promesa.estado === 'incumplida' ? 'aviso-error' : 'aviso-info') + '" style="margin-top:10px">' + icono('calendario') + '<div>' + esc(textoPromesa(r.promesa)) +

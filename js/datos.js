@@ -240,7 +240,7 @@ function ventasActivas(cliId) {
 }
 // Resumen de lo que debe un cliente (todas sus ventas activas)
 function resumenCliente(cliId) {
-  var r = { saldo: 0, atraso: 0, dias: 0, proxima: null, activas: 0, retirada: false, plazoVencido: false, cuotasVencidas: 0 };
+  var r = { saldo: 0, atraso: 0, dias: 0, proxima: null, siguiente: null, activas: 0, retirada: false, plazoVencido: false, cuotasVencidas: 0 };
   ventasActivas(cliId).forEach(function (v) {
     var e = estadoDe(v);
     r.activas++;
@@ -251,6 +251,7 @@ function resumenCliente(cliId) {
     if (v.mercancia === 'retirada') r.retirada = true;
     if (e.plazoVencido) r.plazoVencido = true;
     if (e.proxima && (!r.proxima || e.proxima.fecha < r.proxima.fecha)) r.proxima = e.proxima;
+    if (e.siguiente && (!r.siguiente || e.siguiente.fecha < r.siguiente.fecha)) r.siguiente = e.siguiente;
   });
   r.saldo = redondear2(r.saldo); r.atraso = redondear2(r.atraso);
   r.enCola = redondear2(enColaDeCliente(cliId));

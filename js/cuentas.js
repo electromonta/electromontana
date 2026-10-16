@@ -73,7 +73,7 @@
     var lista = (cuotas || []).slice().sort(function (a, b) {
       return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : (a.n - b.n);
     });
-    var acum = Number(venta.plan_base) || 0, esperado = acum, detalle = [], primeraDeuda = null, proxima = null;
+    var acum = Number(venta.plan_base) || 0, esperado = acum, detalle = [], primeraDeuda = null, proxima = null, siguiente = null;
     // Si se anuló un abono después de dar más tiempo, lo pagado puede quedar por debajo de la base
     if (pagado < acum - 0.004) primeraDeuda = venta.fecha;
     lista.forEach(function (c) {
@@ -88,6 +88,7 @@
       detalle.push(d);
       if (pendiente > 0.004) {
         if (!proxima) proxima = d;
+        if (!siguiente && c.fecha >= hoy) siguiente = d;   // la próxima que todavía no vence
         if (c.fecha < hoy && !primeraDeuda) primeraDeuda = c.fecha;
       }
     });
@@ -102,6 +103,7 @@
       atraso: atraso,
       diasAtraso: primeraDeuda ? Math.max(0, diasEntre(primeraDeuda, hoy)) : 0,
       proxima: activa && saldo > 0.004 ? proxima : null,
+      siguiente: activa && saldo > 0.004 ? siguiente : null,
       vencePlazo: ultima,
       plazoVencido: activa && saldo > 0.004 && ultima < hoy,
       cuotas: detalle

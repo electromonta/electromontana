@@ -354,3 +354,4 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--tenue) 
 .firma-linea { position: absolute; left: 18px; right: 18px; bottom: 54px; border-top: 1.5px solid #cfc7b9; pointer-events: none; }
 .firma-aqui { position: absolute; left: 18px; bottom: 26px; color: var(--tenue); font-size: 15px; pointer-events: none; }
 @media (min-width: 700px) { .firma-caja { height: 300px; } }
+a.item { text-decoration: none; }

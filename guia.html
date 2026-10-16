@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guía de Electro Montana</title>
+<meta name="theme-color" content="#172b4d">
+<link rel="icon" type="image/png" href="img/favicon-32.png?v=1">
+<link rel="apple-touch-icon" href="img/icono-180.png?v=1">
+<style>@font-face{font-family:'Barlow';font-weight:400;font-display:swap;src:url('fonts/barlow-400.woff2') format('woff2')}@font-face{font-family:'Barlow';font-weight:500;font-display:swap;src:url('fonts/barlow-500.woff2') format('woff2')}@font-face{font-family:'Barlow';font-weight:600;font-display:swap;src:url('fonts/barlow-600.woff2') format('woff2')}@font-face{font-family:'Barlow';font-weight:700;font-display:swap;src:url('fonts/barlow-700.woff2') format('woff2')}@font-face{font-family:'Barlow Semi Condensed';font-weight:600;font-display:swap;src:url('fonts/barlow-sc-600.woff2') format('woff2')}@font-face{font-family:'Barlow Semi Condensed';font-weight:700;font-display:swap;src:url('fonts/barlow-sc-700.woff2') format('woff2')}</style>
+</head>
+<body>
+<style>
+/* Manual de bolsillo: columna de texto + captura del teléfono al lado (en pantalla ancha) o debajo (en el teléfono).
+   Misma marca que la app: azul noche, cobre, arena. Solo tema claro, como la app (se lee a pleno sol). */
+:root {
+  --azul: #172b4d; --cobre: #a9541f; --cobre-claro: #e0904f; --arena: #f6f4f0; --sup: #ffffff;
+  --texto: #18202e; --tenue: #5b6474; --borde: #e3ddd2; --info: #1d5fa8; --info-fondo: #eaf1fa;
+  --aviso-fondo: #fbefe5; --verde: #1f7a45; --rojo: #b42318;
+  --titulo: 'Barlow Semi Condensed', 'Arial Narrow', Arial, sans-serif;
+  --letra: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+html { background: var(--arena); scroll-behavior: smooth; }
+body { margin: 0; background: var(--arena); color: var(--texto); font: 17px/1.55 var(--letra); -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+.envoltura { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.cab { background: var(--azul); color: #fff; }
+.cab .envoltura { padding-block: 28px 30px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.cab svg { width: 64px; height: 64px; flex: none; }
+.cab h1 { margin: 0; font: 700 34px/1.05 var(--titulo); letter-spacing: .01em; text-wrap: balance; }
+.cab .marca { font: 600 13px var(--titulo); letter-spacing: .32em; color: var(--cobre-claro); text-transform: uppercase; }
+.cab p { margin: 6px 0 0; color: #c9d2e3; max-width: 60ch; }
+.indice { background: var(--sup); border-bottom: 1px solid var(--borde); }
+.indice .envoltura { padding-block: 16px; }
+.indice h2 { margin: 0 0 10px; font: 700 15px var(--titulo); letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
+.indice ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 18px; counter-reset: cap; }
+.indice li { counter-increment: cap; min-width: 0; }
+.indice a { display: flex; gap: 8px; padding: 6px 0; color: var(--azul); text-decoration: none; font-weight: 600; }
+.indice a::before { content: counter(cap); font: 700 15px var(--titulo); color: var(--cobre); min-width: 1.4em; }
+.indice a:hover, .indice a:focus-visible { text-decoration: underline; }
+main .envoltura { padding-block: 8px 48px; }
+section.cap { padding-top: 34px; border-top: 1px solid var(--borde); margin-top: 34px; }
+section.cap:first-of-type { border-top: 0; margin-top: 0; }
+.cap > h2 { margin: 0 0 6px; font: 700 30px/1.1 var(--titulo); color: var(--azul); text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+.cap > h2 .n { font-size: 20px; color: #fff; background: var(--cobre); border-radius: 8px; padding: 2px 9px; flex: none; }
+.cap > .intro { margin: 0 0 18px; color: var(--tenue); max-width: 65ch; }
+h3 { font: 700 21px/1.2 var(--titulo); color: var(--azul); margin: 22px 0 8px; }
+p, li { max-width: 65ch; }
+.bloque { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 28px; align-items: start; margin: 18px 0; }
+.bloque.dos-fotos { grid-template-columns: minmax(0, 1fr) 270px 270px; }
+.bloque > div { min-width: 0; }
+@media (max-width: 860px) { .bloque.dos-fotos { grid-template-columns: minmax(0, 1fr) 270px; } .bloque.dos-fotos > figure:last-child { grid-column: 2; } }
+@media (max-width: 640px) {
+  .bloque, .bloque.dos-fotos { grid-template-columns: 1fr; gap: 14px; }
+  .bloque.dos-fotos > figure:last-child { grid-column: auto; }
+  figure.tel { max-width: 300px; margin-inline: auto; }
+}
+figure.tel { margin: 0; }
+figure.tel img { display: block; width: 100%; height: auto; border-radius: 22px; border: 1px solid var(--borde); box-shadow: 0 6px 18px rgba(23, 43, 77, .12); background: var(--sup); }
+figure.tel figcaption { font-size: 14px; color: var(--tenue); margin-top: 8px; text-align: center; }
+ol.pasos { padding: 0; margin: 10px 0; list-style: none; counter-reset: paso; display: grid; gap: 10px; }
+ol.pasos > li { counter-increment: paso; position: relative; padding-left: 40px; }
+ol.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: 1px; width: 28px; height: 28px; border-radius: 50%; background: var(--azul); color: #fff; font: 700 15px/28px var(--titulo); text-align: center; }
+ul { padding-left: 22px; margin: 8px 0; }
+ul li { margin: 4px 0; }
+.boton { display: inline-block; font-weight: 600; color: var(--cobre); white-space: nowrap; }
+.boton::before { content: "["; color: var(--tenue); font-weight: 400; margin-right: 1px; }
+.boton::after { content: "]"; color: var(--tenue); font-weight: 400; margin-left: 1px; }
+.nota { border-radius: 12px; padding: 12px 16px; margin: 14px 0; max-width: 65ch; }
+.nota b:first-child { display: block; font: 700 14px var(--titulo); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+.nota.ojo { background: var(--aviso-fondo); border: 1px solid #f0d2b9; }
+.nota.ojo b:first-child { color: var(--cobre); }
+.nota.dato { background: var(--info-fondo); border: 1px solid #c9dbf0; }
+.nota.dato b:first-child { color: var(--info); }
+.colores { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.colores span { border-radius: 999px; padding: 3px 12px; font-weight: 600; font-size: 15px; }
+.c-rojo { background: #fde8e6; color: var(--rojo); } .c-azul { background: var(--info-fondo); color: var(--info); } .c-verde { background: #e3f3e9; color: var(--verde); }
+.tabla { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; min-width: 480px; width: 100%; max-width: 760px; background: var(--sup); border-radius: 10px; overflow: hidden; font-size: 16px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+th { background: #eef1f6; font: 700 14px var(--titulo); letter-spacing: .05em; text-transform: uppercase; color: var(--azul); }
+td.si { color: var(--verde); font-weight: 600; } td.no { color: var(--rojo); font-weight: 600; }
+.guion { background: var(--sup); border: 1px solid var(--borde); border-radius: 14px; padding: 18px 20px; }
+.guion ol.pasos > li::before { background: var(--cobre); }
+.guion .di { color: var(--tenue); font-style: italic; }
+.pie { color: var(--tenue); font-size: 14px; padding-block: 24px 40px; border-top: 1px solid var(--borde); }
+a { color: var(--info); }
+a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
+</style>
+
+<header class="cab"><div class="envoltura">
+  <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#ffffff" stroke-width="2.6"/><path d="M9 46 L23 23 L31 34 L40 26 L55 46" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M35 8.5 L27.5 22 L32.5 22 L30 31 L38.5 17 L33.5 17 L37 8.5 Z" fill="#e0904f"/></svg>
+  <div>
+    <div class="marca">Electro Montana</div>
+    <h1>Guía de uso</h1>
+    <p>Para Franklin, Daniel y el encargado de la tienda de Pedraza. Cómo cobrar, vender, firmar contratos y llevar las cuentas desde el teléfono. Las capturas son de una prueba con clientes inventados.</p>
+  </div>
+</div></header>
+
+<nav class="indice" aria-label="Contenido"><div class="envoltura">
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#empezar">Para empezar</a></li>
+    <li><a href="#cobrar">La pantalla Cobrar</a></li>
+    <li><a href="#abono">Registrar un abono</a></li>
+    <li><a href="#clientes">Clientes</a></li>
+    <li><a href="#vender">Vender a crédito</a></li>
+    <li><a href="#firma">Firmar el contrato</a></li>
+    <li><a href="#yadebia">Clientes que ya debían</a></li>
+    <li><a href="#nopagan">Cuando no pagan</a></li>
+    <li><a href="#notas">Notas y recordatorios</a></li>
+    <li><a href="#mercancia">Mercancía de la tienda</a></li>
+    <li><a href="#cuentas">Cobros y efectivo de Pedraza</a></li>
+    <li><a href="#reportes">Reportes</a></li>
+    <li><a href="#ajustes">Ajustes</a></li>
+    <li><a href="#senal">Sin señal</a></li>
+    <li><a href="#empleado">Lo que puede hacer el empleado</a></li>
+    <li><a href="#preguntas">Preguntas frecuentes</a></li>
+    <li><a href="#mostrar">Cómo mostrarlo (para Kinan)</a></li>
+  </ol>
+</div></nav>
+
+<main><div class="envoltura">
+
+<section class="cap" id="empezar">
+  <h2><span class="n">1</span>Para empezar</h2>
+  <p class="intro">La app se abre desde el teléfono como cualquier otra. No hace falta computadora.</p>
+  <div class="bloque">
+    <div>
+      <h3>Entrar</h3>
+      <ol class="pasos">
+        <li>Escribe tu <b>usuario</b> (por ejemplo <b>franklin</b>) y tu <b>clave</b>. Toca <span class="boton">Entrar</span>.</li>
+        <li>La primera vez te pide <b>poner una clave nueva</b> que solo sepas tú (mínimo 6 letras o números). La clave que te dieron era temporal.</li>
+        <li>La app queda abierta en ese teléfono. Para salir: <b>Más → Salir</b>.</li>
+      </ol>
+      <h3>Ponerla en la pantalla de inicio</h3>
+      <ul>
+        <li><b>iPhone:</b> abre la dirección en Safari → botón <b>Compartir</b> → <b>Agregar a inicio</b>.</li>
+        <li><b>Android:</b> abre la dirección en Chrome → menú de los tres puntos → <b>Instalar app</b>.</li>
+      </ul>
+      <p>Queda un ícono con la montaña y el rayo. Ábrela siempre desde ese ícono.</p>
+      <h3>Cómo está armada</h3>
+      <ul>
+        <li><b>Abajo</b> están las cinco partes: <b>Cobrar</b> (la de inicio), <b>Clientes</b>, <b>Vender</b> (el botón redondo cobre), <b>Cobros</b> y <b>Más</b>.</li>
+        <li><b>Arriba a la derecha</b> está la <b>tasa del día</b>. Si algo no se ha enviado, al lado sale <b>"1 por enviar"</b>.</li>
+      </ul>
+      <p>Los colores siempre dicen lo mismo:</p>
+      <div class="colores"><span class="c-rojo">Rojo: atrasado</span><span class="c-azul">Azul: le toca hoy</span><span class="c-verde">Verde: al día</span></div>
+    </div>
+    <figure class="tel"><img src="guia/01-entrada.jpg" alt="Pantalla de entrada con usuario y clave" width="780" height="1688"><figcaption>La entrada</figcaption></figure>
+  </div>
+  <div class="bloque">
+    <div>
+      <h3>La tasa del día (solo dueños)</h3>
+      <ol class="pasos">
+        <li>Cada mañana toca la <b>tasa</b> arriba a la derecha (o el aviso amarillo de Cobrar que dice que no se ha puesto).</li>
+        <li>Escribe cuántos bolívares por dólar y toca <span class="boton">Guardar tasa</span>.</li>
+      </ol>
+      <p>Esa tasa se usa en <b>todos</b> los teléfonos para recibir pagos en bolívares. El empleado de Pedraza no la puede cambiar: cobra con la que pusieron ustedes.</p>
+      <div class="nota dato"><b>Dato</b>USDT se toma 1 a 1 con el dólar.</div>
+    </div>
+    <figure class="tel"><img src="guia/04-tasa.jpg" alt="Ventana para poner la tasa del día" width="780" height="1688" loading="lazy"><figcaption>Poner la tasa</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="cobrar">
+  <h2><span class="n">2</span>La pantalla Cobrar</h2>
+  <p class="intro">Es lo primero que se ve al abrir. Dice a quién hay que cobrarle hoy y quién está atrasado.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>Arriba: los números del día</h3>
+      <ul>
+        <li><b>Por cobrar:</b> todo lo que deben los clientes.</li>
+        <li><b>Atrasado:</b> lo que ya debieron pagar y no han pagado.</li>
+        <li><b>Cobrado hoy:</b> lo que entró hoy.</li>
+        <li><b>Les toca hoy:</b> las cuotas que vencen hoy.</li>
+      </ul>
+      <p>Los dueños pueden filtrar por <b>Socopó</b>, <b>Pedraza</b> o <b>Exterior</b> (los que viven fuera y pagan por Zelle). El buscador encuentra por nombre, sector o cédula.</p>
+      <h3>Las listas</h3>
+      <ul>
+        <li><b>Prometieron pagar hoy:</b> los que dijeron que hoy pagaban (ver <a href="#notas">notas</a>).</li>
+        <li><b>Atrasados:</b> del más viejo al más nuevo. El botón <span class="boton">Recordar a todos</span> manda el recordatorio por WhatsApp uno por uno.</li>
+        <li><b>Les toca hoy</b> y <b>Próximos 7 días</b>.</li>
+      </ul>
+      <h3>Cada tarjeta</h3>
+      <p>Dice cuánto debe, cuánto está atrasado y desde hace cuántos días. Si lleva <b>3 cuotas sin pagar</b> sale en cobre: según el contrato ya se le puede retirar la mercancía. Abajo de cada tarjeta:</p>
+      <ul>
+        <li><span class="boton">Abonar</span> registra el pago (siguiente capítulo).</li>
+        <li><span class="boton">Recordar</span> abre WhatsApp con el mensaje listo y queda anotado "Recordado hoy".</li>
+        <li><span class="boton">Nota</span> anota una visita, una llamada o una promesa de pago.</li>
+        <li><span class="boton">Llamar</span> marca el número.</li>
+      </ul>
+      <p>Tocando el nombre se abre la ficha del cliente.</p>
+    </div>
+    <figure class="tel"><img src="guia/02-cobrar.jpg" alt="Pantalla Cobrar con los números del día" width="780" height="1688" loading="lazy"><figcaption>Arriba: los números del día</figcaption></figure>
+    <figure class="tel"><img src="guia/03-cobrar-listas.jpg" alt="Lista de atrasados con sus botones" width="780" height="1688" loading="lazy"><figcaption>Atrasados, con sus botones</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="abono">
+  <h2><span class="n">3</span>Registrar un abono</h2>
+  <p class="intro">Cada pago se anota en el momento, en la casa del cliente o cuando llega el Zelle.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li>Toca <span class="boton">Abonar</span> en Cobrar, o <span class="boton">Registrar abono</span> en la ficha del cliente.</li>
+        <li>Elige <b>cómo pagó</b>: Efectivo $, Zelle, USDT, Pago móvil, Efectivo Bs o Transferencia Bs.</li>
+        <li>Escribe el <b>monto</b>. Si es en bolívares, se escribe en bolívares y la app muestra cuánto es en dólares con la tasa del día. Los botones <b>Lo atrasado</b>, <b>La cuota</b> y <b>Todo</b> ponen el monto solos.</li>
+        <li>Si es Zelle, pago móvil o transferencia, escribe la <b>referencia</b>. Si quieres, toma la <b>foto del comprobante</b>.</li>
+        <li>Si el cliente tiene varias ventas, elige a cuál va o deja <b>A la cuenta</b> (se paga primero la más vieja).</li>
+        <li>Toca <span class="boton">Guardar abono</span>.</li>
+        <li>Toca <span class="boton">Enviar recibo por WhatsApp</span>: le llega el recibo con lo que abonó y lo que le falta.</li>
+      </ol>
+      <div class="nota ojo"><b>Importante</b>El botón de guardar se bloquea al primer toque: aunque lo toques dos veces, el abono se guarda una sola vez. Si la referencia ya se usó en otro pago, la app avisa y pregunta si guardar igual.</div>
+      <p><b>Anular un abono</b> (solo dueños): ficha del cliente → Abonos → toca el abono → <span class="boton">Anular</span> y escribe el motivo. Nada se borra: queda anotado quién lo anuló y por qué.</p>
+    </div>
+    <figure class="tel"><img src="guia/05-abono.jpg" alt="Ventana de abono en bolívares con su equivalente en dólares" width="780" height="1688" loading="lazy"><figcaption>Abono en bolívares: muestra el equivalente</figcaption></figure>
+    <figure class="tel"><img src="guia/06-abono-guardado.jpg" alt="Abono registrado con el botón de recibo por WhatsApp" width="780" height="1688" loading="lazy"><figcaption>Listo: mandar el recibo</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="clientes">
+  <h2><span class="n">4</span>Clientes</h2>
+  <p class="intro">Todos los clientes con lo que deben. Se puede filtrar por <b>Con deuda</b>, <b>Atrasados</b> o <b>Exterior</b>.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>Cliente nuevo</h3>
+      <ol class="pasos">
+        <li>En Clientes toca <span class="boton">Nuevo cliente</span> (o desde Vender, al elegir el cliente).</li>
+        <li>Solo el <b>nombre</b> es obligatorio, pero llena todo lo que puedas: cédula, teléfono, si es de <b>Socopó o Pedraza</b>, sector, dirección, punto de referencia y trabajo.</li>
+        <li>Si vive <b>fuera del país</b>, marca la casilla y pon el país y la persona de contacto aquí.</li>
+        <li>Datos del <b>fiador</b>: nombre, cédula, teléfono y dirección.</li>
+        <li>Toma la <b>foto del cliente</b> y la <b>foto de la cédula</b>. Estando en la casa, guarda la <b>ubicación</b> para encontrarla después en el mapa.</li>
+        <li>Toca <span class="boton">Guardar cliente</span>.</li>
+      </ol>
+      <p>Si la cédula ya existe, la app avisa para no repetir clientes.</p>
+      <div class="nota dato"><b>Dato</b>Las fotos y la cédula quedan guardadas en privado: solo se ven entrando a la app.</div>
+    </div>
+    <figure class="tel"><img src="guia/10-clientes.jpg" alt="Lista de clientes con lo que debe cada uno" width="780" height="1688" loading="lazy"><figcaption>La lista de clientes</figcaption></figure>
+    <figure class="tel"><img src="guia/11-cliente-nuevo.jpg" alt="Formulario de cliente nuevo" width="780" height="1688" loading="lazy"><figcaption>Cliente nuevo</figcaption></figure>
+  </div>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>La ficha del cliente</h3>
+      <ul>
+        <li>Arriba: cuánto <b>debe</b>, cuánto está <b>atrasado</b> y la próxima cuota. Avisos si lleva cuotas sin pagar, si prometió pagar o si hay abonos por enviar.</li>
+        <li>Botones: <span class="boton">Registrar abono</span>, Llamar, WhatsApp, Recordar y Ubicar (o Mapa si ya tiene la ubicación).</li>
+        <li><b>Ventas:</b> toca una venta para ver lo que se llevó, el calendario de cuotas (las pagadas con su marca), la ganancia (solo dueños) y el contrato.</li>
+        <li><b>Abonos</b>, <b>Notas de cobro</b> y <b>Datos</b> (con el botón <span class="boton">Editar</span>).</li>
+      </ul>
+      <p>Los dueños pueden marcar <b>No venderle más</b> (en Editar) y <b>quitar</b> un cliente que ya no debe nada.</p>
+    </div>
+    <figure class="tel"><img src="guia/12-ficha.jpg" alt="Ficha de un cliente atrasado" width="780" height="1688" loading="lazy"><figcaption>Ficha: lo que debe y lo atrasado</figcaption></figure>
+    <figure class="tel"><img src="guia/13-ficha-venta.jpg" alt="Detalle de una venta con su calendario de cuotas" width="780" height="1688" loading="lazy"><figcaption>Una venta por dentro</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="vender">
+  <h2><span class="n">5</span>Vender a crédito</h2>
+  <p class="intro">El botón redondo <b>Vender</b> de abajo. Se llena de arriba hacia abajo en cinco pasos.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li><b>Cliente:</b> elígelo o crea uno nuevo. Si estás en su ficha, toca <span class="boton">Nueva venta</span> y ya viene puesto.</li>
+        <li><b>Lo que se lleva:</b> escribe el producto (la app sugiere los que ya se han vendido), la cantidad y el <b>precio al cliente</b>. Los dueños también ponen el <b>costo</b> (lo que costó en Yumana) para saber la ganancia. Si el producto está guardado en la tienda de Pedraza, sale la casilla <b>"Sale de la tienda de Pedraza (hay N)"</b>.</li>
+        <li><b>Inicial:</b> escribe el monto o toca <span class="boton">Usar el 30 %</span>. Si la pagó en el momento, deja marcada <b>"La pagó ahora"</b> y elige cómo pagó.</li>
+        <li><b>Cuotas:</b> semanal, quincenal (el 15 y el último del mes) o mensual; cuántas cuotas o de cuánto cada una, y la fecha de la primera. También se pueden poner a mano, una por una.</li>
+        <li><b>Contrato:</b> número del contrato de papel (si usan papel), foto del contrato firmado y notas.</li>
+      </ol>
+      <p>Abajo se ve el resumen (total, inicial y cuotas). Toca <span class="boton">Guardar venta</span>.</p>
+      <p>Al guardar salen tres opciones: <b>firmar el contrato en la pantalla</b>, mandar el <b>resumen por WhatsApp</b> o <b>imprimir el contrato</b>.</p>
+    </div>
+    <figure class="tel"><img src="guia/16-vender.jpg" alt="Formulario de venta con el producto que sale de la tienda" width="780" height="1688" loading="lazy"><figcaption>Producto, precio y costo</figcaption></figure>
+    <figure class="tel"><img src="guia/17-vender-cuotas.jpg" alt="Calendario de cuotas de la venta" width="780" height="1688" loading="lazy"><figcaption>Las cuotas se arman solas</figcaption></figure>
+  </div>
+  <div class="bloque">
+    <div>
+      <div class="nota ojo"><b>Importante</b>Un cliente marcado "No venderle" no puede comprar a crédito desde el teléfono del empleado. Solo un dueño puede venderle.</div>
+    </div>
+    <figure class="tel"><img src="guia/18-venta-guardada.jpg" alt="Venta guardada con los botones de firmar, resumen e imprimir" width="780" height="1688" loading="lazy"><figcaption>Venta guardada</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="firma">
+  <h2><span class="n">6</span>Firmar el contrato en la pantalla</h2>
+  <p class="intro">El cliente firma con el dedo en el teléfono o en la tablet. El contrato firmado queda guardado en su ficha. También pueden seguir firmando en papel y tomarle foto.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li>Al guardar la venta toca <span class="boton">Firmar el contrato en la pantalla</span>. (Después también se puede: ficha del cliente → la venta → <span class="boton">Firmar en la pantalla</span>.)</li>
+        <li>Muéstrale al cliente el texto de arriba: dice en palabras simples qué compra, el total y lo que se compromete a pagar. Con <span class="boton">Leer el contrato completo</span> ve todas las condiciones.</li>
+        <li>El cliente firma en el recuadro. Si sale mal, <span class="boton">Borrar</span>.</li>
+        <li>Si tiene fiador, toca <span class="boton">Siguiente</span> y firma el fiador. Si el fiador no está, <span class="boton">Sin fiador</span>.</li>
+        <li>Toca <span class="boton">Guardar firma</span>.</li>
+      </ol>
+      <p>El contrato impreso o en PDF sale con las firmas, las cédulas y la fecha y hora en que se firmó.</p>
+      <div class="nota dato"><b>Dato</b>Se guarda una copia fija de lo que se firmó. Si después cambian la dirección del cliente o las condiciones en Ajustes, el contrato firmado sigue igual. Un contrato firmado solo lo puede volver a firmar un dueño, y la firma anterior queda guardada.</div>
+      <p><b>Para imprimir o mandar el PDF:</b> en la venta, <span class="boton">Imprimir contrato</span> → <span class="boton">Imprimir o guardar PDF</span>. En el iPhone, en la ventana de imprimir se pellizca la hoja para abrirla como PDF y compartirla por WhatsApp.</p>
+    </div>
+    <figure class="tel"><img src="guia/19-firma.jpg" alt="Recuadro para firmar con el dedo" width="780" height="1688" loading="lazy"><figcaption>El cliente firma con el dedo</figcaption></figure>
+    <figure class="tel"><img src="guia/21-contrato-firmas.jpg" alt="Contrato con la firma del cliente" width="780" height="1688" loading="lazy"><figcaption>El contrato con la firma</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="yadebia">
+  <h2><span class="n">7</span>Clientes que ya debían (pasar los de WhatsApp)</h2>
+  <p class="intro">Para meter al sistema a los clientes que ya tenían crédito antes de la app. Solo lo pueden hacer los dueños.</p>
+  <div class="bloque">
+    <div>
+      <ol class="pasos">
+        <li>Toca <b>Vender</b> y arriba elige <span class="boton">Ya debía</span>.</li>
+        <li>Elige o crea el cliente.</li>
+        <li>Pon lo que se llevó y el precio total.</li>
+        <li>Pon la <b>fecha en que se vendió</b> y <b>cuánto ha pagado hasta hoy</b> (todo junto, inicial incluida).</li>
+        <li>Arma las cuotas que <b>le faltan</b>, con sus fechas reales. Si alguna ya pasó y no la pagó, sale como atrasada.</li>
+        <li>Toca <span class="boton">Guardar cliente que ya debía</span>.</li>
+      </ol>
+      <div class="nota dato"><b>Dato</b>Lo que pagó antes queda anotado como "pagado antes del sistema": no cuenta como cobrado hoy ni en el efectivo de nadie.</div>
+      <div class="nota ojo"><b>Importante</b>Antes de cargar los clientes reales, Kinan tiene que pasar la base de datos al plan con respaldo automático.</div>
+    </div>
+    <figure class="tel"><img src="guia/22-ya-debia.jpg" alt="Vender en modo Ya debía" width="780" height="1688" loading="lazy"><figcaption>Vender → Ya debía</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="nopagan">
+  <h2><span class="n">8</span>Cuando no pagan (solo dueños)</h2>
+  <p class="intro">En la ficha del cliente, toca la venta y baja hasta <b>Cambios (solo dueños)</b>. Todo cambio pide un motivo y queda en el historial de la venta.</p>
+  <div class="bloque">
+    <div>
+      <div class="tabla"><table>
+        <thead><tr><th>Botón</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td><b>Recargo</b></td><td>Suma un monto por demora. Queda como una cuota más en la fecha que pongas.</td></tr>
+          <tr><td><b>Descuento</b></td><td>Resta de lo que debe, empezando por las últimas cuotas.</td></tr>
+          <tr><td><b>Más tiempo</b></td><td>Arma un calendario nuevo para lo que falta (por ejemplo, 4 cuotas semanales desde la próxima semana).</td></tr>
+          <tr><td><b>Retirar mercancía</b></td><td>Como dice el contrato: se le retira el artículo y <b>sigue debiendo</b>. Se le devuelve cuando termine de pagar.</td></tr>
+          <tr><td><b>Devolver mercancía</b></td><td>Anota que se le devolvió el artículo.</td></tr>
+          <tr><td><b>Cerrar venta</b></td><td>Se deja de cobrar lo que falta (por ejemplo, se retiró y se va a vender a otro). Se puede reabrir.</td></tr>
+          <tr><td><b>Volver a la tienda</b></td><td>En una venta cerrada con la mercancía retirada: el artículo vuelve a la mercancía de la tienda para venderlo otra vez.</td></tr>
+          <tr><td><b>Anular</b></td><td>Solo para una venta registrada por error y sin abonos.</td></tr>
+        </tbody>
+      </table></div>
+      <p>También desde la venta, los dueños pueden <b>poner o cambiar el costo</b> de cada producto.</p>
+    </div>
+    <figure class="tel"><img src="guia/14-cambios-dueno.jpg" alt="Botones de cambios de una venta" width="780" height="1688" loading="lazy"><figcaption>Cambios de una venta</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="notas">
+  <h2><span class="n">9</span>Notas de cobro y recordatorios</h2>
+  <p class="intro">Para no olvidar qué pasó con cada cliente: si no estaba, qué dijo, cuándo prometió pagar.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>Anotar</h3>
+      <ol class="pasos">
+        <li>Toca <span class="boton">Nota</span> en la tarjeta de Cobrar, o <span class="boton">Anotar</span> en la ficha.</li>
+        <li>Elige qué pasó: <b>Visita</b>, <b>Llamada</b>, <b>No estaba</b>, <b>Promesa de pago</b>, <b>Mensaje</b> u <b>Otro</b>.</li>
+        <li>Si es promesa, pon <b>para cuándo</b> y <b>cuánto</b>.</li>
+        <li>Escribe la nota y toca <span class="boton">Guardar nota</span>.</li>
+      </ol>
+      <p>El día de la promesa el cliente sale arriba en Cobrar, en <b>Prometieron pagar hoy</b>. Si pasa la fecha sin abonar, sale <b>"No cumplió la promesa"</b> en rojo. Si abona, la promesa se da por cumplida sola.</p>
+      <h3>Recordar a varios por WhatsApp</h3>
+      <p><b>Más → Recordar por WhatsApp</b> (o <span class="boton">Recordar a todos</span> en Cobrar). Elige <b>Atrasados</b>, <b>Les toca hoy</b> o <b>Les toca mañana</b> y toca <span class="boton">Enviar</span> en cada uno: se abre WhatsApp con el mensaje listo. Al volver a la app, sigue con el próximo. Los que ya se recordaron hoy salen como "Enviado".</p>
+    </div>
+    <figure class="tel"><img src="guia/07-nota-promesa.jpg" alt="Nota de cobro con promesa de pago" width="780" height="1688" loading="lazy"><figcaption>Promesa de pago</figcaption></figure>
+    <figure class="tel"><img src="guia/08-recordatorios.jpg" alt="Lista para recordar por WhatsApp uno por uno" width="780" height="1688" loading="lazy"><figcaption>Recordar uno por uno</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="mercancia">
+  <h2><span class="n">10</span>Mercancía de la tienda</h2>
+  <p class="intro">Lo que está guardado en la tienda de Pedraza. Lo que se vende y se busca en Yumana después no pasa por aquí. Está en <b>Más → Mercancía</b>.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>Cuando llevan mercancía a la tienda (dueños)</h3>
+      <ol class="pasos">
+        <li>Toca <span class="boton">Entrada de mercancía</span> y elige la tienda.</li>
+        <li>Escribe cada producto (si ya existe, elígelo de la lista), la cantidad, el costo y el precio de venta.</li>
+        <li>Pon el número de factura de Yumana en la nota y toca <span class="boton">Guardar entrada</span>.</li>
+      </ol>
+      <h3>Cuando se vende algo de la tienda</h3>
+      <p>Al vender, marca <b>"Sale de la tienda de Pedraza"</b>: se descuenta solo. Al empleado le sale marcada sola. Si se anula la venta, vuelve a la tienda.</p>
+      <h3>Contar</h3>
+      <p>Toca un producto → <span class="boton">Contar</span> → escribe cuántos hay de verdad. La diferencia queda anotada. En cada producto se ve todo lo que entró y salió, y a qué cliente.</p>
+      <div class="nota dato"><b>Dato</b>La app no deja vender de la tienda más de lo que hay.</div>
+    </div>
+    <figure class="tel"><img src="guia/24-mercancia.jpg" alt="Mercancía de la tienda de Pedraza" width="780" height="1688" loading="lazy"><figcaption>Lo que hay en la tienda</figcaption></figure>
+    <figure class="tel"><img src="guia/26-producto.jpg" alt="Un producto con sus entradas y ventas" width="780" height="1688" loading="lazy"><figcaption>Lo que entró y salió</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="cuentas">
+  <h2><span class="n">11</span>Cobros y efectivo de Pedraza</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>Cobros</h3>
+      <p>El botón <b>Cobros</b> de abajo: todo lo cobrado <b>hoy, ayer, en 7 días, este mes</b> o entre las fechas que elijas. Arriba el total, por método de pago y por quién lo recibió; abajo cada abono, día por día.</p>
+      <h3>Efectivo de Pedraza</h3>
+      <p>Lo que el empleado cobra <b>en efectivo</b> queda "en sus manos" hasta que se lo entrega a ustedes. En <b>Más → Efectivo de Pedraza</b> se ve cuánto tiene en dólares y en bolívares.</p>
+      <ol class="pasos">
+        <li>Cuando van a la tienda, toca <span class="boton">Recibir entrega</span>.</li>
+        <li>Cuenta el dinero y escribe lo que te entregó de verdad.</li>
+        <li>La app dice si <b>cuadra</b> o cuánto falta o sobra. Toca <span class="boton">Guardar entrega</span>.</li>
+      </ol>
+      <p>Si mientras cuentas entra otro cobro, ese queda para la próxima entrega.</p>
+    </div>
+    <figure class="tel"><img src="guia/23-cobros.jpg" alt="Pantalla Cobros con totales por método" width="780" height="1688" loading="lazy"><figcaption>Cobros del día</figcaption></figure>
+    <figure class="tel"><img src="guia/34-recibir.jpg" alt="Recibir la entrega del empleado" width="780" height="1688" loading="lazy"><figcaption>Recibir el efectivo</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="reportes">
+  <h2><span class="n">12</span>Reportes (solo dueños)</h2>
+  <p class="intro"><b>Más → Reportes.</b> Se puede ver todo junto, solo Socopó o solo Pedraza.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <ul>
+        <li><b>Por cobrar</b>, <b>atrasado</b>, <b>cobrado este mes</b> y <b>ganancia del mes</b>.</li>
+        <li><b>Cobrado por semana</b> (las últimas 8) y por método de pago.</li>
+        <li><b>Ventas por mes</b> con su ganancia (lo vendido menos lo que costó en Yumana).</li>
+        <li><b>Cómo van los que deben:</b> cuántos están al día y cuántos atrasados de 1 a 15 días, de 16 a 30, de 31 a 60 y de más de 60.</li>
+        <li><b>Atrasados</b> con su último abono y su última nota.</li>
+        <li><b>Lo más vendido</b> en los últimos 90 días y cuánto vale la mercancía guardada.</li>
+      </ul>
+      <div class="nota dato"><b>Dato</b>Para que la ganancia salga completa, cada venta tiene que tener su costo. Si falta alguno, el reporte lo dice.</div>
+    </div>
+    <figure class="tel"><img src="guia/27-reportes.jpg" alt="Reportes con los números del mes" width="780" height="1688" loading="lazy"><figcaption>Reportes</figcaption></figure>
+    <figure class="tel"><img src="guia/28-reportes-ventas.jpg" alt="Ventas y ganancia por mes" width="780" height="1688" loading="lazy"><figcaption>Ventas y ganancia por mes</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="ajustes">
+  <h2><span class="n">13</span>Ajustes</h2>
+  <div class="bloque">
+    <div>
+      <p><b>Más → Ajustes.</b> Los dueños ven todo; el empleado solo ve su cuenta.</p>
+      <ul>
+        <li><b>Tasa del día.</b></li>
+        <li><b>Reglas:</b> el % de inicial sugerido, cuántas cuotas sin pagar para retirar la mercancía, y el teléfono del negocio que sale en el contrato.</li>
+        <li><b>Condiciones del contrato:</b> una por línea. Revísenlas antes de empezar. Se pueden volver a las de fábrica.</li>
+        <li><b>Usuarios:</b> crear al empleado (usuario, nombre y clave temporal), cambiarle la clave o desactivarlo.</li>
+        <li><b>Métodos de pago:</b> quitar o agregar formas de pago.</li>
+        <li><b>Mi cuenta:</b> cambiar la clave.</li>
+        <li><b>Este teléfono:</b> si hay algo por enviar y la versión de la app.</li>
+      </ul>
+      <p><b>Más → Contrato en blanco</b> sirve para imprimir contratos vacíos y llenarlos a mano.</p>
+    </div>
+    <figure class="tel"><img src="guia/29-ajustes.jpg" alt="Pantalla de ajustes" width="780" height="1688" loading="lazy"><figcaption>Ajustes</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="senal">
+  <h2><span class="n">14</span>Sin señal</h2>
+  <p class="intro">En la calle la señal es lenta o se va. La app está hecha para eso: <b>nada de lo que se registra se pierde</b>.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <ul>
+        <li>Si no hay internet, el abono, la venta, el cliente, la nota, la foto o la firma se <b>guardan en el teléfono</b>. Sale el aviso "Guardado en el teléfono".</li>
+        <li>Arriba sale <b>"1 por enviar"</b>. Cuando vuelve la señal se manda <b>solo</b>, sin repetirse (aunque se reintente muchas veces).</li>
+        <li>La app abre con los últimos datos guardados en el teléfono y avisa desde cuándo son.</li>
+        <li>Tocando "por enviar" se ve la lista y el botón <span class="boton">Enviar ahora</span>.</li>
+      </ul>
+      <div class="nota ojo"><b>Importante</b>Si arriba dice <b>"con error"</b>, la base rechazó algo (por ejemplo, una referencia repetida). Toca el aviso: se puede <b>Reintentar</b>, <b>Guardar igual</b> o <b>Descartar</b>. Los abonos guardados sin señal todavía no se restan de la deuda hasta que se envían.</div>
+      <div class="nota ojo"><b>Importante</b>No borres la app ni cambies de teléfono si dice "por enviar". Primero espera a que se envíe todo.</div>
+    </div>
+    <figure class="tel"><img src="guia/31-sin-senal.jpg" alt="Abono guardado en el teléfono sin señal" width="780" height="1688" loading="lazy"><figcaption>Sin señal: queda en el teléfono</figcaption></figure>
+    <figure class="tel"><img src="guia/32-por-enviar.jpg" alt="Aviso de un abono por enviar" width="780" height="1688" loading="lazy"><figcaption>"1 por enviar" hasta que vuelve la señal</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="empleado">
+  <h2><span class="n">15</span>Lo que puede hacer el empleado de Pedraza</h2>
+  <div class="bloque">
+    <div>
+      <p>Entra con su propio usuario y solo ve los <b>clientes de Pedraza</b>.</p>
+      <div class="tabla"><table>
+        <thead><tr><th>Qué</th><th>Dueños</th><th>Empleado</th></tr></thead>
+        <tbody>
+          <tr><td>Clientes nuevos, ventas a crédito, abonos, notas, firmas</td><td class="si">Sí</td><td class="si">Sí (de Pedraza)</td></tr>
+          <tr><td>Vender de la mercancía de la tienda</td><td class="si">Sí</td><td class="si">Sí (de su tienda)</td></tr>
+          <tr><td>Ver costos y ganancia</td><td class="si">Sí</td><td class="no">No</td></tr>
+          <tr><td>Cambiar la tasa</td><td class="si">Sí</td><td class="no">No (usa la de ustedes)</td></tr>
+          <tr><td>Cargar clientes que ya debían</td><td class="si">Sí</td><td class="no">No</td></tr>
+          <tr><td>Recargo, descuento, más tiempo, retirar, cerrar, anular</td><td class="si">Sí</td><td class="no">No</td></tr>
+          <tr><td>Entradas y conteos de mercancía</td><td class="si">Sí</td><td class="no">No (solo ve lo que hay)</td></tr>
+          <tr><td>Reportes, usuarios, condiciones del contrato</td><td class="si">Sí</td><td class="no">No</td></tr>
+          <tr><td>Efectivo por entregar</td><td class="si">Ven el del empleado y lo reciben</td><td class="si">Ve el suyo</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <figure class="tel"><img src="guia/30-empleado.jpg" alt="Pantalla Cobrar del empleado de Pedraza" width="780" height="1688" loading="lazy"><figcaption>Lo que ve el empleado</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="preguntas">
+  <h2><span class="n">16</span>Preguntas frecuentes</h2>
+  <h3>Me equivoqué en un abono. ¿Lo borro?</h3>
+  <p>Nada se borra. Un dueño lo <b>anula</b> (ficha → Abonos → tocar el abono → Anular) y se registra de nuevo bien. La deuda se recalcula sola.</p>
+  <h3>Un cliente pagó en bolívares y la tasa de hoy no está puesta.</h3>
+  <p>Un dueño pone la tasa (tocando la tasa arriba) y se registra el abono. El empleado no puede cobrar en bolívares sin la tasa de ustedes.</p>
+  <h3>El cliente pagó de más.</h3>
+  <p>El abono no puede ser mayor que lo que debe. Si sobra, se anota lo que debe y el resto se arregla aparte.</p>
+  <h3>Cambié de teléfono.</h3>
+  <p>Instala la app en el nuevo y entra con tu usuario: todos los datos están en la base, no en el teléfono. Solo revisa antes que el viejo no tenga nada "por enviar".</p>
+  <h3>Se me olvidó la clave.</h3>
+  <p>Un dueño entra a <b>Ajustes → Usuarios</b>, toca a la persona y le pone una clave nueva temporal.</p>
+  <h3>No me sale un cliente.</h3>
+  <p>Busca por parte del nombre o por la cédula. Si eres el empleado, solo ves los de Pedraza. Si se acaba de crear sin señal, sale como "por enviar".</p>
+  <h3>¿Cómo sé que la app está al día?</h3>
+  <p>En Cobrar, abajo, dice de cuándo son los datos y tiene el botón <span class="boton">Actualizar</span>. También en <b>Más → Actualizar datos</b>.</p>
+</section>
+
+<section class="cap" id="mostrar">
+  <h2><span class="n">17</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
+  <p class="intro">Un recorrido para enseñarlo a Franklin y Daniel con un cliente de prueba. Al final se anula lo que se hizo.</p>
+  <div class="guion">
+    <ol class="pasos">
+      <li><b>Entrar y la tasa.</b> Entra con tu teléfono, pon la tasa del día. <span class="di">"Cada mañana uno de ustedes pone la tasa y sirve para todos los teléfonos."</span></li>
+      <li><b>Cliente nuevo.</b> Clientes → Nuevo cliente: nombre, cédula, teléfono, fiador, foto de la cédula y ubicación. <span class="di">"Todo queda en la ficha, con la foto y el punto en el mapa."</span></li>
+      <li><b>Venta.</b> Desde la ficha, Nueva venta: un producto con precio y costo, Usar el 30 %, inicial en efectivo, 8 cuotas semanales. <span class="di">"El calendario se arma solo y la ganancia la ven solo ustedes."</span></li>
+      <li><b>Firma.</b> Firmar el contrato en la pantalla: que firme uno de ellos con el dedo; muestra el contrato con la firma. Manda el resumen por WhatsApp a tu número.</li>
+      <li><b>Cobrar.</b> Vuelve a Cobrar y registra un abono en bolívares: muestra el equivalente en dólares y manda el recibo. <span class="di">"El cliente recibe su recibo con lo que le falta."</span></li>
+      <li><b>Sin señal.</b> Pon el teléfono en modo avión, registra otro abono, muestra "1 por enviar". Quita el modo avión y mira cómo se envía solo. <span class="di">"Aunque se caiga la señal en la calle, nada se pierde."</span></li>
+      <li><b>Nota y promesa.</b> Anota una promesa de pago para hoy y muestra que sale arriba en Cobrar. Luego Recordar por WhatsApp.</li>
+      <li><b>Cambios de dueño.</b> En la venta: recargo y más tiempo, para que vean que todo pide motivo y queda en el historial.</li>
+      <li><b>Pedraza.</b> Muestra Mercancía (entrada y venta desde la tienda) y Efectivo de Pedraza (recibir entrega). Si ya existe el usuario del empleado, entra con él en otro teléfono: solo ve Pedraza y no ve costos.</li>
+      <li><b>Reportes.</b> Más → Reportes: cobrado por semana, ganancia y atrasados.</li>
+      <li><b>Limpiar.</b> Anula los abonos de prueba y después la venta (ficha → venta → Anular), y quita el cliente de prueba.</li>
+    </ol>
+  </div>
+  <div class="nota ojo"><b>Antes de usarlo con clientes reales</b>
+    1) Pasar la base de datos al plan con respaldo automático. 2) Que el dueño del repositorio active la publicación (ver <code>docs/DOMINIO.md</code>). 3) Apagar el registro público en Supabase. 4) Crear al empleado de Pedraza en Ajustes → Usuarios. 5) Que Franklin y Daniel revisen las condiciones del contrato en Ajustes.
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 4 de la app (octubre de 2026).</div></footer>
+
+</body>
+</html>
