@@ -1,5 +1,9 @@
 # Historial de entregas — Electro Montana
 
+## Publicación (2026-10-16)
+
+- La cuenta `electromonta` activó GitHub Pages (rama `main`, carpeta raíz, HTTPS obligatorio). La app quedó en **https://electromonta.github.io/electromontana/**. Primera publicación correcta; la página, los archivos de la app (versión 5), la guía y las letras responden bien.
+
 ## Entrega 6 — Arreglo en "Recordar por WhatsApp" (2026-10-16)
 
 - Al tocar **Enviar** en la lista de recordatorios, el cliente a veces volvía a decir "Enviar" por un momento (mientras la nota llegaba a la base), y se podía mandar dos veces. Ahora queda **Enviado** al instante. Lo encontró la grabación de los videos.
