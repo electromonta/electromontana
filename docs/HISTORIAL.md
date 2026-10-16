@@ -1,5 +1,11 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 6 — Arreglo en "Recordar por WhatsApp" (2026-10-16)
+
+- Al tocar **Enviar** en la lista de recordatorios, el cliente a veces volvía a decir "Enviar" por un momento (mientras la nota llegaba a la base), y se podía mandar dos veces. Ahora queda **Enviado** al instante. Lo encontró la grabación de los videos.
+- Prueba nueva en el recorrido del teléfono. Pruebas: 206 escenarios de base, 29 de cuentas, 57 del recorrido en teléfono.
+- Herramienta de videos: `pruebas/videos/` (escenario, motor y guiones de 11 videos cortos con subtítulos y acercamientos; se graban contra la copia local con clientes inventados).
+
 ## Entrega 5 — Guía de uso (2026-10-16)
 
 - **Guía completa** en `guia.html` (dentro de la app: **Más → Guía de uso**): para empezar, Cobrar, abonos, clientes, vender, firmar el contrato, clientes que ya debían, cuando no pagan, notas y recordatorios, mercancía, cobros y efectivo de Pedraza, reportes, ajustes, sin señal, lo que puede hacer el empleado, preguntas frecuentes y "cómo mostrarlo en 10 minutos" para Kinan. 34 capturas de la app con clientes inventados.

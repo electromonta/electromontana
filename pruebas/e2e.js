@@ -416,6 +416,26 @@ async function tomarFoto(p, selector) {
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
   revisar('al volver la señal se firmó', sql("select count(*) from ventas where firmado_en is not null and firma_fiador is null") === '1');
 
+  // Recordar a varios: al tocar Enviar queda "Enviado" enseguida (sin esperar a la base)
+  sql(`select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}', false);
+       select public.registrar_venta(jsonb_build_object('cliente_id', (select id from clientes where nombre = 'Ana Pérez'), 'origen', 'carga_inicial',
+         'fecha', ((now() at time zone 'America/Caracas')::date - 60)::text, 'pagado_antes', 10, 'frecuencia', 'mensual',
+         'items', '[{"descripcion":"Plancha","precio":60}]'::jsonb,
+         'cuotas', jsonb_build_array(jsonb_build_object('fecha', ((now() at time zone 'America/Caracas')::date - 20)::text, 'monto', 50))))`);
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-actualizar]');
+  await p.waitForTimeout(1500);
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-recordatorios]');
+  await p.waitForSelector('.hoja [data-enviar]');
+  const antesEnv = await p.locator('.hoja .etiqueta.e-verde').count();
+  await p.click('.hoja [data-enviar] >> nth=0');
+  await p.waitForTimeout(150);
+  revisar('recordatorio marcado Enviado al instante', await p.locator('.hoja .etiqueta.e-verde').count() === antesEnv + 1);
+  await p.waitForTimeout(1500);
+  revisar('sigue Enviado después de guardarse', await p.locator('.hoja .etiqueta.e-verde').count() === antesEnv + 1);
+  await cerrarHojas(p);
+
   // Cuadre final en la base
   revisar('cuadre de todas las ventas', sql(`select count(*) from ventas v where v.estado <> 'anulada' and (
     abs(v.plan_base + coalesce((select sum(monto) from cuotas q where q.venta_id = v.id and q.vigente), 0) - (v.total + v.ajuste)) > 0.004

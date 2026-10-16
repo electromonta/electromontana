@@ -112,7 +112,9 @@ function textoRecordatorio(c, r, cuando) {
 // Recordar a varios, uno por uno (WhatsApp no deja mandar a muchos de una vez desde una app)
 function hojaRecordatorios(grupo) {
   grupo = grupo || 'atrasados';
+  var enviados = new Set();   // los que se mandaron desde esta ventana (no esperan a que la base responda)
   var h = abrirHoja({ titulo: 'Recordar por WhatsApp', completa: true, html: '' });
+  function ya(id) { return enviados.has(id) || recordadoHoy(id); }
   function lista() {
     var hoy = hoyCaracas(), manana = sumarDias(hoy, 1), out = [];
     ST.clientes.forEach(function (c) {
@@ -126,17 +128,17 @@ function hojaRecordatorios(grupo) {
     return out.sort(function (a, b) { return b.r.dias - a.r.dias || b.monto - a.monto; });
   }
   function pintar() {
-    var l = lista(), hechos = l.filter(function (x) { return recordadoHoy(x.c.id); }).length;
+    var l = lista(), hechos = l.filter(function (x) { return ya(x.c.id); }).length;
     h.cuerpo.innerHTML = '<div class="chips" id="rcGrupo">' + [['atrasados', 'Atrasados'], ['hoy', 'Les toca hoy'], ['manana', 'Les toca mañana']].map(function (g) {
         return '<button type="button" class="chip' + (g[0] === grupo ? ' activo' : '') + '" data-g="' + g[0] + '">' + g[1] + '</button>';
       }).join('') + '</div>' +
       '<p class="tenue chico" style="margin:10px 2px">Toca "Enviar" en cada uno: se abre WhatsApp con el mensaje listo. Al volver, sigue con el próximo. ' +
         (l.length ? hechos + ' de ' + l.length + ' ya recordados hoy.' : '') + '</p>' +
       (l.length ? '<div class="lista">' + l.map(function (x) {
-        var ya = recordadoHoy(x.c.id);
+        var listo = ya(x.c.id);
         return '<div class="item" style="cursor:default"><div class="crece"><div class="item-tit cortar">' + esc(x.c.nombre) + '</div>' +
           '<div class="item-sub">' + fmtUSD(x.monto) + (x.r.atraso > 0 ? ' atrasado · ' + textoDias(x.r.dias) : '') + (x.r.promesa ? ' · ' + esc(textoPromesa(x.r.promesa)) : '') + '</div></div>' +
-          (ya ? '<span class="etiqueta e-verde">' + icono('check', 'ic-chico') + 'Enviado</span>'
+          (listo ? '<span class="etiqueta e-verde">' + icono('check', 'ic-chico') + 'Enviado</span>'
               : '<button type="button" class="btn btn-chico" data-enviar="' + x.c.id + '">' + icono('chat', 'ic-chico') + 'Enviar</button>') + '</div>';
       }).join('') + '</div>' : '<div class="vacio">' + icono('check') + '<p>No hay a quién recordar en este grupo.</p></div>');
   }
@@ -148,7 +150,8 @@ function hojaRecordatorios(grupo) {
       var id = Number(b.dataset.enviar), c = ST.cliPorId.get(id);
       abrirWhatsApp(textoRecordatorio(c, resumenCliente(id), grupo), c.telefono || c.contacto_telefono);
       anotarRecordatorio(id);
-      setTimeout(pintar, 300);
+      enviados.add(id);
+      pintar();
     }
   });
   pintar();

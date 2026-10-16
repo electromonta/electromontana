@@ -372,8 +372,11 @@ const VIDEOS = [
     await v.soltar();
     await v.decir('Cantidad, costo y precio. El número de factura va en la nota.', 2600);
     await v.tocar('#emGuardar', { despues: 2200 });
+    await v.decir('Cada producto dice todo lo que entró y salió, y a qué cliente.', 300);
     await v.tocar('#mcLista .item:has-text("Ventilador")', { despues: 1800 });
-    await v.decir('Cada producto dice todo lo que entró y salió, y a qué cliente.', 3600);
+    await v.acercar('.hoja .lista', 1.4);
+    await v.esperar(3000);
+    await v.alejar(700);
     await v.cerrarHojas();
     await v.decir('Lo que el empleado cobra en efectivo queda <b>en sus manos</b> hasta que lo entrega.', 600);
     await v.tocar('#navTabs [data-mas]', { despues: 700 });
@@ -386,12 +389,14 @@ const VIDEOS = [
     await v.escribir('#enUsd', '75');
     await v.escribir('#enBs', '800');
     await v.soltar();
-    await v.acercar('#enDif', 2.2);
+    await v.acercar('#enDif', 1.7);
+    await v.marco('#enDif');
     await v.decir('La app dice si <b>cuadra</b> o cuánto falta.', 3000);
     await v.alejar(700);
     await v.tocar('#enGuardar', { despues: 2400 });
+    await v.decir('La entrega queda anotada, con lo que se esperaba y lo que entregó.', 300);
     await v.acercar('.seccion .lista .item', 1.7);
-    await v.decir('La entrega queda anotada, con lo que se esperaba y lo que entregó.', 3600);
+    await v.esperar(3300);
     await v.alejar();
     await v.cierre('Mercancía y efectivo', 'Siguiente: reportes');
   } },
