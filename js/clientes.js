@@ -271,7 +271,7 @@ var VistaFicha = (function () {
       (!v.firmado_en && !fCola && v.estado !== 'anulada' ? '<button type="button" class="btn btn-chico" data-firmar="' + v.id + '">' + icono('editar', 'ic-chico') + 'Firmar en la pantalla</button>' : '') +
       (v.foto_contrato ? '<button type="button" class="btn btn-sec btn-chico" data-ver-contrato="' + v.id + '">' + icono('foto', 'ic-chico') + 'Ver foto</button>' : '') +
       '<button type="button" class="btn btn-sec btn-chico" data-foto-contrato="' + v.id + '">' + icono('camara', 'ic-chico') + (v.foto_contrato ? 'Cambiar foto' : 'Tomar foto') + '</button>' +
-      '<button type="button" class="btn btn-sec btn-chico" data-imprimir="' + v.id + '">' + icono('imprimir', 'ic-chico') + 'Imprimir contrato</button>' +
+      '<button type="button" class="btn btn-sec btn-chico" data-imprimir="' + v.id + '">' + icono('contrato', 'ic-chico') + 'Contrato PDF</button>' +
       '<button type="button" class="btn btn-sec btn-chico" data-resumen="' + v.id + '">' + icono('chat', 'ic-chico') + 'Resumen por WhatsApp</button></div>';
     if (v.notas) h += '<p class="tenue" style="margin-top:10px">Nota: ' + esc(v.notas) + '</p>';
     if (v.motivo_cierre) h += '<p class="tenue" style="margin-top:6px">' + (v.estado === 'cerrada' ? 'Cerrada: ' : '') + esc(v.motivo_cierre) + '</p>';

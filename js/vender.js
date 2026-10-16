@@ -479,7 +479,7 @@ var VistaVender = (function () {
         '<div class="pila" style="margin-top:14px">' +
         '<button type="button" class="btn btn-ancho" data-firmar>' + icono('editar') + 'Firmar el contrato en la pantalla</button>' +
         '<button type="button" class="btn btn-sec btn-ancho" data-resumen>' + icono('chat') + 'Enviar resumen por WhatsApp</button>' +
-        '<button type="button" class="btn btn-sec btn-ancho" data-imprimir>' + icono('imprimir') + 'Imprimir contrato</button>' +
+        '<button type="button" class="btn btn-sec btn-ancho" data-imprimir>' + icono('contrato') + 'Contrato en PDF (enviar o imprimir)</button>' +
         (b.cliente.pendiente ? '' : '<button type="button" class="btn btn-sec btn-ancho" data-ver>' + icono('usuario') + 'Ver cliente</button>') + '</div>'
     });
     h.$('[data-resumen]').onclick = function () { enviarResumenVenta(null, b); };

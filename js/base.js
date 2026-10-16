@@ -137,11 +137,12 @@ function toast(msg, tipo, ms) {
 }
 // ¿El error es de conexión (se puede reintentar) o es una respuesta de la base (no se reintenta)?
 // Las fallas del servidor (5xx, base ocupada, sesión por renovar) también se reintentan: con la clave no se repite nada.
+// 401 = la sesión no llegó (permiso vencido sin señal para renovarlo): no es un rechazo de la base.
 function esErrorDeRed(e) {
   if (!e) return false;
   if (e.name === 'AbortError' || e.esTiempo) return true;
   var st = Number(e.status != null ? e.status : e.statusCode);
-  if (st === 0 || st >= 500) return true;
+  if (st === 0 || st === 401 || st >= 500) return true;
   if (e.code && /^(40001|40P01|57014|57P0\d|53\d{3}|08\d{3}|PGRST00\d|PGRST30\d)$/.test(e.code)) return true;
   if (e.code && /^[0-9A-Z]{5}$/.test(e.code)) return false;   // error de Postgres (regla del negocio)
   var m = String(e.message || e.error_description || e.error || e);
@@ -205,7 +206,7 @@ async function traerTodo(tabla, select, preparar, orden) {
   while (true) {
     var q = sb.from(tabla).select(select || '*');
     if (preparar) q = preparar(q);
-    q = q.order(orden || 'id', { ascending: true });
+    String(orden || 'id').split(',').forEach(function (c) { q = q.order(c.trim(), { ascending: true }); });   // orden único: si no, al paginar se saltan o repiten filas
     var r = await q.range(desde, desde + tam - 1);
     if (r.error) throw r.error;
     var lote = r.data || [];

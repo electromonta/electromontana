@@ -37,12 +37,18 @@ var BD = (function () {
         db.createObjectStore('cola', { keyPath: 'clave' });
         db.createObjectStore('fotos');
       };
-      r.onsuccess = function () { res(r.result); };
+      r.onsuccess = function () {
+        var db = r.result;
+        // iOS a veces cierra la conexión al volver de segundo plano: la próxima vez se abre otra
+        db.onclose = function () { p = null; };
+        db.onversionchange = function () { db.close(); p = null; };
+        res(db);
+      };
       r.onerror = function () { p = null; rej(r.error); };
     });
     return p;
   }
-  function tx(store, modo, fn) {
+  function tx(store, modo, fn, reintento) {
     return abrir().then(function (db) {
       return new Promise(function (res, rej) {
         var t = db.transaction(store, modo), req = fn(t.objectStore(store));
@@ -50,6 +56,10 @@ var BD = (function () {
         t.onerror = function () { rej(t.error); };
         t.onabort = function () { rej(t.error); };
       });
+    }).catch(function (e) {
+      if (reintento) throw e;
+      p = null;   // conexión cerrada o dañada: se abre de nuevo y se intenta una vez más
+      return tx(store, modo, fn, true);
     });
   }
   return {
@@ -124,7 +134,7 @@ async function cargarTodo() {
     traerTodo('cuotas', 'id,venta_id,plan,n,tipo,fecha,monto', function (q) { return q.eq('vigente', true); }),
     traerTodo('venta_items', 'id,venta_id,producto_id,descripcion,cantidad,precio,orden,sede_salida'),
     traerTodo('productos', 'id,nombre,precio_sugerido,activo,codigo_yumana'),
-    traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id'),
+    traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id,sede'),
     traerGestiones(),
     traerUltimosAbonos()
   ];
@@ -149,12 +159,17 @@ function traerGestiones(cliId) {
   });
 }
 async function traerUltimosAbonos() {
-  var r = await sb.rpc('resumen_abonos_clientes');
-  if (r.error) throw r.error;
-  return r.data || [];
+  var todos = [], desde = 0;
+  while (true) {   // la base entrega máximo 1000 filas por vez
+    var r = await sb.rpc('resumen_abonos_clientes').order('cliente_id', { ascending: true }).range(desde, desde + 999);
+    if (r.error) throw r.error;
+    todos = todos.concat(r.data || []);
+    if (!r.data || r.data.length < 1000) return todos;
+    desde += 1000;
+  }
 }
 async function recargarExistencias() {
-  ST.existencias = await traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id');
+  ST.existencias = await traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id,sede');
   indexar();
   guardarCache();
 }
@@ -207,7 +222,7 @@ async function recargarProductos() {
   var r = await Promise.all([
     traerTodo('productos', 'id,nombre,precio_sugerido,activo,codigo_yumana'),
     esDueno() ? traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id') : Promise.resolve([]),
-    traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id')
+    traerTodo('existencias', 'producto_id,sede,cantidad', null, 'producto_id,sede')
   ]);
   ST.productos = r[0]; ST.prodCostos = r[1]; ST.existencias = r[2];
   indexar();
@@ -305,7 +320,14 @@ var Cola = {
     pintarCola();
   },
   mias() { var uid = ST.yo && ST.yo.id; return this.ops.filter(function (o) { return o.uid === uid; }); },
-  async guardar(op) { try { await BD.put('cola', op); } catch (e) { console.warn('No se guardó en el teléfono', e); } },
+  async guardar(op) {
+    try { await BD.put('cola', op); return true; } catch (e) {
+      // No se pierde mientras la app siga abierta (está en la memoria y se envía apenas haya señal), pero hay que avisar
+      console.warn('No se guardó en el teléfono', e);
+      toast('Atención: el teléfono no pudo guardar lo que está por enviar. No cierres la app hasta que vuelva la señal y se envíe.', 'error', 12000);
+      return false;
+    }
+  },
   async agregar(op) {
     op.uid = ST.yo.id; op.creado = Date.now(); op.estado = 'pendiente'; op.intentos = 0;
     this.ops.push(op);
@@ -385,7 +407,15 @@ function enviarYEsperar(op, ms) {
   });
 }
 
+// Sin sesión vigente (el permiso de 1 hora venció y no hubo señal para renovarlo) la base respondería
+// "sin permiso" y la operación se daría por rechazada: se espera, como si no hubiera señal.
+async function sesionLista() {
+  var s = await sb.auth.getSession();
+  if (!(s.data && s.data.session)) { var e = new Error('Sin señal para renovar la sesión'); e.esTiempo = true; throw e; }
+}
+
 async function enviarOp(op) {
+  await sesionLista();
   if (op.tipo === 'cliente') return rpc('guardar_cliente', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'venta') return rpc('registrar_venta', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'abono') return rpc('registrar_abono', { p: op.datos, p_clave: op.clave }, 25000);
@@ -418,11 +448,17 @@ async function subirFotoOp(op) {
 
 // Sube una imagen al bucket privado. Si ya estaba (un reintento), sigue sin error.
 async function subirAlBucket(ruta, blob) {
-  var up = await sb.storage.from('fotos').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+  // Con el internet muy lento la subida puede quedarse colgada: a los 90 s se deja para el próximo intento
+  // (si en verdad subió, el reintento la encuentra y sigue).
+  var t, tiempo = new Promise(function (_, rej) { t = setTimeout(function () { var e = new Error('Se agotó el tiempo de espera'); e.esTiempo = true; rej(e); }, 90000); });
+  var up;
+  try { up = await Promise.race([sb.storage.from('fotos').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false }), tiempo]); }
+  finally { clearTimeout(t); }
   if (up.error) {
     var msg = String(up.error.message || '');
     var st = Number(up.error.statusCode || up.error.status || 0);
     if (/already exists|duplicate/i.test(msg) || st === 409) return;   // ya estaba subida
+    if (st === 401 || /jwt|token|unauthorized/i.test(msg)) { var e = new Error(msg); e.esTiempo = true; throw e; }   // sesión por renovar: se reintenta
     if (st >= 400 && st < 500) throw { code: 'EM4XX', message: 'No se pudo subir la imagen: ' + msg };
     throw up.error;
   }

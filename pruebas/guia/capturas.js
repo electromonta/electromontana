@@ -9,7 +9,15 @@ async function tel(b) {
     timezoneId: 'America/Caracas', locale: 'es-VE', geolocation: { latitude: 8.2312, longitude: -70.8201 }, permissions: ['geolocation'] });
   const p = await ctx.newPage();
   p.on('pageerror', e => console.log('ERROR pagina:', e.message));
-  await p.addInitScript(() => { window.open = function () { return null; }; });
+  await p.addInitScript(() => {
+    window.open = function () { return null; };
+    // Como en el iPhone: "Compartir" con archivos (Chromium de Linux no lo trae)
+    navigator.canShare = function () { return true; };
+    navigator.share = function () { return Promise.resolve(); };
+    // y dedo, no ratón (al firmar con page.mouse, Chromium deja de decir que es táctil)
+    var mm = window.matchMedia.bind(window);
+    window.matchMedia = function (q) { return /pointer:\s*coarse/.test(q) ? { matches: true, media: q, addEventListener: function () {}, removeEventListener: function () {} } : mm(q); };
+  });
   return { ctx, p };
 }
 async function sinToasts(p) { await p.addStyleTag({ content: '.toasts{display:none!important}' }); }

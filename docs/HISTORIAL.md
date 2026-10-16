@@ -1,5 +1,18 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 8 — Contrato en PDF y arreglos de la revisión independiente (2026-10-16)
+
+- **Contrato en PDF para WhatsApp:** el botón del contrato (en la venta guardada y en la ficha: **Contrato PDF**) ya no abre la ventana de imprimir. Arma un PDF tamaño carta con las firmas y en el teléfono abre "Compartir": WhatsApp (el chat del cliente, o el propio para imprimirlo después) o Guardar en Archivos. En la computadora se descarga. **Imprimir** queda abajo como segunda opción. El PDF se arma en el mismo teléfono (`js/pdf.js`, sin librerías): el contrato sin firmar sale aun sin señal; el firmado necesita internet para traer las firmas, salvo que estén en el mismo teléfono por enviar.
+- **Revisión independiente de la app** (otra IA leyó el código buscando errores). Arreglado:
+  - Con la app cerrada más de 1 hora y **sin señal**, al abrirla pedía la clave (el permiso de la sesión vence cada hora y sin internet no se renueva). Ahora abre con lo guardado en el teléfono y renueva la sesión sola cuando vuelve la señal.
+  - Con la sesión vencida, lo que estaba por enviar se podía dar por "rechazado: sin permiso" al volver una señal débil. Ahora espera a renovar la sesión.
+  - Si el iPhone cierra la conexión con la memoria del teléfono, lo por enviar podía quedarse solo en la memoria de la app. Ahora la vuelve a abrir y, si aun así no puede, avisa en rojo que no se cierre la app.
+  - Al abrir sin señal no se reintentaba cada 20 s; las fotos colgadas con internet lento trancaban la cola (ahora se sueltan a los 90 s); la página guardada para abrir sin señal podía quedar de una versión distinta a sus archivos; dos lecturas podían cortarse en 1000 filas.
+- En el iPhone, "Compartir" solo abre en el mismo toque: la **copia de seguridad** ahora se prepara y luego se ofrece con un botón **Guardar o enviar** (antes podía terminar en una descarga suelta).
+- Guía actualizada (contrato en PDF; las capturas muestran el iPhone).
+- Pruebas: 212 escenarios de base, 29 de cuentas, 68 del recorrido en teléfono (PDF de una hoja con las dos firmas; abrir sin señal con la sesión vencida, guardar y enviar al volver).
+- La revisión de la base encontró 3 puntos (ninguno grave); van en la entrega 9 con la migración `006`.
+
 ## Entrega 7 — Copias de seguridad y pantallas grandes (2026-10-16)
 
 - **Copia de seguridad descargable** (Más → Ajustes → Copia de seguridad, solo dueños): un archivo con **todos** los datos que queda fuera del sistema (en el teléfono se abre "Compartir": Archivos, Drive o WhatsApp; en la computadora se descarga). La app anota la fecha y quién la hizo, y si hay clientes y pasan 7 días sin copia, Cobrar avisa. También **lista de clientes y saldos** para Excel o Google Sheets.

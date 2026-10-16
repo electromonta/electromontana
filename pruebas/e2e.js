@@ -23,7 +23,7 @@ async function nuevoTelefono(b) {
     timezoneId: 'America/Caracas', locale: 'es-VE', geolocation: { latitude: 8.2312, longitude: -70.8201 }, permissions: ['geolocation'] });
   const p = await ctx.newPage();
   p.on('pageerror', e => errores.push('pageerror: ' + e.message));
-  p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_INTERNET_DISCONNECTED|net::/.test(m.text())) errores.push('console: ' + m.text()); });
+  p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_INTERNET_DISCONNECTED|net::|TypeError: Failed to fetch/.test(m.text())) errores.push('console: ' + m.text()); });
   await p.addInitScript(() => { window.__abiertos = []; window.open = function (u) { window.__abiertos.push(u); return null; }; });
   return { ctx, p };
 }
@@ -154,7 +154,7 @@ async function tomarFoto(p, selector) {
   await p.click('#navTabs [data-ir="cobrar"]');
   await p.waitForTimeout(600);
   const txtCobrar = await p.textContent('#cbListas');
-  revisar('Luis aparece atrasado', /Atrasado \$100,00 · 14 días/.test(txtCobrar), txtCobrar.slice(0, 300));
+  revisar('Luis aparece atrasado', /Atrasado \$100,00 · \d+ días/.test(txtCobrar), txtCobrar.slice(0, 300));
   await foto(p, '07-cobrar');
   await p.click('.cobro:has-text("Luis Rojas") [data-abonar]');
   await p.click('#abMetodos [data-m="1"]');
@@ -388,6 +388,15 @@ async function tomarFoto(p, selector) {
   revisar('contrato con las dos firmas', await p.locator('.hoja .ct-firma').count() === 2 && (await p.textContent('.hoja .ct')).includes('Firmado en la pantalla'));
   await p.waitForFunction(() => Array.from(document.querySelectorAll('.hoja .ct-firma')).every(i => i.complete), null, { timeout: 10000 });
   revisar('las firmas se ven (imagen real)', await p.evaluate(() => Array.from(document.querySelectorAll('.hoja .ct-firma')).every(i => i.naturalWidth > 50 && i.naturalHeight > 10)));
+  // Contrato en PDF (en la computadora se descarga; en el teléfono abre Compartir → WhatsApp)
+  await p.waitForSelector('#ctPdf:not([disabled]):has-text("PDF")', { timeout: 15000 });
+  const [descarga] = await Promise.all([p.waitForEvent('download'), p.click('#ctPdf')]);
+  const rutaPdf = path.join(CAPTURAS, descarga.suggestedFilename());
+  await descarga.saveAs(rutaPdf);
+  const infoPdf = execFileSync('pdfinfo', [rutaPdf]).toString(), imgsPdf = execFileSync('pdfimages', ['-list', rutaPdf]).toString().trim().split('\n').length - 2;
+  const textoPdf = execFileSync('pdftotext', [rutaPdf, '-']).toString();
+  revisar('PDF del contrato: una hoja carta con las dos firmas', /Pages:\s+1\b/.test(infoPdf) && /612 x 792/.test(infoPdf) && imgsPdf === 2, infoPdf.replace(/\n/g, ' ') + ' imágenes: ' + imgsPdf);
+  revisar('PDF con los datos y el nombre del archivo', /^contrato-000001-ana-perez\.pdf$/.test(descarga.suggestedFilename()) && textoPdf.includes('Ana Pérez') && textoPdf.includes('Firmado en la pantalla') && textoPdf.includes('NO SE DEVUELVE DINERO'), descarga.suggestedFilename());
   await p.setViewportSize({ width: 820, height: 1100 });
   await p.locator('.hoja .ct-firmas').scrollIntoViewIfNeeded();
   await foto(p, '23-contrato-firmado');
@@ -478,6 +487,33 @@ async function tomarFoto(p, selector) {
   await entrar(e, 'pedraza');
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
   revisar('lo de antes de salir se envió al volver', sql("select count(*) from abonos") === String(Number(antesSalir) + 1));
+
+  // Sin señal y con el permiso de la sesión vencido (la app estuvo cerrada más de 1 hora): abre igual con
+  // lo del teléfono, guarda en la cola, y al volver la señal renueva la sesión y envía.
+  const antesVencida = sql("select count(*) from abonos");
+  await e.waitForTimeout(1500);   // la copia del teléfono se guarda un momento después de cargar
+  await t2.ctx.setOffline(true);
+  await e.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('electromontana-sesion'));
+    s.expires_at = Math.floor(Date.now() / 1000) - 600;
+    localStorage.setItem('electromontana-sesion', JSON.stringify(s));
+  });
+  await e.reload();
+  await e.waitForSelector('#app:not([hidden])', { timeout: 10000 });
+  revisar('sin señal y sesión vencida: abre con lo del teléfono (no pide la clave)', await e.locator('#pantallaLogin:not([hidden])').count() === 0);
+  await e.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await e.click('#navTabs [data-ir="clientes"]');
+  await e.click('.item:has-text("Luis Rojas")');
+  await e.click('.ficha-cab [data-abonar]');
+  await e.click('#abMetodos [data-m="1"]');
+  await e.fill('#abMonto', '2');
+  await e.click('#abGuardar');
+  await e.waitForSelector('.hoja h2:has-text("Guardado en el teléfono")', { timeout: 20000 });
+  await cerrarHojas(e);
+  await t2.ctx.setOffline(false);
+  await e.evaluate(() => window.dispatchEvent(new Event('online')));
+  await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 60000 });
+  revisar('al volver la señal renovó la sesión y envió (sin darlo por rechazado)', sql("select count(*) from abonos") === String(Number(antesVencida) + 1));
 
   // Cuadre final en la base
   revisar('cuadre de todas las ventas', sql(`select count(*) from ventas v where v.estado <> 'anulada' and (

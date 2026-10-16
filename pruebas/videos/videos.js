@@ -173,7 +173,7 @@ const VIDEOS = [
     await v.decir('Abajo está el resumen. Toca <b>Guardar venta</b>.', 1200);
     await v.tocar('#vGuardar', { despues: 2000 });
     await v.esperarQue('.hoja h2:has-text("guardada")');
-    await v.decir('Venta guardada. Ahora se puede <b>firmar en la pantalla</b>, mandar el <b>resumen</b> o <b>imprimir</b> el contrato.', 4200);
+    await v.decir('Venta guardada. Ahora se puede <b>firmar en la pantalla</b>, mandar el <b>resumen</b> o el <b>contrato en PDF</b>.', 4200);
     await v.tocar('.hoja [data-resumen]', { despues: 400 });
     await v.decir('El resumen le llega por WhatsApp, con todas sus cuotas.');
     await v.whatsapp(6500);

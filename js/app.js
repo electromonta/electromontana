@@ -244,9 +244,18 @@ $('#formLogin').addEventListener('submit', async function (ev) {
   }
 });
 
+// La sesión que la librería guardó en el teléfono. Si el permiso de 1 hora venció y no hay señal para
+// renovarlo, la librería la deja guardada (solo la borra cuando la base dice que ya no sirve): con ella
+// se abre la app con la copia del teléfono, y lo nuevo espera en la cola hasta que se renueve.
+function sesionGuardada() {
+  try {
+    var s = JSON.parse(localStorage.getItem('electromontana-sesion') || 'null');
+    return s && s.refresh_token && s.user && s.user.id ? s : null;
+  } catch (e) { return null; }
+}
+
 async function entrar() {
-  var s = await sb.auth.getSession();
-  var uid = s.data && s.data.session && s.data.session.user && s.data.session.user.id;
+  var g = sesionGuardada(), uid = g && g.user.id;
   if (!uid) { mostrarLogin(); return; }
 
   // 1) Abrir enseguida con la copia del teléfono (sirve sin señal)
@@ -262,8 +271,13 @@ async function entrar() {
     $('#vista').innerHTML = '<div class="cargando">Cargando…</div>';
   }
 
-  // 2) Traer lo último de la base
+  // 2) Renovar la sesión (si hace falta) y traer lo último de la base
   try {
+    var s = await sb.auth.getSession();
+    if (!(s.data && s.data.session)) {
+      if (sesionGuardada()) { var sinSenal = new Error('Sin señal para renovar la sesión'); sinSenal.esTiempo = true; throw sinSenal; }
+      ST.yo = null; mostrarLogin('Tu sesión venció. Vuelve a entrar.'); return;
+    }
     var r = await sb.from('usuarios').select('*').eq('id', uid).maybeSingle();
     if (r.error) throw r.error;
     if (!r.data || !r.data.activo) {
@@ -289,6 +303,7 @@ async function entrar() {
         '<br><button type="button" class="btn btn-sec btn-chico" onclick="location.reload()" style="margin-top:10px">Reintentar</button></div></div>';
     } else {
       toast('Sin señal: estás viendo los datos guardados en el teléfono.', '', 4000);
+      Cola.procesar();   // sigue intentando cada 20 s, aunque la señal vuelva sin avisar
     }
   }
 }
@@ -376,8 +391,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   $('#barraLogo').innerHTML = logoSVG('#ffffff', '#e0904f', 'logo');
   await Cola.cargar();
   try {
-    var s = await sb.auth.getSession();
-    if (s.data && s.data.session) await entrar(); else mostrarLogin();
+    // Con la sesión guardada se abre enseguida (aunque esté vencida y no haya señal); entrar() la renueva
+    if (sesionGuardada()) await entrar(); else mostrarLogin();
   } catch (e) {
     mostrarLogin(errMsg(e));
   }

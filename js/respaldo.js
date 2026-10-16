@@ -6,7 +6,7 @@
 // Tablas que entran en la copia completa (todo lo que un dueño puede leer). [tabla, orden]
 var TABLAS_COPIA = [
   ['config', 'id'], ['usuarios', 'id'], ['metodos_pago', 'id'], ['tasas', 'id'], ['clientes', 'id'],
-  ['productos', 'id'], ['producto_costos', 'producto_id'], ['existencias', 'producto_id'], ['movimientos_inventario', 'id'],
+  ['productos', 'id'], ['producto_costos', 'producto_id'], ['existencias', 'producto_id,sede'], ['movimientos_inventario', 'id'],
   ['ventas', 'id'], ['venta_items', 'id'], ['venta_item_costos', 'item_id'], ['cuotas', 'id'], ['abonos', 'id'],
   ['entregas', 'id'], ['eventos_venta', 'id'], ['gestiones', 'id'], ['auditoria', 'id']
 ];
@@ -46,8 +46,16 @@ async function armarCopia(avance) {
   };
 }
 
+// ¿Este aparato abre "Compartir" con archivos? (teléfono o tablet; en la computadora se descarga)
+function puedeCompartirArchivos() {
+  var tactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (!tactil || !navigator.canShare || typeof File !== 'function') return false;
+  try { return navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
+}
+
 // Entrega un archivo: en el teléfono o la tablet abre "Compartir" (Guardar en Archivos, Drive, WhatsApp…);
 // en la computadora lo descarga. Devuelve false si la persona canceló.
+// Ojo: en el iPhone "Compartir" solo abre si se llama en el mismo toque (sin esperar internet antes).
 async function entregarArchivo(nombre, contenido, tipo) {
   var blob = new Blob([contenido], { type: tipo });
   var tactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
@@ -65,10 +73,32 @@ async function entregarArchivo(nombre, contenido, tipo) {
   return true;
 }
 
+// Para un archivo que tardó en armarse (bajando datos): en el teléfono se ofrece con un botón, así
+// "Compartir" abre en ese toque; en la computadora se descarga de una vez.
+function ofrecerArchivo(nombre, contenido, tipo, titulo, texto) {
+  if (!puedeCompartirArchivos()) return entregarArchivo(nombre, contenido, tipo);
+  return new Promise(function (res) {
+    var hecho = false;
+    var h = abrirHoja({
+      titulo: titulo,
+      html: '<div class="aviso aviso-ok">' + icono('check') + '<div>' + texto + '</div></div>',
+      pie: '<button type="button" class="btn btn-ancho" id="ofEnviar">' + icono('enviar') + 'Guardar o enviar</button>',
+      alCerrar: function () { if (!hecho) res(false); }
+    });
+    h.$('#ofEnviar').onclick = function () {
+      if (hecho) return;
+      hecho = true;
+      entregarArchivo(nombre, contenido, tipo).then(function (ok) { res(ok); h.cerrar(); });
+    };
+  });
+}
+
 async function descargarCopiaCompleta(btn) {
   var copia = await armarCopia(function (i, n) { if (btn && btn.isConnected) btn.textContent = 'Preparando copia… ' + i + ' de ' + n; });
   var hoy = hoyCaracas();
-  var ok = await entregarArchivo('electromontana-copia-' + hoy + '.json', JSON.stringify(copia), 'application/json');
+  var ok = await ofrecerArchivo('electromontana-copia-' + hoy + '.json', JSON.stringify(copia), 'application/json', 'Copia lista',
+    'La copia está lista: ' + plural(copia.conteo.clientes, 'cliente', 'clientes') + ' y ' + plural(copia.conteo.abonos, 'abono', 'abonos') +
+    '. Toca <b>Guardar o enviar</b> y elige dónde: Archivos, Drive o un chat de WhatsApp.');
   if (!ok) { toast('No se guardó la copia', '', 3000); return false; }
   try {
     var r = await rpc('anotar_copia', { p_resumen: copia.conteo });
