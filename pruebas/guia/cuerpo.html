@@ -93,7 +93,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     <li><a href="#cobrar">La pantalla Cobrar</a></li>
     <li><a href="#abono">Registrar un abono</a></li>
     <li><a href="#clientes">Clientes</a></li>
-    <li><a href="#vender">Vender a crédito</a></li>
+    <li><a href="#vender">Vender a crédito o de contado</a></li>
     <li><a href="#firma">Firmar el contrato</a></li>
     <li><a href="#yadebia">Clientes que ya debían</a></li>
     <li><a href="#nopagan">Cuando no pagan</a></li>
@@ -105,7 +105,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     <li><a href="#copias">Copias de seguridad</a></li>
     <li><a href="#socios">Seguridad entre los socios</a></li>
     <li><a href="#senal">Sin señal</a></li>
-    <li><a href="#empleado">Lo que puede hacer el empleado</a></li>
+    <li><a href="#empleado">El empleado de Pedraza</a></li>
     <li><a href="#preguntas">Preguntas frecuentes</a></li>
     <li><a href="#mostrar">Cómo mostrarlo (para Kinan)</a></li>
   </ol>
@@ -135,6 +135,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
       <ul>
         <li><b>Abajo</b> están las cinco partes: <b>Cobrar</b> (la de inicio), <b>Clientes</b>, <b>Vender</b> (el botón redondo cobre), <b>Cobros</b> y <b>Más</b>.</li>
         <li><b>Arriba a la derecha</b> está la <b>tasa del día</b>. Si algo no se ha enviado, al lado sale <b>"1 por enviar"</b>.</li>
+        <li><b>Arriba a la izquierda</b> sale la <b>flecha de Volver</b>: regresa a la pantalla de antes (por ejemplo, de la ficha de un cliente a la lista). El botón "atrás" del teléfono hace lo mismo, y si hay una ventana abierta, la cierra.</li>
       </ul>
       <p>Los colores siempre dicen lo mismo:</p>
       <div class="colores"><span class="c-rojo">Rojo: atrasado</span><span class="c-azul">Azul: le toca hoy</span><span class="c-verde">Verde: al día</span></div>
@@ -235,12 +236,13 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     <div>
       <h3>La ficha del cliente</h3>
       <ul>
-        <li>Arriba: cuánto <b>debe</b>, cuánto está <b>atrasado</b> y la próxima cuota. Avisos si lleva cuotas sin pagar, si prometió pagar o si hay abonos por enviar.</li>
+        <li>Arriba: cuánto <b>debe</b>, cuánto está <b>atrasado</b> y la próxima cuota. Avisos si lleva cuotas sin pagar, si prometió pagar o si hay abonos por enviar. Debajo del nombre dice <b>quién lo anotó y cuándo</b> ("Lo anotó Franklin el 21/10/2026").</li>
         <li>Botones: <span class="boton">Registrar abono</span>, Llamar, WhatsApp, Recordar y Ubicar (o Mapa si ya tiene la ubicación).</li>
-        <li><b>Ventas:</b> toca una venta para ver lo que se llevó, el calendario de cuotas (las pagadas con su marca), la ganancia (solo dueños) y el contrato.</li>
+        <li><b>Ventas:</b> cada una dice <b>de quién es el crédito</b> ("Crédito de Daniel") y, si la anotó otra persona, quién ("la anotó Franklin"). Toca una venta para ver lo que se llevó, el calendario de cuotas (las pagadas con su marca), la ganancia (solo dueños) y el contrato.</li>
         <li><b>Abonos</b>, <b>Notas de cobro</b> y <b>Datos</b> (con el botón <span class="boton">Editar</span>).</li>
       </ul>
       <p>Los dueños pueden marcar <b>No venderle más</b> (en Editar) y <b>quitar</b> un cliente que ya no debe nada.</p>
+      <p>En <b>Clientes</b> y en <b>Cobrar</b>, cada cliente dice de quién son sus créditos ("de Daniel"), y los dueños tienen los filtros <span class="boton">De Franklin</span> y <span class="boton">De Daniel</span> para ver solo los de cada uno.</p>
     </div>
     <figure class="tel"><img src="guia/12-ficha.jpg" alt="Ficha de un cliente atrasado" width="780" height="1688" loading="lazy"><figcaption>Ficha: lo que debe y lo atrasado</figcaption></figure>
     <figure class="tel"><img src="guia/13-ficha-venta.jpg" alt="Detalle de una venta con su calendario de cuotas" width="780" height="1688" loading="lazy"><figcaption>Una venta por dentro</figcaption></figure>
@@ -248,12 +250,12 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="vender">
-  <h2><span class="n">5</span>Vender a crédito</h2>
-  <p class="intro">El botón redondo <b>Vender</b> de abajo. Se llena de arriba hacia abajo en cinco pasos.</p>
+  <h2><span class="n">5</span>Vender a crédito o de contado</h2>
+  <p class="intro">El botón redondo <b>Vender</b> de abajo. Arriba se elige <span class="boton">A crédito</span> o <span class="boton">De contado</span>. A crédito se llena de arriba hacia abajo en cinco pasos.</p>
   <div class="bloque dos-fotos">
     <div>
       <ol class="pasos">
-        <li><b>Cliente:</b> elígelo o crea uno nuevo. Si estás en su ficha, toca <span class="boton">Nueva venta</span> y ya viene puesto.</li>
+        <li><b>Cliente:</b> elígelo o crea uno nuevo. Si estás en su ficha, toca <span class="boton">Nueva venta</span> y ya viene puesto. Debajo, <b>"¿De quién es este crédito?"</b>: viene marcado quien está anotando; si la venta es del otro socio (o del empleado), toca su nombre. El empleado no elige: sus ventas quedan a su nombre.</li>
         <li><b>Lo que se lleva:</b> escribe el producto (la app sugiere los que ya se han vendido), la cantidad y el <b>precio al cliente</b>. Los dueños también ponen el <b>costo</b> (lo que costó en Yumana) para saber la ganancia. Si el producto está guardado en la tienda de Pedraza, sale la casilla <b>"Sale de la tienda de Pedraza (hay N)"</b>.</li>
         <li><b>Inicial:</b> escribe el monto o toca <span class="boton">Usar el 30 %</span>. Si la pagó en el momento, deja marcada <b>"La pagó ahora"</b> y elige cómo pagó.</li>
         <li><b>Cuotas:</b> semanal, quincenal (el 15 y el último del mes) o mensual; cuántas cuotas o de cuánto cada una, y la fecha de la primera. También se pueden poner a mano, una por una.</li>
@@ -261,6 +263,8 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
       </ol>
       <p>Abajo se ve el resumen (total, inicial y cuotas). Toca <span class="boton">Guardar venta</span>.</p>
       <p>Al guardar salen tres opciones: <b>firmar el contrato en la pantalla</b>, mandar el <b>resumen por WhatsApp</b> o el <b>contrato en PDF</b> (para enviarlo o imprimirlo).</p>
+      <h3>De contado</h3>
+      <p>Toca <span class="boton">De contado</span>: se elige el cliente y lo que se lleva, y en <b>Pago</b> cómo pagó (efectivo, Zelle, bolívares…). No lleva cuotas ni contrato. Al guardar, <span class="boton">Enviar recibo por WhatsApp</span>. Si sale de la tienda, se descuenta igual.</p>
     </div>
     <figure class="tel"><img src="guia/16-vender.jpg" alt="Formulario de venta con el producto que sale de la tienda" width="780" height="1688" loading="lazy"><figcaption>Producto, precio y costo</figcaption></figure>
     <figure class="tel"><img src="guia/17-vender-cuotas.jpg" alt="Calendario de cuotas de la venta" width="780" height="1688" loading="lazy"><figcaption>Las cuotas se arman solas</figcaption></figure>
@@ -331,6 +335,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
           <tr><td><b>Cerrar venta</b></td><td>Se deja de cobrar lo que falta (por ejemplo, se retiró y se va a vender a otro). Se puede reabrir. <b>Lo aprueba el otro socio.</b></td></tr>
           <tr><td><b>Volver a la tienda</b></td><td>En una venta cerrada con la mercancía retirada: el artículo vuelve a la mercancía de la tienda para venderlo otra vez.</td></tr>
           <tr><td><b>Anular</b></td><td>Solo para una venta registrada por error y sin abonos. <b>Lo aprueba el otro socio.</b></td></tr>
+          <tr><td><b>De quién es</b></td><td>Pasa el crédito a otra persona (por ejemplo, si se anotó a nombre de Franklin y era de Daniel). <b>Lo aprueba el otro socio</b> y queda en el historial de la venta.</td></tr>
         </tbody>
       </table></div>
       <p>También desde la venta, los dueños pueden <b>poner o cambiar el costo</b> de cada producto.</p>
@@ -371,6 +376,8 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li>Escribe cada producto (si ya existe, elígelo de la lista), la cantidad, el costo y el precio de venta.</li>
         <li>Pon el número de factura de Yumana en la nota y toca <span class="boton">Guardar entrada</span>.</li>
       </ol>
+      <h3>Si la recibe el empleado</h3>
+      <p>El encargado de Pedraza también puede anotar lo que llega a <b>su</b> tienda: <span class="boton">Anotar mercancía que llegó</span>, cada producto y cuántos. <b>No pone costos</b> (no los ve), y el precio solo lo pone si el producto es nuevo. Queda a su nombre en cada producto. Después, uno de ustedes le pone el costo: en Mercancía sale cuántos productos están "sin costo"; tóquenlo → <span class="boton">Editar</span>.</p>
       <h3>Cuando se vende algo de la tienda</h3>
       <p>Al vender, marca <b>"Sale de la tienda de Pedraza"</b>: se descuenta solo. Al empleado le sale marcada sola. Si se anula la venta, vuelve a la tienda.</p>
       <h3>Contar</h3>
@@ -412,6 +419,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li><b>Cobrado por semana</b> (las últimas 8) y por método de pago.</li>
         <li><b>Ventas por mes</b> con su ganancia (lo vendido menos lo que costó en Yumana).</li>
         <li><b>Cómo van los que deben:</b> cuántos están al día y cuántos atrasados de 1 a 15 días, de 16 a 30, de 31 a 60 y de más de 60.</li>
+        <li><b>De quién son los créditos:</b> cuántos créditos activos tiene cada uno, cuánto le deben, cuánto está atrasado y cuánto vendió este mes.</li>
         <li><b>Atrasados</b> con su último abono y su última nota.</li>
         <li><b>Lo más vendido</b> en los últimos 90 días y cuánto vale la mercancía guardada.</li>
       </ul>
@@ -476,6 +484,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <li><b>Descuento</b> en una venta.</li>
         <li><b>Cerrar una venta</b> (dejar de cobrar lo que falta).</li>
         <li><b>Anular una venta</b>.</li>
+        <li><b>Pasar un crédito a otra persona</b> (botón <span class="boton">De quién es</span> en la venta).</li>
       </ul>
       <p>El recargo, más tiempo, retirar y devolver la mercancía no la necesitan (no bajan lo que deben), pero también quedan en el historial.</p>
       <h3>Cómo se pide y cómo se aprueba</h3>
@@ -528,7 +537,21 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="empleado">
-  <h2><span class="n">17</span>Lo que puede hacer el empleado de Pedraza</h2>
+  <h2><span class="n">17</span>El empleado de Pedraza</h2>
+  <div class="bloque">
+    <div>
+      <h3>Darle su usuario (lo hace uno de ustedes)</h3>
+      <ol class="pasos">
+        <li><b>Más → Ajustes → Usuarios →</b> <span class="boton">Nuevo</span>.</li>
+        <li>Su nombre, un <b>usuario</b> corto para entrar (por ejemplo <b>jose</b>, sin espacios) y una <b>clave temporal</b> (mínimo 6).</li>
+        <li>Rol <span class="boton">Empleado</span> y sede <span class="boton">Pedraza</span>. Abajo sale lo que podrá y no podrá hacer. Toca <span class="boton">Crear usuario</span>.</li>
+        <li>Pásale el link de la app, su usuario y la clave temporal por WhatsApp. La primera vez que entra, la app le pide <b>su propia clave</b>.</li>
+        <li>Pásale también <b>su guía</b> (en su teléfono: Más → Guía de uso) y el video para el empleado.</li>
+      </ol>
+      <p><b>Si se le olvida la clave:</b> Ajustes → Usuarios → él → <span class="boton">Ponerle una clave nueva</span> (al entrar la cambia). <b>Si deja de trabajar con ustedes:</b> desmarquen <b>"Puede entrar"</b>; lo que hizo queda guardado.</p>
+    </div>
+    <figure class="tel"><img src="guia/41-nuevo-empleado.jpg" alt="Crear el usuario del empleado en Ajustes" width="780" height="1688" loading="lazy"><figcaption>Crear su usuario</figcaption></figure>
+  </div>
   <div class="bloque">
     <div>
       <p>Entra con su propio usuario y solo ve los <b>clientes de Pedraza</b>.</p>
@@ -537,11 +560,13 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
         <tbody>
           <tr><td>Clientes nuevos, ventas a crédito, abonos, notas, firmas</td><td class="si">Sí</td><td class="si">Sí (de Pedraza)</td></tr>
           <tr><td>Vender de la mercancía de la tienda</td><td class="si">Sí</td><td class="si">Sí (de su tienda)</td></tr>
+          <tr><td>Vender de contado</td><td class="si">Sí</td><td class="si">Sí</td></tr>
           <tr><td>Ver costos y ganancia</td><td class="si">Sí</td><td class="no">No</td></tr>
           <tr><td>Cambiar la tasa</td><td class="si">Sí</td><td class="no">No (usa la de ustedes)</td></tr>
           <tr><td>Cargar clientes que ya debían</td><td class="si">Sí</td><td class="no">No</td></tr>
-          <tr><td>Recargo, descuento, más tiempo, retirar, cerrar, anular</td><td class="si">Sí</td><td class="no">No</td></tr>
-          <tr><td>Entradas y conteos de mercancía</td><td class="si">Sí</td><td class="no">No (solo ve lo que hay)</td></tr>
+          <tr><td>Recargo, descuento, más tiempo, retirar, cerrar, anular</td><td class="si">Sí (lo que baja la deuda, con aprobación del otro)</td><td class="no">No</td></tr>
+          <tr><td>Anotar la mercancía que llega</td><td class="si">Sí, con costo</td><td class="si">Sí, a su tienda y sin costo</td></tr>
+          <tr><td>Conteos de mercancía y costos</td><td class="si">Sí</td><td class="no">No</td></tr>
           <tr><td>Reportes, usuarios, condiciones del contrato</td><td class="si">Sí</td><td class="no">No</td></tr>
           <tr><td>Efectivo por entregar</td><td class="si">Ven el del empleado y lo reciben</td><td class="si">Ve el suyo</td></tr>
         </tbody>
@@ -595,4 +620,4 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 
 </div></main>
 
-<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 6 de la app (octubre de 2026).</div></footer>
+<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 9 de la app (octubre de 2026). El encargado de Pedraza tiene su propia guía: <a href="guia-empleado.html">guía del empleado</a>.</div></footer>

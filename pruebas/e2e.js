@@ -344,7 +344,7 @@ async function tomarFoto(p, selector) {
   await e.click('#navTabs [data-mas]');
   await e.click('.hoja [data-ir="mercancia"]');
   await e.waitForSelector('#mcLista');
-  revisar('empleado ve su tienda sin botón de entrada', (await e.textContent('#mcLista')).includes('Licuadora Oster') && await e.locator('#mcEntrada').count() === 0);
+  revisar('empleado ve su tienda y anota lo que llega (no la "Entrada" de los dueños)', (await e.textContent('#mcLista')).includes('Licuadora Oster') && (await e.textContent('#mcEntrada')).includes('Anotar mercancía que llegó') && await e.locator('#mcSede').count() === 0);
   await e.click('#navTabs [data-mas]');
   revisar('empleado sin reportes', await e.locator('.hoja [data-ir="reportes"]').count() === 0);
   await cerrarHojas(e);
@@ -488,6 +488,42 @@ async function tomarFoto(p, selector) {
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
   revisar('lo de antes de salir se envió al volver', sql("select count(*) from abonos") === String(Number(antesSalir) + 1));
 
+  // El encargado de Pedraza anota la mercancía que llegó (sin costos) y vende de contado
+  await e.click('#navTabs [data-mas]');
+  await e.click('.hoja [data-ir="mercancia"]');
+  await e.waitForSelector('#mcEntrada');
+  revisar('el empleado tiene "Anotar mercancía que llegó"', (await e.textContent('#mcEntrada')).includes('Anotar mercancía que llegó'));
+  await e.click('#mcEntrada');
+  await e.waitForSelector('#emFilas');
+  revisar('sin costo ni otra tienda en su formulario', await e.locator('#emFilas [data-c="costo"]').count() === 0 && await e.locator('#emSede').count() === 0);
+  await e.fill('#emFilas [data-c="nombre"]', 'Plancha Oster');
+  await e.fill('#emFilas [data-c="cantidad"]', '2');
+  await e.fill('#emFilas [data-c="precio"]', '28');
+  await e.click('#emGuardar');
+  await e.waitForTimeout(1500);
+  revisar('la mercancía quedó en Pedraza, a su nombre y sin costo', sql("select e.cantidad || '/' || p.precio_sugerido || '/' || (select count(*) from producto_costos c where c.producto_id = p.id) || '/' || (select u.usuario from movimientos_inventario m join usuarios u on u.id = m.usuario_id where m.producto_id = p.id limit 1) from productos p join existencias e on e.producto_id = p.id and e.sede = 'pedraza' where p.nombre = 'Plancha Oster'") === '2/28.00/0/pedraza');
+  await cerrarHojas(e);
+  await e.click('#navTabs [data-ir="vender"]');
+  await e.waitForSelector('#vForma');
+  await e.click('#vForma [data-c="1"]');
+  revisar('el empleado no elige de quién es la venta (es suya)', await e.locator('#vVendChips').count() === 0);
+  revisar('de contado: sin cuotas ni contrato', await e.locator('#vCardCuotas').isHidden() && await e.locator('#vCardContrato').isHidden());
+  await e.click('#vCliente [data-elegir]');
+  await e.fill('#ecBusca', 'Luis');
+  await e.waitForTimeout(400);
+  await e.click('#ecLista [data-ref]:has-text("Luis Rojas")');
+  await e.fill('#vItems [data-campo="descripcion"]', 'plancha');
+  await e.click('#vItems .sugerencias [data-p]');
+  await e.click('#vMetodos [data-m="1"]');
+  await e.click('#vGuardar');
+  await e.waitForSelector('.hoja h2:has-text("Venta de contado")', { timeout: 20000 });
+  await foto(e, '24b-contado');
+  revisar('venta de contado pagada, salió de la tienda y el efectivo es del empleado', sql("select v.frecuencia || '/' || v.estado || '/' || v.saldo || '/' || (select cantidad from existencias where producto_id = (select id from productos where nombre = 'Plancha Oster') and sede = 'pedraza') || '/' || (select u.usuario from abonos a join usuarios u on u.id = a.recibido_por where a.venta_id = v.id) from ventas v order by v.id desc limit 1") === 'contado/pagada/0.00/1/pedraza');
+  await e.click('.hoja [data-resumen]');
+  const reciboContado = await e.evaluate(() => decodeURIComponent(window.__abiertos.pop() || ''));
+  revisar('recibo de contado por WhatsApp', reciboContado.includes('Pagó completo') && reciboContado.includes('$28,00'), reciboContado.slice(0, 160));
+  await cerrarHojas(e);
+
   // Seguridad entre socios: Franklin pide anular un abono; no cambia nada hasta que Daniel lo aprueba desde su teléfono
   await p.click('#navTabs [data-ir="clientes"]');
   await p.click('.item:has-text("Ana Pérez")');
@@ -532,6 +568,80 @@ async function tomarFoto(p, selector) {
   revisar('historial: quién pidió, quién aprobó y la anulación', txtHist.includes('Anuló un abono') && txtHist.includes('Pidió: anular un abono') && txtHist.includes('Aprobó: anular un abono'));
   revisar('historial: el cambio hecho por fuera de la app también sale', txtHist.includes('Cambio hecho por fuera de la app'));
   await tDaniel.ctx.close();
+
+  // Botón Volver y "atrás" del teléfono
+  await p.click('#navTabs [data-ir="clientes"]');
+  await p.click('.item:has-text("Ana Pérez")');
+  await p.waitForSelector('.ficha-cab');
+  revisar('en la ficha está el botón Volver', await p.locator('#btnVolver').isVisible());
+  const anotoAna = sql("select u.nombre from clientes c join usuarios u on u.id = c.creado_por where c.nombre = 'Ana Pérez'");
+  revisar('la ficha dice quién anotó al cliente', (await p.textContent('.ficha-cab')).includes('Lo anotó ' + anotoAna + ' el '), anotoAna);
+  await p.click('#btnVolver');
+  await p.waitForSelector('#clBusca');
+  revisar('Volver regresa a la lista de clientes', (await p.evaluate(() => location.hash)) === '#clientes');
+  await p.click('.item:has-text("Ana Pérez")');
+  await p.waitForSelector('.ficha-cab');
+  await p.goBack();
+  await p.waitForSelector('#clBusca');
+  revisar('el "atrás" del teléfono también', (await p.evaluate(() => location.hash)) === '#clientes');
+  await p.click('.item:has-text("Ana Pérez")');
+  await p.click('.ficha-cab [data-abonar]');
+  await p.waitForSelector('.velo');
+  await p.goBack();
+  await p.waitForTimeout(500);
+  revisar('con una ventana abierta, "atrás" la cierra y se queda en el cliente', await p.locator('.velo').count() === 0 && (await p.evaluate(() => location.hash)).startsWith('#cliente/'));
+
+  // De quién es el crédito: Franklin anota una venta a nombre de Daniel, después pide pasarla a él y Daniel lo aprueba
+  await p.click('.seccion [data-vender]');
+  await p.waitForSelector('#vVendChips');
+  revisar('el dueño elige de quién es el crédito (de entrada, suyo)', (await p.textContent('#vVendedor')).includes('¿De quién es este crédito?') &&
+    (await p.textContent('#vVendChips .chip.activo')) === 'Franklin');
+  await p.click('#vVendChips .chip:has-text("Daniel")');
+  await p.fill('#vItems [data-campo="descripcion"]', 'Microondas');
+  await p.fill('#vItems [data-campo="precio"]', '120');
+  await foto(p, '27-de-quien');
+  await p.click('#vGuardar');
+  await p.waitForSelector('.hoja h2:has-text("guardada")', { timeout: 20000 });
+  revisar('al guardar dice de quién quedó', (await p.textContent('.hoja')).includes('Crédito de Daniel'));
+  const idMicro = sql("select id from ventas where total = 120 order by id desc limit 1");
+  const deQuien = () => sql("select u.usuario || '/' || (select usuario from usuarios where id = v.creado_por) from ventas v join usuarios u on u.id = v.vendedor_id where v.id = " + idMicro);
+  revisar('en la base: de Daniel, la anotó Franklin', deQuien() === 'daniel/franklin');
+  await p.click('.hoja [data-ver]');
+  await p.waitForSelector('[data-venta="' + idMicro + '"]');
+  revisar('la ficha muestra de quién es y quién la anotó', (await p.textContent('[data-venta="' + idMicro + '"]')).includes('Crédito de Daniel · la anotó Franklin'));
+  await p.click('[data-venta="' + idMicro + '"] .venta-cab');
+  await p.click('[data-venta="' + idMicro + '"] [data-accion="vendedor"]');
+  await p.waitForSelector('#cvGente');
+  await p.click('#cvGente .chip:has-text("Franklin")');
+  await p.fill('#cvMotivo', 'La vendí yo');
+  await p.click('#cvGuardar');
+  await p.waitForTimeout(1500);
+  revisar('pedido; sigue de Daniel hasta que él lo apruebe', sql("select count(*) from solicitudes where estado = 'pendiente' and tipo = 'cambiar_vendedor'") === '1' && deQuien() === 'daniel/franklin');
+  const tDaniel2 = await nuevoTelefono(b);
+  const d2 = tDaniel2.p;
+  await d2.goto(URL_APP);
+  await d2.fill('#loginUsuario', 'daniel');
+  await d2.fill('#loginClave', 'nueva123');
+  await d2.click('#btnEntrar');
+  await d2.waitForSelector('[data-aprobaciones]', { timeout: 15000 });
+  await d2.click('[data-aprobaciones]');
+  await d2.waitForSelector('[data-aprobar]');
+  revisar('Daniel ve qué se pasa y a quién', (await d2.textContent('.hoja')).includes('de Daniel a Franklin'));
+  await d2.click('[data-aprobar]');
+  await d2.click('#cfSi');
+  await d2.waitForFunction(() => !document.querySelector('[data-aprobar]'), null, { timeout: 15000 });
+  revisar('aprobado: el crédito es de Franklin y queda en el historial de la venta', deQuien() === 'franklin/franklin' &&
+    sql("select count(*) from eventos_venta where tipo = 'vendedor' and venta_id = " + idMicro) === '1');
+  await tDaniel2.ctx.close();
+  await p.click('#navTabs [data-ir="clientes"]');
+  revisar('filtro por persona en Clientes', await p.locator('#clFiltro .chip:has-text("De Franklin")').count() === 1);
+  await p.click('#clFiltro .chip:has-text("De Franklin")');
+  revisar('con el filtro sale Ana Pérez', await p.locator('#clLista .item:has-text("Ana Pérez")').count() === 1);
+  await p.click('#clFiltro .chip:has-text("Todos")');
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="reportes"]');
+  await p.waitForSelector('h2:has-text("De quién son los créditos")', { timeout: 15000 });
+  revisar('Reportes: cuánto le deben a cada uno', (await p.textContent('.seccion:has(h2:has-text("De quién son"))')).includes('Franklin'));
 
   // Sin señal y con el permiso de la sesión vencido (la app estuvo cerrada más de 1 hora): abre igual con
   // lo del teléfono, guarda en la cola, y al volver la señal renueva la sesión y envía.

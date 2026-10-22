@@ -2,6 +2,7 @@
 'use strict';
 
 var VistaActual = null, _vistaNombre = '', _vistaArg = '';
+var _pila = [];   // pantallas anteriores (para el botón Volver y el "atrás" del teléfono)
 var VISTAS = {
   cobrar: { v: VistaCobrar, nombre: 'Cobrar' },
   clientes: { v: VistaClientes, nombre: 'Clientes' },
@@ -75,15 +76,24 @@ function parsearHash() {
   return i < 0 ? { n: h, arg: '' } : { n: h.slice(0, i), arg: h.slice(i + 1) };
 }
 
-function ir(nombre, arg) {
+// modo: sin modo = pantalla nueva (se puede volver a la anterior); 'reemplazar' = sin dejar la anterior
+// (después de guardar o de quitar algo); 'atras' = la pidió el botón Volver o el "atrás" del teléfono
+function ir(nombre, arg, modo) {
   if (!VISTAS[nombre]) { nombre = 'cobrar'; arg = ''; }
+  arg = arg || '';
   var hash = '#' + nombre + (arg ? '/' + arg : '');
-  if (location.hash !== hash) history.replaceState(null, '', hash);
-  _vistaNombre = nombre; _vistaArg = arg || '';
+  var misma = nombre === _vistaNombre && arg === _vistaArg;
+  if (!modo && _vistaNombre && !misma) {
+    _pila.push({ n: _vistaNombre, arg: _vistaArg });
+    if (_pila.length > 40) _pila.shift();
+    history.pushState(null, '', hash);
+  } else if (location.hash !== hash) history.replaceState(null, '', hash);
+  _vistaNombre = nombre; _vistaArg = arg;
   VistaActual = VISTAS[nombre].v;
   $('#tituloVista').textContent = VISTAS[nombre].nombre;
   document.title = VISTAS[nombre].nombre + ' · Electro Montana';
   pintarNav();
+  pintarVolver();
   var cont = $('#vista');
   cont.innerHTML = '';
   window.scrollTo(0, 0);
@@ -91,6 +101,32 @@ function ir(nombre, arg) {
     console.error(e);
     cont.innerHTML = '<div class="aviso aviso-error">' + icono('alerta') + '<div>No se pudo abrir: ' + esc(errMsg(e)) + '</div></div>';
   });
+}
+function pintarVolver() {
+  var hay = _pila.length > 0 || !!(VISTAS[_vistaNombre] && VISTAS[_vistaNombre].padre);
+  $('#btnVolver').hidden = !hay;
+  $('.barra-sup').classList.toggle('con-volver', hay);
+}
+function volver() {
+  if (_pila.length) { history.back(); return; }
+  ir((VISTAS[_vistaNombre] && VISTAS[_vistaNombre].padre) || 'cobrar', '', 'reemplazar');
+}
+// "Atrás" del teléfono o del navegador: con una ventana abierta, la cierra y la pantalla se queda;
+// si no, vuelve a la pantalla anterior.
+function alCambiarHistorial() {
+  if (!ST.yo || !_vistaNombre) return;
+  var p = parsearHash();
+  if (p.n === _vistaNombre && p.arg === _vistaArg) return;
+  var arriba = _hojas[_hojas.length - 1];
+  if (arriba) {
+    history.pushState(null, '', '#' + _vistaNombre + (_vistaArg ? '/' + _vistaArg : ''));
+    if (!arriba.fija) arriba.cerrar();
+    return;
+  }
+  var tope = _pila[_pila.length - 1];
+  if (tope && tope.n === p.n && tope.arg === p.arg) _pila.pop();
+  else _pila.push({ n: _vistaNombre, arg: _vistaArg });   // adelante, o una dirección escrita a mano
+  ir(p.n, p.arg, 'atras');
 }
 // Vuelve a dibujar la pantalla actual con los datos nuevos (sin perder lo que se está escribiendo)
 function repintar() {
@@ -116,7 +152,8 @@ function menuMas() {
       (esDueno() ? '<button type="button" class="item" data-aprobaciones>' + icono('candado') + '<div class="crece"><div class="item-tit">Aprobaciones' +
           (porAprobar().length ? ' <span class="etiqueta e-ambar">' + porAprobar().length + '</span>' : '') + '</div><div class="item-sub">Anular, descontar o cerrar lo aprueba el otro socio</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
         '<button type="button" class="item" data-historial>' + icono('reloj') + '<div class="crece"><div class="item-tit">Historial de cambios</div><div class="item-sub">Quién cambió qué y cuándo (no se borra)</div></div>' + icono('flecha', 'ic-chico') + '</button>' : '') +
-      '<a class="item" href="guia.html" target="_blank" rel="noopener">' + icono('info') + '<div class="crece"><div class="item-tit">Guía de uso</div><div class="item-sub">Cómo se usa cada pantalla, paso a paso</div></div>' + icono('flecha', 'ic-chico') + '</a>' +
+      '<a class="item" href="' + (esDueno() ? 'guia.html' : 'guia-empleado.html') + '" target="_blank" rel="noopener">' + icono('info') + '<div class="crece"><div class="item-tit">Guía de uso</div><div class="item-sub">' +
+        (esDueno() ? 'Cómo se usa cada pantalla, paso a paso' : 'Todo lo que haces en la tienda, paso a paso') + '</div></div>' + icono('flecha', 'ic-chico') + '</a>' +
       '<button type="button" class="item" data-contrato-blanco>' + icono('contrato') + '<div class="crece"><div class="item-tit">Contrato en blanco</div><div class="item-sub">Para imprimir y llenar a mano</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
       '<button type="button" class="item" data-ir="ajustes">' + icono('ajustes') + '<div class="crece"><div class="item-tit">Ajustes</div><div class="item-sub">' +
         (esDueno() ? 'Tasa, usuarios, métodos de pago, contrato' : 'Tu clave y lo que falta por enviar') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
@@ -320,7 +357,8 @@ function mostrarApp() {
   $('#app').hidden = false;
   pintarTasa(); pintarCola();
   var p = parsearHash();
-  ir(VISTAS[p.n] ? p.n : 'cobrar', p.arg);
+  _pila = []; _vistaNombre = '';
+  ir(VISTAS[p.n] ? p.n : 'cobrar', p.arg, 'reemplazar');
 }
 
 async function salir() {
@@ -370,16 +408,14 @@ document.addEventListener('click', function (e) {
   var b = e.target.closest('#navTabs [data-ir]');
   if (b) { ir(b.dataset.ir); return; }
   if (e.target.closest('#navTabs [data-mas]')) { menuMas(); return; }
+  if (e.target.closest('#btnVolver')) { volver(); return; }
   if (e.target.closest('#chipTasa')) { hojaTasa(); return; }
   if (e.target.closest('#chipCola')) { hojaCola(); return; }
   var c = e.target.closest('[data-ir-cliente]');
   if (c) { ir('cliente', c.dataset.irCliente); }
 });
-window.addEventListener('hashchange', function () {
-  if (!ST.yo) return;
-  var p = parsearHash();
-  if (VISTAS[p.n] && (p.n !== _vistaNombre || p.arg !== _vistaArg)) ir(p.n, p.arg);
-});
+window.addEventListener('popstate', alCambiarHistorial);
+window.addEventListener('hashchange', alCambiarHistorial);
 // Al volver a la app: mandar lo pendiente y, si pasó un rato, traer lo nuevo
 document.addEventListener('visibilitychange', function () {
   if (document.visibilityState !== 'visible' || !ST.yo) return;
@@ -394,6 +430,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 (async function iniciar() {
   $('#loginLogo').innerHTML = logoSVG('#ffffff', '#e0904f');
   $('#barraLogo').innerHTML = logoSVG('#ffffff', '#e0904f', 'logo');
+  $('#btnVolver').innerHTML = icono('atras');
   await Cola.cargar();
   try {
     // Con la sesión guardada se abre enseguida (aunque esté vencida y no haya señal); entrar() la renueva

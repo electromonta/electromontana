@@ -8,13 +8,15 @@ var VistaCobrar = (function () {
     cont = document.createElement('div');
     c.appendChild(cont);
     var hoy = hoyCaracas();
+    var filtros = [['todos', 'Todos'], ['socopo', 'Socopó'], ['pedraza', 'Pedraza'], ['exterior', 'Exterior']].concat(chipsDeQuien(true));
+    if (!esDueno() || !filtros.some(function (f) { return f[0] === filtro; })) filtro = 'todos';
     cont.innerHTML =
       '<div class="fila-sep" style="margin-bottom:12px"><div><h2>Hola, ' + esc(ST.yo.nombre.split(' ')[0]) + '</h2>' +
         '<div class="tenue">' + esc(fmtFechaLarga(hoy)) + '</div></div></div>' +
       '<div id="cbAvisos"></div>' +
       '<div class="kpis" id="cbKpis"></div>' +
       (esDueno() ? '<div class="chips" id="cbFiltro" style="margin-top:14px">' +
-        [['todos', 'Todos'], ['socopo', 'Socopó'], ['pedraza', 'Pedraza'], ['exterior', 'Exterior']].map(function (f) {
+        filtros.map(function (f) {
           return '<button type="button" class="chip' + (filtro === f[0] ? ' activo' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>';
         }).join('') + '</div>' : '') +
       '<div class="buscador" style="margin-top:10px">' + icono('buscar') + '<input id="cbBusca" type="search" placeholder="Buscar cliente" value="' + esc(busca) + '"></div>' +
@@ -36,6 +38,7 @@ var VistaCobrar = (function () {
   function pasaFiltro(c) {
     if (filtro === 'exterior') return c.en_exterior;
     if (filtro === 'socopo' || filtro === 'pedraza') return c.sede === filtro;
+    if (filtro.indexOf('u:') === 0) return tieneCreditoDe(c.id, filtro.slice(2), true);
     return true;
   }
 
@@ -116,7 +119,7 @@ var VistaCobrar = (function () {
     if (r.promesa) etq += '<span class="etiqueta ' + (r.promesa.estado === 'incumplida' ? 'e-rojo' : 'e-info') + '">' + esc(textoPromesa(r.promesa)) + '</span>';
     if (recordadoHoy(c.id)) etq += '<span class="etiqueta e-gris">Recordado hoy</span>';
     var nota = r.ultimaNota && r.ultimaNota.nota && r.ultimaNota.tipo !== 'recordatorio' ? r.ultimaNota : null;
-    var sub = [c.sector, esDueno() ? nombreSede(c.sede) : '', c.en_exterior ? (c.pais || 'Exterior') : ''].filter(Boolean).join(' · ');
+    var sub = [c.sector, esDueno() ? nombreSede(c.sede) : '', c.en_exterior ? (c.pais || 'Exterior') : '', deQuienCliente(c.id)].filter(Boolean).join(' · ');
     return '<div class="cobro ' + clase + '">' +
       '<div class="cobro-cuerpo" data-ir-cliente="' + c.id + '"><div class="avatar">' + esc(iniciales(c.nombre)) + '</div>' +
         '<div class="crece"><div class="item-tit">' + esc(c.nombre) + '</div><div class="item-sub">' + esc(sub || '—') + '</div>' +

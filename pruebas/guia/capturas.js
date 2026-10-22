@@ -107,6 +107,9 @@ async function firmar(p) {
   await mas(p, '[data-ir="reportes"]'); await p.waitForSelector('.barras'); await espera(800); await foto(p, '27-reportes');
   await p.locator('.seccion-tit:has-text("Ventas por mes")').scrollIntoViewIfNeeded(); await foto(p, '28-reportes-ventas');
   await mas(p, '[data-ir="ajustes"]'); await foto(p, '29-ajustes');
+  await p.click('[data-nuevo-usuario]'); await p.waitForSelector('#usNombre');
+  await p.fill('#usNombre', 'José Rivas'); await p.fill('#usUsuario', 'jose'); await p.fill('#usClave', 'temporal1');
+  await p.click('#usRol [data-v="empleado"]'); await p.click('#usSede [data-v="pedraza"]'); await foto(p, '41-nuevo-empleado'); await cerrar(p);
   await p.evaluate(() => ir('ajustes', 'copia')); await espera(900); await foto(p, '35-copia');
 
   // Empleado de Pedraza: su pantalla, cobro en efectivo sin señal
@@ -119,6 +122,36 @@ async function firmar(p) {
   await cerrar(e); await foto(e, '32-por-enviar');
   await t2.ctx.setOffline(false); await e.evaluate(() => window.dispatchEvent(new Event('online')));
   await e.waitForFunction(() => document.getElementById('chipCola').hidden, null, { timeout: 30000 });
+
+  // Guía del empleado (capturas e-*): entrar, cobrar, vender a crédito y de contado, mercancía, su efectivo
+  const t4 = await tel(b); const q4 = t4.p;
+  await q4.goto(URL_APP); await q4.waitForSelector('#pantallaLogin:not([hidden])');
+  await q4.fill('#loginUsuario', 'pedraza'); await q4.fill('#loginClave', 'prueba123'); await foto(q4, 'e01-entrar');
+  await q4.click('#btnEntrar'); await q4.waitForSelector('#app:not([hidden])'); await sinToasts(q4); await espera(900);
+  await q4.evaluate(() => hojaCambiarClave(true)); await espera(600); await foto(q4, 'e02-clave');
+  await t4.ctx.close();
+  await e.click('#navTabs [data-ir="cobrar"]'); await espera(800); await foto(e, 'e03-cobrar');
+  await cliente(e, 'Rosa Pérez'); await e.click('.ficha-cab [data-abonar]'); await e.waitForSelector('#abMetodos');
+  await e.click('#abMetodos [data-m="1"]'); await e.fill('#abMonto', '50'); await e.dispatchEvent('#abMonto', 'input'); await foto(e, 'e04-abono');
+  await e.click('#abGuardar'); await e.waitForSelector('.hoja h2:has-text("Abono registrado")'); await foto(e, 'e05-recibo'); await cerrar(e);
+  await cliente(e, 'Luis Mendoza'); await e.click('[data-vender]'); await e.waitForSelector('#vItems');
+  await e.fill('#vItems [data-campo="descripcion"]', 'licuadora'); await e.click('#vItems .sugerencias [data-p]'); await espera(400);
+  await foto(e, 'e06-vender');
+  await e.click('#vUsarPct'); await e.click('#vMetodos [data-m="1"]'); await e.fill('#vNumero', '4'); await e.dispatchEvent('#vNumero', 'input');
+  await e.locator('#vCuotas').scrollIntoViewIfNeeded(); await e.evaluate(() => window.scrollBy(0, -80)); await foto(e, 'e07-cuotas');
+  await e.click('#vGuardar'); await e.waitForSelector('.hoja h2:has-text("guardada")'); await foto(e, 'e08-guardada'); await cerrar(e);
+  await e.click('#navTabs [data-ir="vender"]'); await e.waitForSelector('#vForma'); await e.click('#vForma [data-c="1"]');
+  await e.click('#vCliente [data-elegir]'); await e.fill('#ecBusca', 'Rosa'); await espera(400); await e.click('#ecLista [data-ref]:has-text("Rosa Pérez")');
+  await e.fill('#vItems [data-campo="descripcion"]', 'ventilador'); await e.click('#vItems .sugerencias [data-p]'); await espera(300);
+  await e.click('#vMetodos [data-m="1"]'); await espera(300); await foto(e, 'e09-contado');
+  await e.click('#vGuardar'); await e.waitForSelector('.hoja h2:has-text("contado")'); await foto(e, 'e10-contado-guardado'); await cerrar(e);
+  await mas(e, '[data-ir="mercancia"]'); await e.waitForSelector('#mcEntrada'); await foto(e, 'e11-mercancia');
+  await e.click('#mcEntrada'); await e.waitForSelector('#emFilas');
+  await e.fill('#emFilas [data-c="nombre"]', 'Plancha Oster'); await e.fill('#emFilas [data-c="cantidad"]', '3'); await e.fill('#emFilas [data-c="precio"]', '28');
+  await e.fill('#emNota', 'Las trajo Franklin el martes'); await foto(e, 'e12-llego');
+  await e.click('#emGuardar'); await espera(1500); await cerrar(e);
+  await mas(e, '[data-ir="efectivo"]'); await espera(900); await foto(e, 'e13-efectivo');
+
   await mas(p, '[data-ir="efectivo"]'); await p.waitForSelector('[data-recibir]'); await foto(p, '33-efectivo');
   await p.click('[data-recibir]'); await espera(400); await foto(p, '34-recibir'); await cerrar(p);
   // Seguridad entre socios: Franklin pide un descuento; Daniel lo ve en Cobrar, lo aprueba y queda en el historial

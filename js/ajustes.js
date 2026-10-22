@@ -1,7 +1,7 @@
 // Electro Montana — ajustes: tasa, reglas, contrato, usuarios, métodos de pago y este teléfono.
 'use strict';
 
-var VERSION_APP = '8';
+var VERSION_APP = '9';
 
 var VistaAjustes = (function () {
   var raiz = null;
@@ -131,6 +131,9 @@ function hojaUsuario(u) {
         '<button type="button" data-v="dueno"' + (u.rol === 'dueno' ? ' class="activo"' : '') + '>Dueño</button></div></div>' +
       '<div class="campo" id="usSedeCampo"' + (u.rol === 'dueno' ? ' hidden' : '') + '><span>Sede (solo ve los clientes de aquí)</span><div class="seg" id="usSede">' +
         ['pedraza', 'socopo'].map(function (s) { return '<button type="button" data-v="' + s + '"' + (u.sede === s ? ' class="activo"' : '') + '>' + nombreSede(s) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="aviso aviso-info" id="usPermisos"' + (u.rol === 'dueno' ? ' hidden' : '') + '>' + icono('candado') + '<div><b>El empleado puede:</b> ver y crear clientes de su tienda, vender a crédito o de contado, ' +
+        'cobrar y mandar recibos, firmar contratos y anotar la mercancía que llega a su tienda.<br><b>No puede:</b> ver costos, ganancias ni reportes, ver otra tienda, ' +
+        'anular, descontar ni cerrar ventas, cambiar la tasa ni tocar los ajustes. El efectivo que cobra queda a su nombre hasta que se lo entrega a ustedes.</div></div>' +
       (nuevo ? '' : socioAjeno
         ? '<div class="aviso aviso-info">' + icono('candado') + '<div>' + esc(u.nombre) + ' es socio: aprueba los cambios de dinero. Su rol, su acceso y su clave solo los cambia él mismo (si olvida la clave, habla con soporte).</div></div>'
         : '<label class="casilla"><input type="checkbox" id="usActivo"' + (u.activo ? ' checked' : '') + '> Puede entrar</label>' +
@@ -143,6 +146,7 @@ function hojaUsuario(u) {
     var b = e.target.closest('[data-v]'); if (!b) return;
     rol = b.dataset.v; $$('button', this).forEach(function (x) { x.classList.toggle('activo', x === b); });
     h.$('#usSedeCampo').hidden = rol === 'dueno';
+    h.$('#usPermisos').hidden = rol === 'dueno';
   });
   h.$('#usSede').addEventListener('click', function (e) {
     var b = e.target.closest('[data-v]'); if (!b) return;

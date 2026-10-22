@@ -87,6 +87,14 @@ a { color: var(--azul-2); }
   padding: calc(env(safe-area-inset-top) + 8px) 16px 10px; display: flex; align-items: center; gap: 10px;
 }
 .barra-sup .logo { width: 34px; height: 34px; flex: none; }
+/* Volver a la pantalla anterior: a la izquierda, al alcance del pulgar, en lugar del logo */
+.btn-volver {
+  flex: none; width: 44px; height: 44px; margin-left: -8px; border: 0; border-radius: 12px; cursor: pointer;
+  background: rgba(255,255,255,.12); color: #fff; display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-volver:active { background: rgba(255,255,255,.24); }
+.btn-volver .ic { width: 26px; height: 26px; stroke-width: 2.4; }
+.barra-sup.con-volver #barraLogo { display: none; }
 .barra-sup h1 { font-size: 21px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .02em; }
 .chip-sup {
   border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.08); color: #fff; border-radius: 999px;

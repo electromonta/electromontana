@@ -449,10 +449,11 @@ function enviarResumenVenta(v, borrador) {
   var d = datosContrato(v, borrador);
   if (!d) return;
   var c = d.cliente || {};
-  var lineas = ['*ELECTRO MONTANA*', d.numero ? 'Contrato #' + d.numero + ' · ' + fmtFechaAnio(d.fecha) : 'Venta del ' + fmtFechaAnio(d.fecha), '',
+  var lineas = ['*ELECTRO MONTANA*', d.numero ? (d.frecuencia === 'contado' ? 'Venta #' : 'Contrato #') + d.numero + ' · ' + fmtFechaAnio(d.fecha) : 'Venta del ' + fmtFechaAnio(d.fecha), '',
     'Cliente: ' + (c.nombre || ''), 'Se llevó: ' + d.items.map(function (i) { return (i.cantidad > 1 ? i.cantidad + ' ' : '') + i.descripcion; }).join(', '),
     'Total: *' + fmtUSD(d.total) + '*'];
-  if (d.origen === 'carga_inicial') lineas.push('Ya pagado: ' + fmtUSD(d.pagado_antes));
+  if (d.frecuencia === 'contado') lineas.push('Pagó completo: *' + fmtUSD(d.total) + '* (de contado)');
+  else if (d.origen === 'carga_inicial') lineas.push('Ya pagado: ' + fmtUSD(d.pagado_antes));
   else if (d.inicial > 0) lineas.push('Inicial: ' + fmtUSD(d.inicial) + (d.inicial_pagada ? ' (pagada)' : ''));
   var n = d.cuotas.length;
   if (n) {

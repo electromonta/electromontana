@@ -17,7 +17,7 @@ begin
   perform public.registrar_venta(jsonb_build_object('cliente_id',c1,'origen','carga_inicial','fecha','2026-07-20','pagado_antes',250,'frecuencia','mensual',
     'items','[{"descripcion":"Juego de comedor 6 sillas","precio":600,"costo":380}]'::jsonb,
     'cuotas','[{"fecha":"2026-09-01","monto":117},{"fecha":"2026-10-01","monto":117},{"fecha":"2026-11-01","monto":116}]'::jsonb));
-  perform public.registrar_venta(jsonb_build_object('cliente_id',c2,'origen','carga_inicial','fecha','2026-08-15','pagado_antes',300,'frecuencia','quincenal',
+  perform public.registrar_venta(jsonb_build_object('cliente_id',c2,'vendedor_id','00000000-0000-0000-0000-00000000000b','origen','carga_inicial','fecha','2026-08-15','pagado_antes',300,'frecuencia','quincenal',
     'items','[{"descripcion":"Televisor 43 pulgadas","precio":450,"costo":290}]'::jsonb,
     'cuotas',jsonb_build_array(jsonb_build_object('fecha',hoy,'monto',75),jsonb_build_object('fecha',hoy+16,'monto',75))));
   perform public.registrar_venta(jsonb_build_object('cliente_id',c3,'items','[{"descripcion":"Lavadora 12 kg","precio":520,"costo":340}]'::jsonb,'inicial',156,
@@ -29,10 +29,10 @@ begin
   perform public.registrar_venta(jsonb_build_object('cliente_id',c5,'origen','carga_inicial','fecha','2026-09-20','pagado_antes',100,'frecuencia','mensual',
     'items','[{"descripcion":"Colchón matrimonial","precio":300,"costo":180}]'::jsonb,
     'cuotas',jsonb_build_array(jsonb_build_object('fecha',hoy+3,'monto',100),jsonb_build_object('fecha',hoy+34,'monto',100))));
-  perform public.registrar_venta(jsonb_build_object('cliente_id',c6,'origen','carga_inicial','fecha','2026-06-10','pagado_antes',120,'frecuencia','mensual',
+  perform public.registrar_venta(jsonb_build_object('cliente_id',c6,'vendedor_id','00000000-0000-0000-0000-00000000000b','origen','carga_inicial','fecha','2026-06-10','pagado_antes',120,'frecuencia','mensual',
     'items','[{"descripcion":"Aire acondicionado 12.000 BTU","precio":480,"costo":320}]'::jsonb,
     'cuotas','[{"fecha":"2026-07-15","monto":90},{"fecha":"2026-08-15","monto":90},{"fecha":"2026-09-15","monto":90},{"fecha":"2026-10-15","monto":90}]'::jsonb));
-  perform public.registrar_venta(jsonb_build_object('cliente_id',c7,'origen','carga_inicial','fecha','2026-09-01','pagado_antes',80,'frecuencia','semanal',
+  perform public.registrar_venta(jsonb_build_object('cliente_id',c7,'vendedor_id','00000000-0000-0000-0000-00000000000b','origen','carga_inicial','fecha','2026-09-01','pagado_antes',80,'frecuencia','semanal',
     'items','[{"descripcion":"Licuadora Oster","precio":80},{"descripcion":"Plancha","precio":40}]'::jsonb,
     'cuotas',jsonb_build_array(jsonb_build_object('fecha',hoy+5,'monto',20),jsonb_build_object('fecha',hoy+12,'monto',20))));
 

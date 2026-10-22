@@ -1,18 +1,19 @@
-// Electro Montana — vender a crédito (y cargar clientes que ya debían antes del sistema).
+// Electro Montana — vender a crédito o de contado (y cargar clientes que ya debían antes del sistema).
 'use strict';
 
 var VistaVender = (function () {
-  var raiz = null, F = null;
+  var raiz = null, F = null, seguirDeContado = false;   // en la tienda pueden venir varias de contado seguidas
 
   function nuevoFormulario(tipo) {
     var hoy = hoyCaracas();
     return {
-      tipo: tipo || 'nueva', cliente: null,
+      tipo: tipo || 'nueva', cliente: null, contado: false,   // contado: se paga todo hoy, sin cuotas ni contrato
       items: [{ descripcion: '', cantidad: 1, precio: null, costo: null, producto_id: null, sede: null }],
       inicial: null, pagaInicial: true, metodo: (ST.metodos.find(function (m) { return m.activo; }) || {}).id, refInicial: '',
       fecha: hoy, pagadoAntes: null,
       frecuencia: 'semanal', modo: 'numero', numero: 8, cuota: null, primera: Cuentas.primeraSugerida(hoy, 'semanal'), primeraTocada: false,
       personal: null, contratoPapel: '', foto: null, notas: '',
+      vendedor: ST.yo.id,   // de quién es el crédito (un dueño lo puede poner a nombre de otro; el empleado vende a su nombre)
       clave: nuevaClave()   // una sola clave por venta: tocar Guardar dos veces no la repite
     };
   }
@@ -22,18 +23,20 @@ var VistaVender = (function () {
     raiz.className = 'formulario';
     c.appendChild(raiz);
     F = nuevoFormulario();
+    F.contado = seguirDeContado; seguirDeContado = false;
     if (arg) ponerCliente(arg);
     // "Ya debía" solo lo usan los dueños (lo pagado antes no pasa por el efectivo de nadie)
     raiz.innerHTML =
       '<div class="seg" id="vTipo"' + (esDueno() ? '' : ' hidden') + '><button type="button" data-t="nueva" class="activo">Venta nueva</button><button type="button" data-t="carga">Ya debía</button></div>' +
+      '<div class="seg" id="vForma" style="margin-top:10px"><button type="button" data-c="0" class="activo">A crédito</button><button type="button" data-c="1">De contado</button></div>' +
       '<p class="tenue chico" id="vTipoAyuda" style="margin:8px 2px 0"></p>' +
-      '<div class="tarjeta" style="margin-top:12px"><div class="paso"><b>1</b><h3>Cliente</h3></div><div id="vCliente"></div></div>' +
+      '<div class="tarjeta" style="margin-top:12px"><div class="paso"><b>1</b><h3>Cliente</h3></div><div id="vCliente"></div><div id="vVendedor"></div></div>' +
       '<div class="tarjeta"><div class="paso"><b>2</b><h3>Lo que se lleva</h3></div><div id="vItems"></div>' +
         '<button type="button" class="btn btn-sec btn-ancho" id="vMasItem" style="margin-top:10px">' + icono('mas') + 'Agregar otro producto</button>' +
         '<div class="total-linea" style="margin-top:12px"><span class="fuerte">Total</span><span class="monto" id="vTotal">$0,00</span></div></div>' +
       '<div class="tarjeta"><div class="paso"><b>3</b><h3 id="vTitInicial">Inicial</h3></div><div id="vInicial"></div></div>' +
-      '<div class="tarjeta"><div class="paso"><b>4</b><h3>Cuotas</h3></div><div id="vCuotas"></div></div>' +
-      '<div class="tarjeta"><div class="paso"><b>5</b><h3>Contrato</h3></div><div class="pila">' +
+      '<div class="tarjeta" id="vCardCuotas"><div class="paso"><b>4</b><h3>Cuotas</h3></div><div id="vCuotas"></div></div>' +
+      '<div class="tarjeta" id="vCardContrato"><div class="paso"><b>5</b><h3>Contrato</h3></div><div class="pila">' +
         '<label class="campo"><span>N° del contrato en papel (si tiene)</span><input id="vPapel" inputmode="numeric" placeholder="Ej.: 000412"></label>' +
         '<div class="fotos"><button type="button" class="foto-btn" id="vFoto"><span class="foto-mini">' + icono('camara') + '</span><span>Foto del contrato firmado</span></button></div>' +
         '<label class="campo"><span>Notas</span><textarea id="vNotas" rows="2" placeholder="Algo que haya que recordar de esta venta"></textarea></label>' +
@@ -47,6 +50,13 @@ var VistaVender = (function () {
       $$('button', this).forEach(function (x) { x.classList.toggle('activo', x === b); });
       if (F.tipo === 'nueva') F.fecha = hoyCaracas();
       if (!F.primeraTocada) F.primera = Cuentas.primeraSugerida(F.tipo === 'carga' ? hoyCaracas() : F.fecha, F.frecuencia);
+      pintarTodo();
+    });
+    $('#vForma', raiz).addEventListener('click', function (e) {
+      var b = e.target.closest('[data-c]'); if (!b) return;
+      F.contado = b.dataset.c === '1';
+      if (!F.contado) { F.inicial = null; F.pagaInicial = true; }
+      F.personal = null;
       pintarTodo();
     });
     $('#vMasItem', raiz).addEventListener('click', function () {
@@ -91,12 +101,33 @@ var VistaVender = (function () {
   }
 
   function pintarTodo() {
+    if (F.tipo === 'carga') F.contado = false;
+    var contado = F.contado;
+    $('#vForma', raiz).hidden = F.tipo === 'carga';
+    $$('#vForma button', raiz).forEach(function (x) { x.classList.toggle('activo', (x.dataset.c === '1') === contado); });
     $('#vTipoAyuda', raiz).textContent = F.tipo === 'carga'
       ? 'Para pasar al sistema a un cliente que ya debía: lo que se llevó, lo que ya pagó y las cuotas que le faltan.'
-      : 'Una venta a crédito de hoy.';
-    $('#vTitInicial', raiz).textContent = F.tipo === 'carga' ? 'Lo que ya pagó' : 'Inicial';
-    $('#vGuardar', raiz).textContent = F.tipo === 'carga' ? 'Guardar cliente que ya debía' : 'Guardar venta';
-    pintarCliente(); pintarItems(); pintarInicial(); pintarCuotas();
+      : contado ? 'Paga todo hoy: sin cuotas ni contrato. Se le manda el recibo por WhatsApp.' : 'Una venta a crédito de hoy.';
+    $('#vTitInicial', raiz).textContent = F.tipo === 'carga' ? 'Lo que ya pagó' : contado ? 'Pago' : 'Inicial';
+    $('#vCardCuotas', raiz).hidden = contado;
+    $('#vCardContrato', raiz).hidden = contado;
+    $('#vGuardar', raiz).textContent = F.tipo === 'carga' ? 'Guardar cliente que ya debía' : contado ? 'Guardar venta de contado' : 'Guardar venta';
+    pintarCliente(); pintarVendedor(); pintarItems(); pintarInicial(); pintarCuotas();
+  }
+
+  /* ---------- De quién es el crédito (lo eligen los dueños) ---------- */
+  function pintarVendedor() {
+    var cont = $('#vVendedor', raiz), gente = esDueno() ? personasQueVenden() : [];
+    if (gente.length < 2) { cont.innerHTML = ''; return; }
+    cont.innerHTML = '<div class="campo" style="margin-top:14px"><span>' + (F.contado ? '¿Quién vendió?' : '¿De quién es este crédito?') + '</span>' +
+      '<div class="chips envolver" id="vVendChips">' + gente.map(function (u) {
+        return '<button type="button" class="chip' + (u.id === F.vendedor ? ' activo' : '') + '" data-u="' + u.id + '">' + esc(nombreConSede(u)) + '</button>';
+      }).join('') + '</div></div>';
+    $('#vVendChips', cont).onclick = function (e) {
+      var b = e.target.closest('[data-u]'); if (!b) return;
+      F.vendedor = b.dataset.u;
+      $$('.chip', this).forEach(function (x) { x.classList.toggle('activo', x === b); });
+    };
   }
 
   /* ---------- Cliente ---------- */
@@ -217,13 +248,16 @@ var VistaVender = (function () {
       $('#vAntes', cont).addEventListener('input', function () { var v = parseNum(this.value); F.pagadoAntes = isNaN(v) ? null : v; F.personal = null; actualizarCalculos(); });
       return;
     }
-    var pct = Number(ST.cfg.inicial_pct) || 0;
+    var pct = Number(ST.cfg.inicial_pct) || 0, contado = F.contado;
     var metodos = ST.metodos.filter(function (m) { return m.activo; });
+    if (contado) { F.pagaInicial = true; F.inicial = total(); }
     cont.innerHTML = '<div class="pila">' +
       (esDueno() ? '<label class="campo"><span>Fecha de la venta</span><input type="date" id="vFechaN" value="' + esc(F.fecha) + '" max="' + hoyCaracas() + '"></label>' : '') +
-      '<label class="campo"><span>Inicial $ <span class="ayuda" id="vSugerida"></span></span><input id="vInicialMonto" inputmode="decimal" value="' + esc(numCampo(F.inicial)) + '" placeholder="0"></label>' +
-      (pct ? '<button type="button" class="btn btn-sec btn-chico" id="vUsarPct">Usar el ' + fmtNum(pct).replace(',00', '') + ' %</button>' : '') +
-      '<label class="casilla"><input type="checkbox" id="vPaga"' + (F.pagaInicial ? ' checked' : '') + '> La pagó ahora</label>' +
+      (contado ? '<div class="total-linea"><span class="fuerte">Paga completo</span><span class="monto" id="vPagaTotal">' + fmtUSD(F.inicial) + '</span></div>' +
+          '<p class="tenue chico" style="margin:0">¿Cómo pagó?</p>'
+        : '<label class="campo"><span>Inicial $ <span class="ayuda" id="vSugerida"></span></span><input id="vInicialMonto" inputmode="decimal" value="' + esc(numCampo(F.inicial)) + '" placeholder="0"></label>' +
+          (pct ? '<button type="button" class="btn btn-sec btn-chico" id="vUsarPct">Usar el ' + fmtNum(pct).replace(',00', '') + ' %</button>' : '') +
+          '<label class="casilla"><input type="checkbox" id="vPaga"' + (F.pagaInicial ? ' checked' : '') + '> La pagó ahora</label>') +
       '<div id="vPagoCampos" class="pila"' + (F.pagaInicial ? '' : ' hidden') + '>' +
         '<div class="metodos" id="vMetodos">' + metodos.map(function (m) {
           return '<button type="button" class="chip' + (m.id === F.metodo ? ' activo' : '') + '" data-m="' + m.id + '">' + esc(m.nombre) + '</button>';
@@ -236,14 +270,16 @@ var VistaVender = (function () {
       F.fecha = this.value || hoyCaracas();
       if (!F.primeraTocada) { F.primera = Cuentas.primeraSugerida(F.fecha, F.frecuencia); pintarCuotas(); }
     });
-    $('#vInicialMonto', cont).addEventListener('input', function () { var v = parseNum(this.value); F.inicial = isNaN(v) ? null : v; F.personal = null; actualizarCalculos(); });
+    var im = $('#vInicialMonto', cont);
+    if (im) im.addEventListener('input', function () { var v = parseNum(this.value); F.inicial = isNaN(v) ? null : v; F.personal = null; actualizarCalculos(); });
     var up = $('#vUsarPct', cont);
     if (up) up.onclick = function () {
       F.inicial = redondear2(total() * pct / 100);
       $('#vInicialMonto', cont).value = numCampo(F.inicial);
       F.personal = null; actualizarCalculos();
     };
-    $('#vPaga', cont).addEventListener('change', function () { F.pagaInicial = this.checked; $('#vPagoCampos', cont).hidden = !this.checked; actualizarCalculos(); });
+    var vp = $('#vPaga', cont);
+    if (vp) vp.addEventListener('change', function () { F.pagaInicial = this.checked; $('#vPagoCampos', cont).hidden = !this.checked; actualizarCalculos(); });
     $('#vMetodos', cont).addEventListener('click', function (e) {
       var b = e.target.closest('[data-m]'); if (!b) return;
       F.metodo = Number(b.dataset.m);
@@ -355,7 +391,10 @@ var VistaVender = (function () {
   /* ---------- Números que cambian al escribir ---------- */
   function actualizarCalculos() {
     if (!raiz || !raiz.isConnected) return;
+    if (F.contado) F.inicial = total();   // de contado se paga todo
     var t = total(), f = falta();
+    var pt = $('#vPagaTotal', raiz);
+    if (pt) pt.textContent = fmtUSD(t);
     $('#vTotal', raiz).textContent = fmtUSD(t);
     var sug = $('#vSugerida', raiz);
     if (sug) { var pct = Number(ST.cfg.inicial_pct) || 0; sug.textContent = pct && t > 0 ? '(el ' + fmtNum(pct).replace(',00', '') + ' % es ' + fmtUSD(t * pct / 100) + ')' : ''; }
@@ -387,8 +426,9 @@ var VistaVender = (function () {
     }
     var res = $('#vResumen', raiz);
     if (res) {
-      var txt = 'Total ' + fmtUSD(t);
-      if (F.tipo === 'carga') txt += ' · Ya pagó ' + fmtUSD(F.pagadoAntes || 0);
+      var txt = (F.contado ? 'De contado · ' : '') + 'Total ' + fmtUSD(t);
+      if (F.contado) { /* nada más: se paga todo */ }
+      else if (F.tipo === 'carga') txt += ' · Ya pagó ' + fmtUSD(F.pagadoAntes || 0);
       else if (F.inicial) txt += ' · Inicial ' + fmtUSD(F.inicial);
       if (lista.length && f > 0) txt += ' · ' + plural(lista.length, 'cuota', 'cuotas') + (F.personal ? '' : ' ' + textoFrecuencia(F.frecuencia, lista.length)) + ' de ' + fmtUSD(lista[0].monto);
       res.textContent = txt;
@@ -417,22 +457,24 @@ var VistaVender = (function () {
         if (dueno && it.costo != null) x.costo = redondear2(it.costo);
         return x;
       }),
-      frecuencia: F.personal ? 'personalizada' : F.frecuencia,
+      frecuencia: F.contado ? 'contado' : F.personal ? 'personalizada' : F.frecuencia,
       cuotas: f > 0 ? lista.map(function (q) { return { fecha: q.fecha, monto: redondear2(q.monto) }; }) : [],
       contrato_papel: F.contratoPapel, notas: F.notas, hecho_en: new Date().toISOString()
     };
+    if (dueno && F.vendedor && F.vendedor !== ST.yo.id) datos.vendedor_id = F.vendedor;
     if (c.pendiente) datos.cliente_clave = c.clave; else datos.cliente_id = c.id;
     if (F.tipo === 'carga') {
       var antes = Number(F.pagadoAntes) || 0;
       if (antes < 0 || antes >= t) { toast('Lo que ya pagó tiene que ser menor que el total', 'error'); return; }
       datos.pagado_antes = redondear2(antes);
     } else {
-      var ini = Number(F.inicial) || 0;
+      var ini = F.contado ? t : (Number(F.inicial) || 0);
       if (ini < 0 || ini > t) { toast('La inicial no puede ser mayor que el total', 'error'); return; }
       datos.inicial = redondear2(ini);
-      if (ini > 0 && F.pagaInicial) {
+      if (F.contado) { datos.contrato_papel = ''; F.foto = null; }
+      if (ini > 0 && (F.pagaInicial || F.contado)) {
         var p = pagoInicial();
-        if (!p) { toast('Elige cómo pagó la inicial', 'error'); return; }
+        if (!p) { toast(F.contado ? 'Elige cómo pagó' : 'Elige cómo pagó la inicial', 'error'); return; }
         if (p.sinTasa) { toast('Falta la tasa del día para cobrar en bolívares', 'error'); return; }
         datos.pago_inicial = { metodo_id: p.metodo.id, monto: p.monto, tasa: p.tasa, monto_usd: p.usd, referencia: F.refInicial };
       }
@@ -447,7 +489,7 @@ var VistaVender = (function () {
         if (F.tipo === 'nueva' && lista[k].fecha < F.fecha) { toast('Una cuota no puede ser antes de la fecha de la venta', 'error'); return; }
       }
     }
-    var op = { clave: F.clave, tipo: 'venta', datos: datos, resumen: { texto: (F.tipo === 'carga' ? 'Carga de ' : 'Venta a ') + c.nombre + ' por ' + fmtUSD(t) } };
+    var op = { clave: F.clave, tipo: 'venta', datos: datos, resumen: { texto: (F.tipo === 'carga' ? 'Carga de ' : F.contado ? 'Venta de contado a ' : 'Venta a ') + c.nombre + ' por ' + fmtUSD(t) } };
     var r;
     try {
       r = await enviarYEsperar(op);
@@ -463,33 +505,37 @@ var VistaVender = (function () {
     }
     var borrador = { numero: r.estado === 'ok' ? r.resultado.numero : null, fecha: F.fecha, cliente: c, origen: datos.origen,
                      items: datos.items, total: t, inicial: datos.inicial || 0, pagado_antes: datos.pagado_antes || 0,
-                     inicial_pagada: !!datos.pago_inicial, frecuencia: datos.frecuencia, cuotas: datos.cuotas, contrato_papel: F.contratoPapel };
+                     inicial_pagada: !!datos.pago_inicial, frecuencia: datos.frecuencia, cuotas: datos.cuotas, contrato_papel: F.contratoPapel,
+                     vendedor_id: datos.vendedor_id || ST.yo.id };
     if (r.estado === 'ok' && !c.pendiente) { try { await recargarCliente(c.id); } catch (e) { /* luego */ } }
     hojaVentaGuardada(r, borrador, op.clave);
-    F = nuevoFormulario(F.tipo);
-    ir('vender');
+    seguirDeContado = F.contado;
+    ir('vender', '', 'reemplazar');
   }
 
   function hojaVentaGuardada(r, b, claveVenta) {
-    var ok = r.estado === 'ok';
+    var ok = r.estado === 'ok', contado = b.frecuencia === 'contado';
     var h = abrirHoja({
-      titulo: ok ? (b.origen === 'carga_inicial' ? 'Cliente cargado' : 'Venta #' + b.numero + ' guardada') : 'Guardada en el teléfono',
+      titulo: ok ? (b.origen === 'carga_inicial' ? 'Cliente cargado' : contado ? 'Venta de contado #' + b.numero : 'Venta #' + b.numero + ' guardada') : 'Guardada en el teléfono',
       html: '<div class="aviso ' + (ok ? 'aviso-ok' : 'aviso-ambar') + '">' + icono(ok ? 'check' : 'nube') + '<div>' +
-        (ok ? esc(b.cliente.nombre) + ' debe ' + fmtUSD(r.resultado.saldo) + '.' : 'No hay señal. La venta quedó guardada en este teléfono y se enviará sola cuando vuelva el internet.') + '</div></div>' +
+        (ok ? (contado ? esc(b.cliente.nombre) + ' pagó ' + fmtUSD(b.total) + ' completo.' : esc(b.cliente.nombre) + ' debe ' + fmtUSD(r.resultado.saldo) + '.')
+          : 'No hay señal. La venta quedó guardada en este teléfono y se enviará sola cuando vuelva el internet.') + '</div></div>' +
+        (b.vendedor_id !== ST.yo.id ? '<p class="tenue" style="margin:10px 2px 0">' + (contado ? 'Vendió ' : 'Crédito de ') + '<b>' + esc(nombreUsuario(b.vendedor_id)) + '</b>.</p>' : '') +
         '<div class="pila" style="margin-top:14px">' +
-        '<button type="button" class="btn btn-ancho" data-firmar>' + icono('editar') + 'Firmar el contrato en la pantalla</button>' +
-        '<button type="button" class="btn btn-sec btn-ancho" data-resumen>' + icono('chat') + 'Enviar resumen por WhatsApp</button>' +
-        '<button type="button" class="btn btn-sec btn-ancho" data-imprimir>' + icono('contrato') + 'Contrato en PDF (enviar o imprimir)</button>' +
+        (contado ? '<button type="button" class="btn btn-ancho" data-resumen>' + icono('chat') + 'Enviar recibo por WhatsApp</button>'
+          : '<button type="button" class="btn btn-ancho" data-firmar>' + icono('editar') + 'Firmar el contrato en la pantalla</button>' +
+            '<button type="button" class="btn btn-sec btn-ancho" data-resumen>' + icono('chat') + 'Enviar resumen por WhatsApp</button>' +
+            '<button type="button" class="btn btn-sec btn-ancho" data-imprimir>' + icono('contrato') + 'Contrato en PDF (enviar o imprimir)</button>') +
         (b.cliente.pendiente ? '' : '<button type="button" class="btn btn-sec btn-ancho" data-ver>' + icono('usuario') + 'Ver cliente</button>') + '</div>'
     });
     h.$('[data-resumen]').onclick = function () { enviarResumenVenta(null, b); };
-    h.$('[data-firmar]').onclick = function () {
+    if (h.$('[data-firmar]')) h.$('[data-firmar]').onclick = function () {
       hojaFirmar({ d: b, ventaId: ok ? r.resultado.id : null, ventaClave: claveVenta, cliente: b.cliente, alFirmar: function () {
         var bt = h.$('[data-firmar]');
         if (bt) { bt.disabled = true; bt.innerHTML = icono('check') + 'Contrato firmado'; }
       } });
     };
-    h.$('[data-imprimir]').onclick = function () { imprimirContrato(null, b); };
+    if (h.$('[data-imprimir]')) h.$('[data-imprimir]').onclick = function () { imprimirContrato(null, b); };
     var ver = h.$('[data-ver]');
     if (ver) ver.onclick = function () { h.cerrar(); ir('cliente', String(b.cliente.id)); };
   }

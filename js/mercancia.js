@@ -14,7 +14,7 @@ var VistaMercancia = (function () {
     raiz.innerHTML =
       (esDueno() ? '<div class="seg" id="mcSede"><button type="button" data-s="pedraza">Tienda de Pedraza</button><button type="button" data-s="socopo">Socopó</button></div>' : '') +
       '<div class="kpis" id="mcKpis" style="margin-top:12px"></div>' +
-      (esDueno() ? '<button type="button" class="btn btn-ancho" id="mcEntrada" style="margin-top:12px">' + icono('caja') + 'Entrada de mercancía</button>' : '') +
+      '<button type="button" class="btn btn-ancho" id="mcEntrada" style="margin-top:12px">' + icono('caja') + (esDueno() ? 'Entrada de mercancía' : 'Anotar mercancía que llegó') + '</button>' +
       '<div class="buscador" style="margin-top:12px">' + icono('buscar') + '<input id="mcBusca" type="search" placeholder="Buscar producto" value="' + esc(busca) + '"></div>' +
       '<label class="casilla" style="margin-top:6px"><input type="checkbox" id="mcTodo"' + (verTodo ? ' checked' : '') + '> Ver también lo que no hay</label>' +
       '<div id="mcLista" class="lista" style="margin-top:10px"></div>';
@@ -25,7 +25,7 @@ var VistaMercancia = (function () {
     });
     $('#mcBusca', raiz).addEventListener('input', debounce(function (e) { busca = e.target.value; pintar(); }, 200));
     $('#mcTodo', raiz).addEventListener('change', function () { verTodo = this.checked; pintar(); });
-    if (esDueno()) $('#mcEntrada', raiz).addEventListener('click', function () { hojaEntrada(sede); });
+    $('#mcEntrada', raiz).addEventListener('click', function () { hojaEntrada(sede); });
     raiz.addEventListener('click', function (e) {
       var b = e.target.closest('[data-prod]');
       if (b) hojaProducto(Number(b.dataset.prod), sede);
@@ -202,23 +202,28 @@ function hojaEditarProducto(p) {
 }
 
 // Entrada de mercancía a una tienda (lo que traen de Yumana para tener guardado)
+// Dueños: a cualquier tienda, con costo y precio. Empleado: solo a su tienda, sin costos (los ponen los
+// dueños), y el precio solo en un producto nuevo (el de los que ya existen lo deciden los dueños).
 function hojaEntrada(sedeInicial) {
-  var sede = sedeInicial || 'pedraza', clave = nuevaClave();
+  var dueno = esDueno(), sede = dueno ? (sedeInicial || 'pedraza') : (ST.yo.sede || 'pedraza'), clave = nuevaClave();
   var filas = [{ nombre: '', producto_id: null, cantidad: 1, costo: null, precio: null }];
   var h = abrirHoja({
-    titulo: 'Entrada de mercancía', completa: true,
-    html: '<div class="seg" id="emSede"><button type="button" data-s="pedraza">Tienda de Pedraza</button><button type="button" data-s="socopo">Socopó</button></div>' +
+    titulo: dueno ? 'Entrada de mercancía' : 'Llegó mercancía', completa: true,
+    html: (dueno ? '<div class="seg" id="emSede"><button type="button" data-s="pedraza">Tienda de Pedraza</button><button type="button" data-s="socopo">Socopó</button></div>'
+        : '<p class="tenue" style="margin:0 2px">Anota lo que llegó a la tienda de ' + esc(nombreSede(sede)) + ': cada producto y cuántos. Los costos los ponen Franklin y Daniel.</p>') +
       '<div id="emFilas" style="margin-top:12px"></div>' +
       '<button type="button" class="btn btn-sec btn-ancho" id="emMas" style="margin-top:10px">' + icono('mas') + 'Agregar otro producto</button>' +
-      '<label class="campo" style="margin-top:12px"><span>Nota (opcional)</span><input id="emNota" placeholder="Ej.: factura de Yumana N° 1234"></label>' +
-      '<div class="total-linea" style="margin-top:12px"><span class="fuerte">Total a costo</span><span class="monto" id="emTotal">$0,00</span></div>',
-    pie: '<button type="button" class="btn btn-ancho" id="emGuardar">Guardar entrada</button>'
+      '<label class="campo" style="margin-top:12px"><span>Nota (opcional)</span><input id="emNota" placeholder="' + (dueno ? 'Ej.: factura de Yumana N° 1234' : 'Ej.: los trajo Franklin el martes') + '"></label>' +
+      (dueno ? '<div class="total-linea" style="margin-top:12px"><span class="fuerte">Total a costo</span><span class="monto" id="emTotal">$0,00</span></div>' : ''),
+    pie: '<button type="button" class="btn btn-ancho" id="emGuardar">' + (dueno ? 'Guardar entrada' : 'Guardar lo que llegó') + '</button>'
   });
   function marcarSede() { $$('#emSede button', h.el).forEach(function (x) { x.classList.toggle('activo', x.dataset.s === sede); }); }
   function total() {
+    if (!dueno) return;
     var t = filas.reduce(function (s, f) { return s + (f.costo != null ? f.costo * f.cantidad : 0); }, 0);
     h.$('#emTotal').textContent = fmtUSD(t);
   }
+  function precioDe(f) { var p = f.producto_id && ST.productos.find(function (x) { return x.id === f.producto_id; }); return p && p.precio_sugerido != null ? Number(p.precio_sugerido) : null; }
   function pintarFilas() {
     var cont = h.$('#emFilas');
     cont.innerHTML = filas.map(function (f, i) {
@@ -226,10 +231,13 @@ function hojaEntrada(sedeInicial) {
         '<div class="fila"><label class="campo crece"><span>Producto</span><input data-c="nombre" value="' + esc(f.nombre) + '" placeholder="Ej.: Licuadora Oster" autocomplete="off"></label>' +
           (filas.length > 1 ? '<button type="button" class="btn btn-plano btn-icono" data-quitar aria-label="Quitar" style="margin-top:22px">' + icono('basura') + '</button>' : '') + '</div>' +
         '<div data-sug></div>' +
-        '<div class="tres" style="margin-top:10px">' +
+        '<div class="' + (dueno ? 'tres' : 'dos') + '" style="margin-top:10px">' +
           '<label class="campo"><span>Cantidad</span><input data-c="cantidad" inputmode="numeric" value="' + f.cantidad + '"></label>' +
-          '<label class="campo"><span>Costo $</span><input data-c="costo" inputmode="decimal" value="' + esc(numCampo(f.costo)) + '"></label>' +
-          '<label class="campo"><span>Precio $</span><input data-c="precio" inputmode="decimal" value="' + esc(numCampo(f.precio)) + '"></label></div>' +
+          (dueno ? '<label class="campo"><span>Costo $</span><input data-c="costo" inputmode="decimal" value="' + esc(numCampo(f.costo)) + '"></label>' : '') +
+          (dueno || !f.producto_id
+            ? '<label class="campo"><span>' + (dueno ? 'Precio $' : 'Precio de venta $') + '</span><input data-c="precio" inputmode="decimal" value="' + esc(numCampo(f.precio)) + '"></label>'
+            : '<div class="campo"><span>Precio de venta</span><b style="padding:12px 2px">' + (precioDe(f) != null ? fmtUSD(precioDe(f)) : '—') + '</b></div>') +
+        '</div>' +
         (f.producto_id ? '<p class="tenue chico" style="margin:6px 2px 0">Ya hay ' + existenciaDe(f.producto_id, sede) + ' en la tienda.</p>' : (f.nombre.trim() ? '<p class="tenue chico" style="margin:6px 2px 0">Producto nuevo: se agrega al catálogo.</p>' : '')) +
         '</div>';
     }).join('');
@@ -264,12 +272,12 @@ function hojaEntrada(sedeInicial) {
       var b = e.target.closest('[data-p]'); if (!b) return;
       var p = ST.productos.find(function (x) { return x.id === Number(b.dataset.p); });
       f.nombre = p.nombre; f.producto_id = p.id;
-      if (f.costo == null && ST.costoProducto.has(p.id)) f.costo = ST.costoProducto.get(p.id);
+      if (dueno && f.costo == null && ST.costoProducto.has(p.id)) f.costo = ST.costoProducto.get(p.id);
       if (f.precio == null && p.precio_sugerido != null) f.precio = Number(p.precio_sugerido);
       pintarFilas();
     };
   }
-  h.$('#emSede').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (b) { sede = b.dataset.s; marcarSede(); pintarFilas(); } });
+  if (dueno) h.$('#emSede').addEventListener('click', function (e) { var b = e.target.closest('[data-s]'); if (b) { sede = b.dataset.s; marcarSede(); pintarFilas(); } });
   h.$('#emMas').addEventListener('click', function () {
     filas.push({ nombre: '', producto_id: null, cantidad: 1, costo: null, precio: null });
     pintarFilas();
@@ -282,8 +290,8 @@ function hojaEntrada(sedeInicial) {
       var f = filas[i];
       if (!f.nombre.trim()) { toast('Escribe el nombre del producto ' + (i + 1), 'error'); return; }
       var x = { producto_id: f.producto_id, nombre: f.nombre.trim(), cantidad: f.cantidad };
-      if (f.costo != null) x.costo = redondear2(f.costo);
-      if (f.precio != null) x.precio_sugerido = redondear2(f.precio);
+      if (dueno && f.costo != null) x.costo = redondear2(f.costo);
+      if (f.precio != null && (dueno || !f.producto_id)) x.precio_sugerido = redondear2(f.precio);
       items.push(x);
     }
     var r = await rpc('entrada_mercancia', { p: { sede: sede, nota: h.$('#emNota').value.trim(), items: items }, p_clave: clave }, 25000);

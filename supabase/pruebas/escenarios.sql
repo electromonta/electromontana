@@ -292,7 +292,15 @@ reset role;
 
 select como('E'); set role authenticated;
 select igual('empleado ve solo la existencia de Pedraza', $q$ (select count(*) filter (where sede = 'socopo') || '/' || (count(*) > 0)::text from public.existencias) $q$, '0/true');
-select t('empleado no hace entradas', $q$ public.entrada_mercancia('{"sede":"pedraza","items":[{"nombre":"X","cantidad":1}]}') $q$, 'Solo los dueños');
+-- El empleado anota lo que llega a SU tienda, sin costos (migración 008)
+select t('empleado no anota mercancía de Socopó', $q$ public.entrada_mercancia('{"sede":"socopo","items":[{"nombre":"X","cantidad":1}]}') $q$, 'Solo puedes anotar la mercancía de tu tienda');
+select t('empleado no pone costos', $q$ public.entrada_mercancia('{"sede":"pedraza","items":[{"nombre":"Batidora Oster","cantidad":1,"costo":20}]}') $q$, 'Los costos los anotan los dueños');
+select igual('empleado anota lo que llegó (producto nuevo con su precio)', $q$ public.entrada_mercancia('{"sede":"pedraza","nota":"Llegaron hoy","items":[{"nombre":"Batidora Oster","cantidad":2,"precio_sugerido":35}]}', '66666666-0000-0000-0000-0000000000e1')->>'unidades' $q$, '2');
+select igual('misma clave no la repite', $q$ public.entrada_mercancia('{"sede":"pedraza","items":[{"nombre":"Batidora Oster","cantidad":2}]}', '66666666-0000-0000-0000-0000000000e1')->>'unidades' $q$, '2');
+select igual('el precio de uno que ya existe no lo cambia el empleado', $q$ (public.entrada_mercancia('{"sede":"pedraza","items":[{"nombre":"batidora oster","cantidad":1,"precio_sugerido":5}]}')->>'unidades') || '/' || (select precio_sugerido from public.productos where id = public.prod('Batidora Oster')) || '/' || public.exist('Batidora Oster', 'pedraza') $q$, '1/35.00/3');
+select igual('queda a nombre del empleado', $q$ (select count(*) from public.movimientos_inventario where producto_id = public.prod('Batidora Oster') and tipo = 'entrada' and usuario_id = auth.uid()) $q$, '2');
+select igual('venta de contado desde la tienda (pagada completa)', $q$ public.registrar_venta(jsonb_build_object('cliente_id',2,'items','[{"descripcion":"Batidora Oster","cantidad":1,"precio":35,"sede_salida":"pedraza"}]'::jsonb,'inicial',35,'frecuencia','contado','cuotas','[]'::jsonb,'pago_inicial',jsonb_build_object('metodo_id',1,'monto',35)), '77777777-0000-0000-0000-0000000000c1')->>'saldo' $q$, '0.00');
+select igual('de contado: pagada, sin cuotas, lo cobró el empleado y salió de la tienda', $q$ (select v.frecuencia || '/' || v.estado || '/' || (select count(*) from public.cuotas q where q.venta_id = v.id and q.tipo <> 'inicial') || '/' || (select (a.recibido_por = auth.uid())::text from public.abonos a where a.venta_id = v.id) || '/' || public.exist('Batidora Oster', 'pedraza') from public.ventas v where v.clave = '77777777-0000-0000-0000-0000000000c1') $q$, 'contado/pagada/0/true/2');
 select t('empleado no saca de Socopó', $q$ public.registrar_venta('{"cliente_id":2,"items":[{"descripcion":"Plancha","precio":25,"sede_salida":"socopo"}],"inicial":25}') $q$, 'Solo puedes sacar mercancía de tu tienda');
 select t('no hay suficientes', $q$ public.registrar_venta('{"cliente_id":2,"items":[{"descripcion":"Licuadora Oster","cantidad":5,"precio":45,"sede_salida":"pedraza"}],"inicial":225}') $q$, 'No hay suficiente "Licuadora Oster" en la tienda de Pedraza (quedan 3)');
 select igual('existencia intacta tras el error', $q$ public.exist('Licuadora Oster', 'pedraza') $q$, '3');
@@ -301,6 +309,7 @@ select igual('quedó 1 licuadora', $q$ public.exist('Licuadora Oster', 'pedraza'
 select igual('el movimiento dice venta', $q$ (select tipo || '/' || cantidad || '/' || queda from public.movimientos_inventario where clave = '77777777-0000-0000-0000-000000000001') $q$, 'venta/-2/1');
 select igual('el costo vino de la entrada', $q$ (select count(*) from public.venta_item_costos) $q$, '0');
 reset role;
+select igual('lo que anotó el empleado quedó sin costo (lo ponen los dueños)', $q$ (select count(*) from public.producto_costos where producto_id = public.prod('Batidora Oster')) $q$, '0');
 select igual('costo de la venta desde la tienda (dueño)', $q$ (select c.costo from public.venta_item_costos c join public.venta_items i on i.id = c.item_id join public.ventas v on v.id = i.venta_id where v.clave = '77777777-0000-0000-0000-000000000001') $q$, '25.00');
 
 select como('D'); set role authenticated;
@@ -494,6 +503,43 @@ reset role;
 set role anon;
 select t('anónimo no pide aprobaciones', $q$ public.pedir_aprobacion('{}', null) $q$, 'permission denied');
 select t('anónimo no aprueba', $q$ public.responder_aprobacion(1, true, null) $q$, 'permission denied');
+reset role;
+
+-- ===================== De quién es cada crédito (migración 008) =====================
+create function public.vc(c text) returns bigint language sql security definer as $$ select id from public.ventas where clave = c::uuid $$;
+grant execute on function public.vc(text) to authenticated;
+create function public.vend(c text) returns text language sql security definer as $$
+  select u.nombre from public.ventas v join public.usuarios u on u.id = v.vendedor_id where v.clave = c::uuid $$;
+grant execute on function public.vend(text) to authenticated;
+select como('F'); set role authenticated;
+select t('sin elegir, el crédito es de quien lo anota', $q$ public.registrar_venta(jsonb_build_object('cliente_clave','aaaaaaaa-0000-0000-0000-000000000001','items','[{"descripcion":"Licuadora","precio":60}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',60))), 'bbbbbbbb-0000-0000-0000-000000000001') $q$);
+select igual('quedó de Franklin', $q$ public.vend('bbbbbbbb-0000-0000-0000-000000000001') $q$, 'Franklin');
+select t('Franklin la anota a nombre de Daniel', $q$ public.registrar_venta(jsonb_build_object('cliente_clave','aaaaaaaa-0000-0000-0000-000000000001','vendedor_id','00000000-0000-0000-0000-00000000000b','items','[{"descripcion":"Nevera","precio":300}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',300))), 'bbbbbbbb-0000-0000-0000-000000000002') $q$);
+select igual('quedó de Daniel (y la anotó Franklin)', $q$ public.vend('bbbbbbbb-0000-0000-0000-000000000002') || '/' || (select u.nombre from public.ventas v join public.usuarios u on u.id = v.creado_por where v.id = public.vc('bbbbbbbb-0000-0000-0000-000000000002')) $q$, 'Daniel/Franklin');
+select t('a nombre de alguien que no está activo, no', $q$ public.registrar_venta(jsonb_build_object('cliente_clave','aaaaaaaa-0000-0000-0000-000000000001','vendedor_id','00000000-0000-0000-0000-00000000000f','items','[{"descripcion":"Nevera","precio":300}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',300))), gen_random_uuid()) $q$, 'no está activa');
+select t('"Ya debía" también se pone a nombre de otro', $q$ public.registrar_venta(jsonb_build_object('cliente_clave','aaaaaaaa-0000-0000-0000-000000000001','origen','carga_inicial','vendedor_id','00000000-0000-0000-0000-00000000000b','pagado_antes',20,'items','[{"descripcion":"Cocina","precio":120}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',100))), 'bbbbbbbb-0000-0000-0000-000000000003') $q$);
+select igual('la carga quedó de Daniel', $q$ public.vend('bbbbbbbb-0000-0000-0000-000000000003') $q$, 'Daniel');
+reset role;
+select como('E'); set role authenticated;
+select t('el empleado no anota ventas a nombre de otro', $q$ public.registrar_venta(jsonb_build_object('cliente_id',2,'vendedor_id','00000000-0000-0000-0000-00000000000a','items','[{"descripcion":"Plancha","precio":30}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',30))), gen_random_uuid()) $q$, 'Solo puedes anotar ventas a tu nombre');
+select t('a su nombre sí', $q$ public.registrar_venta(jsonb_build_object('cliente_id',2,'vendedor_id','00000000-0000-0000-0000-00000000000e','items','[{"descripcion":"Plancha","precio":30}]'::jsonb,'frecuencia','semanal','cuotas',jsonb_build_array(jsonb_build_object('fecha',h(7),'monto',30))), 'bbbbbbbb-0000-0000-0000-000000000004') $q$);
+select igual('quedó del empleado', $q$ public.vend('bbbbbbbb-0000-0000-0000-000000000004') $q$, 'Empleado Pedraza');
+select t('el empleado no pide cambiar de quién es', $q$ public.pedir_aprobacion(jsonb_build_object('tipo','cambiar_vendedor','venta_id',public.vc('bbbbbbbb-0000-0000-0000-000000000004'),'usuario_id','00000000-0000-0000-0000-00000000000e','motivo','x'), gen_random_uuid()) $q$, 'Solo los dueños');
+reset role;
+select como('F'); set role authenticated;
+select t('cambiarlo sin decir a quién', $q$ public.pedir_aprobacion(jsonb_build_object('tipo','cambiar_vendedor','venta_id',public.vc('bbbbbbbb-0000-0000-0000-000000000002'),'motivo','x'), gen_random_uuid()) $q$, 'Elige de quién');
+select t('pasarlo a quien ya lo tiene', $q$ public.pedir_aprobacion(jsonb_build_object('tipo','cambiar_vendedor','venta_id',public.vc('bbbbbbbb-0000-0000-0000-000000000002'),'usuario_id','00000000-0000-0000-0000-00000000000b','motivo','x'), gen_random_uuid()) $q$, 'ya es de Daniel');
+select t('pasarlo a alguien que no está activo', $q$ public.pedir_aprobacion(jsonb_build_object('tipo','cambiar_vendedor','venta_id',public.vc('bbbbbbbb-0000-0000-0000-000000000002'),'usuario_id','00000000-0000-0000-0000-00000000000f','motivo','x'), gen_random_uuid()) $q$, 'no está activa');
+select igual('Franklin pide pasarse el crédito de Daniel', $q$ public.pedir_aprobacion(jsonb_build_object('tipo','cambiar_vendedor','venta_id',public.vc('bbbbbbbb-0000-0000-0000-000000000002'),'usuario_id','00000000-0000-0000-0000-00000000000a','motivo','La vendí yo'), 'bbbbbbbb-0000-0000-0000-000000000005')->>'detalle' $q$, 'Pasar la venta #' || (select numero from public.ventas where id = public.vc('bbbbbbbb-0000-0000-0000-000000000002')) || ' de Daniel a Franklin · Cliente Socios');
+select igual('mientras Daniel no apruebe, sigue de Daniel', $q$ public.vend('bbbbbbbb-0000-0000-0000-000000000002') $q$, 'Daniel');
+select t('Franklin no se lo aprueba a sí mismo', $q$ public.responder_aprobacion(public.sol(), true, null) $q$, 'lo responde el otro socio');
+reset role;
+select como('D'); set role authenticated;
+select igual('Daniel aprueba', $q$ public.responder_aprobacion(public.sol(), true, null)->'resultado'->>'nombre' $q$, 'Franklin');
+select igual('ahora es de Franklin', $q$ public.vend('bbbbbbbb-0000-0000-0000-000000000002') $q$, 'Franklin');
+select igual('queda en el historial de la venta, con quién aprobó', $q$ (select e.motivo || '/' || (e.datos->>'antes') || '/' || (e.datos->>'despues') from public.eventos_venta e where e.venta_id = public.vc('bbbbbbbb-0000-0000-0000-000000000002') and e.tipo = 'vendedor') $q$, 'La vendí yo (aprobó Daniel)/00000000-0000-0000-0000-00000000000b/00000000-0000-0000-0000-00000000000a');
+select igual('y en auditoría', $q$ (select count(*) from public.auditoria where tabla = 'ventas' and accion = 'cambiar_vendedor' and registro_id = public.vc('bbbbbbbb-0000-0000-0000-000000000002')::text) $q$, '1');
+select igual('las cuentas no cambian', $q$ public.cuadre() $q$, 'todo cuadra');
 reset role;
 
 -- ===================== Copia de cada noche: 30 días completos y una por mes (migración 007) =====================

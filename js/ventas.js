@@ -1,5 +1,5 @@
 // Electro Montana — cambios a una venta (solo dueños): recargo, descuento, más tiempo, retiro,
-// devolución, cerrar, reabrir, anular y costo de lo vendido.
+// devolución, cerrar, reabrir, anular, de quién es el crédito y costo de lo vendido.
 'use strict';
 
 async function accionVenta(accion, v) {
@@ -10,6 +10,7 @@ async function accionVenta(accion, v) {
     if (accion === 'recargo') hecho = await hojaAjuste(v, 'recargo');
     else if (accion === 'descuento') hecho = await hojaAjuste(v, 'descuento');
     else if (accion === 'tiempo') hecho = await hojaReprogramar(v);
+    else if (accion === 'vendedor') hecho = await hojaCambiarVendedor(v);
     else if (accion === 'retirar') {
       var m1 = await confirmar({ titulo: 'Retirar mercancía', pedir: 'Qué pasó', boton: 'Retirar',
         mensajeHtml: '<p>Se anota que se le retiró el artículo a ' + esc(cli.nombre) + '.</p><p>La venta <b>sigue activa</b>: sigue debiendo ' + fmtUSD(e.saldo) +
@@ -72,6 +73,38 @@ function hojaAjuste(v, tipo) {
       }
       await rpc('recargo_venta', { p_venta: v.id, p_monto: redondear2(monto), p_motivo: motivo, p_fecha: h.$('#ajFecha').value || null, p_clave: clave });
       listo = true; h.cerrar(); resolver(true);
+    });
+  });
+}
+
+// Pasar el crédito a otra persona: lo tiene que aprobar el otro socio
+function hojaCambiarVendedor(v) {
+  return new Promise(function (resolver) {
+    var listo = false, clave = nuevaClave(), elegido = null;
+    var gente = personasQueVenden().filter(function (u) { return u.id !== v.vendedor_id; });
+    var h = abrirHoja({
+      titulo: 'De quién es este crédito',
+      html: '<p>La venta #' + v.numero + ' es de <b>' + esc(duenoCredito(v)) + '</b>. ¿A quién se pasa?</p>' +
+        '<div class="chips envolver" id="cvGente" style="margin:10px 0 14px">' + gente.map(function (u) {
+          return '<button type="button" class="chip" data-u="' + u.id + '">' + esc(nombreConSede(u)) + '</button>';
+        }).join('') + '</div>' +
+        '<label class="campo"><span>Motivo</span><input id="cvMotivo" placeholder="Ej.: la vendió Daniel, se anotó a otro nombre"></label>' +
+        '<div class="aviso aviso-info" style="margin-top:12px">' + icono('candado') + '<div>Lo tiene que aprobar <b>' + esc(nombreOtroSocio()) +
+        '</b>. Hasta entonces sigue siendo de ' + esc(duenoCredito(v)) + '.</div></div>',
+      pie: '<button type="button" class="btn btn-ancho" id="cvGuardar">Pedir aprobación</button>',
+      alCerrar: function () { if (!listo) resolver(false); }
+    });
+    h.$('#cvGente').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-u]'); if (!b) return;
+      elegido = b.dataset.u;
+      h.$$('#cvGente .chip').forEach(function (x) { x.classList.toggle('activo', x === b); });
+    });
+    protegerBoton(h.$('#cvGuardar'), async function () {
+      if (!elegido) { toast('Elige a quién se pasa', 'error'); return; }
+      var motivo = h.$('#cvMotivo').value.trim();
+      if (!motivo) { toast('Escribe el motivo', 'error'); return; }
+      await pedirAprobacion({ tipo: 'cambiar_vendedor', venta_id: v.id, usuario_id: elegido, motivo: motivo }, clave);
+      listo = true; h.cerrar(); resolver('pedido');
     });
   });
 }

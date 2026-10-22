@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guía del encargado de Pedraza</title>
+<meta name="theme-color" content="#172b4d">
+<link rel="icon" type="image/png" href="img/favicon-32.png?v=1">
+<link rel="apple-touch-icon" href="img/icono-180.png?v=1">
+<style>@font-face{font-family:'Barlow';font-weight:400;font-display:swap;src:url('fonts/barlow-400.woff2') format('woff2')}@font-face{font-family:'Barlow';font-weight:500;font-display:swap;src:url('fonts/barlow-500.woff2') format('woff2')}@font-face{font-family:'Barlow';font-weight:600;font-display:swap;src:url('fonts/barlow-600.woff2') format('woff2')}@font-face{font-family:'Barlow';font-weight:700;font-display:swap;src:url('fonts/barlow-700.woff2') format('woff2')}@font-face{font-family:'Barlow Semi Condensed';font-weight:600;font-display:swap;src:url('fonts/barlow-sc-600.woff2') format('woff2')}@font-face{font-family:'Barlow Semi Condensed';font-weight:700;font-display:swap;src:url('fonts/barlow-sc-700.woff2') format('woff2')}</style>
+</head>
+<body>
+<style>
+/* Manual de bolsillo: columna de texto + captura del teléfono al lado (en pantalla ancha) o debajo (en el teléfono).
+   Misma marca que la app: azul noche, cobre, arena. Solo tema claro, como la app (se lee a pleno sol). */
+:root {
+  --azul: #172b4d; --cobre: #a9541f; --cobre-claro: #e0904f; --arena: #f6f4f0; --sup: #ffffff;
+  --texto: #18202e; --tenue: #5b6474; --borde: #e3ddd2; --info: #1d5fa8; --info-fondo: #eaf1fa;
+  --aviso-fondo: #fbefe5; --verde: #1f7a45; --rojo: #b42318;
+  --titulo: 'Barlow Semi Condensed', 'Arial Narrow', Arial, sans-serif;
+  --letra: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+html { background: var(--arena); scroll-behavior: smooth; }
+body { margin: 0; background: var(--arena); color: var(--texto); font: 17px/1.55 var(--letra); -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+.envoltura { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.cab { background: var(--azul); color: #fff; }
+.cab .envoltura { padding-block: 28px 30px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.cab svg { width: 64px; height: 64px; flex: none; }
+.cab h1 { margin: 0; font: 700 34px/1.05 var(--titulo); letter-spacing: .01em; text-wrap: balance; }
+.cab .marca { font: 600 13px var(--titulo); letter-spacing: .32em; color: var(--cobre-claro); text-transform: uppercase; }
+.cab p { margin: 6px 0 0; color: #c9d2e3; max-width: 60ch; }
+.indice { background: var(--sup); border-bottom: 1px solid var(--borde); }
+.indice .envoltura { padding-block: 16px; }
+.indice h2 { margin: 0 0 10px; font: 700 15px var(--titulo); letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
+.indice ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 18px; counter-reset: cap; }
+.indice li { counter-increment: cap; min-width: 0; }
+.indice a { display: flex; gap: 8px; padding: 6px 0; color: var(--azul); text-decoration: none; font-weight: 600; }
+.indice a::before { content: counter(cap); font: 700 15px var(--titulo); color: var(--cobre); min-width: 1.4em; }
+.indice a:hover, .indice a:focus-visible { text-decoration: underline; }
+main .envoltura { padding-block: 8px 48px; }
+section.cap { padding-top: 34px; border-top: 1px solid var(--borde); margin-top: 34px; }
+section.cap:first-of-type { border-top: 0; margin-top: 0; }
+.cap > h2 { margin: 0 0 6px; font: 700 30px/1.1 var(--titulo); color: var(--azul); text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+.cap > h2 .n { font-size: 20px; color: #fff; background: var(--cobre); border-radius: 8px; padding: 2px 9px; flex: none; }
+.cap > .intro { margin: 0 0 18px; color: var(--tenue); max-width: 65ch; }
+h3 { font: 700 21px/1.2 var(--titulo); color: var(--azul); margin: 22px 0 8px; }
+p, li { max-width: 65ch; }
+.bloque { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 28px; align-items: start; margin: 18px 0; }
+.bloque.dos-fotos { grid-template-columns: minmax(0, 1fr) 270px 270px; }
+.bloque > div { min-width: 0; }
+@media (max-width: 860px) { .bloque.dos-fotos { grid-template-columns: minmax(0, 1fr) 270px; } .bloque.dos-fotos > figure:last-child { grid-column: 2; } }
+@media (max-width: 640px) {
+  .bloque, .bloque.dos-fotos { grid-template-columns: 1fr; gap: 14px; }
+  .bloque.dos-fotos > figure:last-child { grid-column: auto; }
+  figure.tel { max-width: 300px; margin-inline: auto; }
+}
+figure.tel { margin: 0; }
+figure.tel img { display: block; width: 100%; height: auto; border-radius: 22px; border: 1px solid var(--borde); box-shadow: 0 6px 18px rgba(23, 43, 77, .12); background: var(--sup); }
+figure.tel figcaption { font-size: 14px; color: var(--tenue); margin-top: 8px; text-align: center; }
+ol.pasos { padding: 0; margin: 10px 0; list-style: none; counter-reset: paso; display: grid; gap: 10px; }
+ol.pasos > li { counter-increment: paso; position: relative; padding-left: 40px; }
+ol.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: 1px; width: 28px; height: 28px; border-radius: 50%; background: var(--azul); color: #fff; font: 700 15px/28px var(--titulo); text-align: center; }
+ul { padding-left: 22px; margin: 8px 0; }
+ul li { margin: 4px 0; }
+.boton { display: inline-block; font-weight: 600; color: var(--cobre); white-space: nowrap; }
+.boton::before { content: "["; color: var(--tenue); font-weight: 400; margin-right: 1px; }
+.boton::after { content: "]"; color: var(--tenue); font-weight: 400; margin-left: 1px; }
+.nota { border-radius: 12px; padding: 12px 16px; margin: 14px 0; max-width: 65ch; }
+.nota b:first-child { display: block; font: 700 14px var(--titulo); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+.nota.ojo { background: var(--aviso-fondo); border: 1px solid #f0d2b9; }
+.nota.ojo b:first-child { color: var(--cobre); }
+.nota.dato { background: var(--info-fondo); border: 1px solid #c9dbf0; }
+.nota.dato b:first-child { color: var(--info); }
+.colores { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.colores span { border-radius: 999px; padding: 3px 12px; font-weight: 600; font-size: 15px; }
+.c-rojo { background: #fde8e6; color: var(--rojo); } .c-azul { background: var(--info-fondo); color: var(--info); } .c-verde { background: #e3f3e9; color: var(--verde); }
+.tabla { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; min-width: 480px; width: 100%; max-width: 760px; background: var(--sup); border-radius: 10px; overflow: hidden; font-size: 16px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+th { background: #eef1f6; font: 700 14px var(--titulo); letter-spacing: .05em; text-transform: uppercase; color: var(--azul); }
+td.si { color: var(--verde); font-weight: 600; } td.no { color: var(--rojo); font-weight: 600; }
+.guion { background: var(--sup); border: 1px solid var(--borde); border-radius: 14px; padding: 18px 20px; }
+.guion ol.pasos > li::before { background: var(--cobre); }
+.guion .di { color: var(--tenue); font-style: italic; }
+.pie { color: var(--tenue); font-size: 14px; padding-block: 24px 40px; border-top: 1px solid var(--borde); }
+a { color: var(--info); }
+a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
+</style>
+
+<header class="cab"><div class="envoltura">
+  <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#ffffff" stroke-width="2.6"/><path d="M9 46 L23 23 L31 34 L40 26 L55 46" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M35 8.5 L27.5 22 L32.5 22 L30 31 L38.5 17 L33.5 17 L37 8.5 Z" fill="#e0904f"/></svg>
+  <div>
+    <div class="marca">Electro Montana</div>
+    <h1>Guía del encargado de Pedraza</h1>
+    <p>Todo lo que haces en la tienda desde tu teléfono: cobrar, vender a crédito o de contado, anotar la mercancía que llega y llevar tu efectivo. Las capturas son de una prueba con clientes inventados.</p>
+  </div>
+</div></header>
+
+<nav class="indice" aria-label="Contenido"><div class="envoltura">
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#entrar">Entrar por primera vez</a></li>
+    <li><a href="#pantalla">Tu pantalla</a></li>
+    <li><a href="#abono">Cobrar un abono</a></li>
+    <li><a href="#credito">Vender a crédito</a></li>
+    <li><a href="#contado">Vender de contado</a></li>
+    <li><a href="#mercancia">La mercancía de la tienda</a></li>
+    <li><a href="#efectivo">Tu efectivo por entregar</a></li>
+    <li><a href="#senal">Sin señal</a></li>
+    <li><a href="#no">Lo que no haces tú</a></li>
+  </ol>
+</div></nav>
+
+<main><div class="envoltura">
+
+<section class="cap" id="entrar">
+  <h2><span class="n">1</span>Entrar por primera vez</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li>Abre el link de la app que te pasaron Franklin o Daniel. En el iPhone: <b>Compartir → Agregar a inicio</b>, así queda como una app.</li>
+        <li>Escribe <b>tu usuario</b> y la <b>clave temporal</b> que te dieron, y toca <span class="boton">Entrar</span>.</li>
+        <li>La primera vez te pide <b>una clave nueva</b>: escoge una que solo sepas tú (mínimo 6). Desde ahí entras con esa.</li>
+      </ol>
+      <div class="nota ojo"><b>Tu clave es tuya</b>No se la des a nadie. Todo lo que cobras y vendes queda a tu nombre. Si se te olvida, pídele a Franklin o a Daniel que te pongan una nueva.</div>
+    </div>
+    <figure class="tel"><img src="guia/e01-entrar.jpg" alt="Pantalla para entrar con usuario y clave" width="780" height="1688" loading="lazy"><figcaption>Tu usuario y tu clave</figcaption></figure>
+    <figure class="tel"><img src="guia/e02-clave.jpg" alt="La app pide una clave nueva la primera vez" width="780" height="1688" loading="lazy"><figcaption>La primera vez: tu clave</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="pantalla">
+  <h2><span class="n">2</span>Tu pantalla</h2>
+  <div class="bloque">
+    <div>
+      <p>Al abrir sale <b>Cobrar</b>, solo con los <b>clientes de la tienda de Pedraza</b>:</p>
+      <div class="colores"><span class="c-rojo">Rojo: atrasado</span><span class="c-azul">Azul: le toca hoy</span><span class="c-verde">Verde: al día</span></div>
+      <p>Abajo tienes <b>Cobrar</b>, <b>Clientes</b>, <b>Vender</b> (el botón redondo), <b>Cobros</b> y <b>Más</b>. En Más están la <b>mercancía</b>, <b>tu efectivo</b>, <b>Recordar por WhatsApp</b> y esta guía.</p>
+      <p>Para regresar a la pantalla de antes, toca la <b>flecha de arriba a la izquierda</b> (o el botón "atrás" del teléfono).</p>
+      <p>La <b>tasa del bolívar</b> la ponen Franklin y Daniel cada mañana; tú la usas tal cual.</p>
+      <p>Lo que vendes queda <b>a tu nombre</b> ("Crédito de José") y cada cliente dice quién lo anotó.</p>
+    </div>
+    <figure class="tel"><img src="guia/e03-cobrar.jpg" alt="Pantalla Cobrar del encargado" width="780" height="1688" loading="lazy"><figcaption>Tus clientes de Pedraza</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="abono">
+  <h2><span class="n">3</span>Cobrar un abono</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li>En Cobrar o en la ficha del cliente, toca <span class="boton">Abonar</span>.</li>
+        <li>Elige cómo pagó: efectivo en dólares, Zelle, USDT, pago móvil o bolívares en efectivo. En bolívares la app calcula con la tasa del día.</li>
+        <li>Escribe el monto (y la referencia si es transferencia) y toca <span class="boton">Guardar abono</span>.</li>
+        <li>Toca <span class="boton">Enviar recibo por WhatsApp</span>: al cliente le llega lo que pagó y lo que le falta.</li>
+      </ol>
+      <div class="nota dato"><b>Dato</b>El botón de guardar se bloquea al primer toque: aunque lo toques dos veces, se guarda una sola vez.</div>
+    </div>
+    <figure class="tel"><img src="guia/e04-abono.jpg" alt="Registrar un abono en efectivo" width="780" height="1688" loading="lazy"><figcaption>El abono</figcaption></figure>
+    <figure class="tel"><img src="guia/e05-recibo.jpg" alt="Abono registrado con el botón del recibo" width="780" height="1688" loading="lazy"><figcaption>El recibo por WhatsApp</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="credito">
+  <h2><span class="n">4</span>Vender a crédito</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li>Toca <b>Vender</b> (o <span class="boton">Nueva venta</span> en la ficha del cliente). Deja marcado <span class="boton">A crédito</span>.</li>
+        <li><b>Cliente:</b> elígelo, o toca <span class="boton">Cliente nuevo</span> y llena sus datos, el fiador y la foto de la cédula.</li>
+        <li><b>Lo que se lleva:</b> escribe el producto y elígelo de la lista. Si está en la tienda, sale marcado <b>"Sale de la tienda de Pedraza"</b> y se descuenta solo.</li>
+        <li><b>Inicial:</b> toca <span class="boton">Usar el 30 %</span> (o escribe el monto) y cómo la pagó.</li>
+        <li><b>Cuotas:</b> semanal, quincenal o mensual, y cuántas. Las fechas se ponen solas.</li>
+        <li>Toca <span class="boton">Guardar venta</span> y después <span class="boton">Firmar el contrato en la pantalla</span>: firma el cliente con el dedo, y el fiador si hay.</li>
+      </ol>
+      <div class="nota ojo"><b>Ojo</b>Si un cliente está marcado "No venderle", la app no te deja venderle: habla con Franklin o Daniel.</div>
+    </div>
+    <figure class="tel"><img src="guia/e06-vender.jpg" alt="Venta de un producto que sale de la tienda" width="780" height="1688" loading="lazy"><figcaption>El producto sale de la tienda</figcaption></figure>
+    <figure class="tel"><img src="guia/e07-cuotas.jpg" alt="Inicial y cuotas de la venta" width="780" height="1688" loading="lazy"><figcaption>Inicial y cuotas</figcaption></figure>
+  </div>
+  <div class="bloque">
+    <div><p>Al guardar puedes <b>firmar el contrato</b>, mandar el <b>resumen por WhatsApp</b> o el <b>contrato en PDF</b>.</p></div>
+    <figure class="tel"><img src="guia/e08-guardada.jpg" alt="Venta guardada con sus botones" width="780" height="1688" loading="lazy"><figcaption>Venta guardada</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="contado">
+  <h2><span class="n">5</span>Vender de contado</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <ol class="pasos">
+        <li>En Vender toca <span class="boton">De contado</span>.</li>
+        <li>Elige el cliente y lo que se lleva (si está en la tienda, sale de ahí).</li>
+        <li>En <b>Pago</b> elige cómo pagó. No lleva inicial, ni cuotas, ni contrato.</li>
+        <li>Toca <span class="boton">Guardar venta de contado</span> y <span class="boton">Enviar recibo por WhatsApp</span>.</li>
+      </ol>
+    </div>
+    <figure class="tel"><img src="guia/e09-contado.jpg" alt="Venta de contado con el pago completo" width="780" height="1688" loading="lazy"><figcaption>De contado</figcaption></figure>
+    <figure class="tel"><img src="guia/e10-contado-guardado.jpg" alt="Venta de contado guardada con el recibo" width="780" height="1688" loading="lazy"><figcaption>El recibo</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="mercancia">
+  <h2><span class="n">6</span>La mercancía de la tienda</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <p><b>Más → Mercancía:</b> lo que hay en la tienda de Pedraza. Toca un producto para ver lo que entró y salió.</p>
+      <h3>Cuando llega mercancía</h3>
+      <ol class="pasos">
+        <li>Toca <span class="boton">Anotar mercancía que llegó</span>.</li>
+        <li>Escribe cada producto: si ya existe, elígelo de la lista; si es nuevo, ponle su <b>precio de venta</b>. Y cuántos llegaron.</li>
+        <li>En la nota, quién la trajo o la factura. Toca <span class="boton">Guardar lo que llegó</span>.</li>
+      </ol>
+      <div class="nota dato"><b>Dato</b>Los costos los anotan Franklin y Daniel. El precio de un producto que ya existe también lo deciden ellos.</div>
+    </div>
+    <figure class="tel"><img src="guia/e11-mercancia.jpg" alt="Lo que hay en la tienda de Pedraza" width="780" height="1688" loading="lazy"><figcaption>Lo que hay en la tienda</figcaption></figure>
+    <figure class="tel"><img src="guia/e12-llego.jpg" alt="Anotar la mercancía que llegó" width="780" height="1688" loading="lazy"><figcaption>Anotar lo que llegó</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="efectivo">
+  <h2><span class="n">7</span>Tu efectivo por entregar</h2>
+  <div class="bloque">
+    <div>
+      <p>Lo que cobras <b>en efectivo</b> (dólares o bolívares) queda a tu nombre hasta que se lo entregas a Franklin o a Daniel. Lo ves en <b>Más → Mi efectivo por entregar</b>.</p>
+      <p>Cuando vienen a la tienda, cuentan el dinero contigo y lo anotan en su teléfono. Si cuadra, queda en cero; si falta o sobra, queda escrito.</p>
+      <div class="nota ojo"><b>Ojo</b>Zelle, USDT y pago móvil no son efectivo: no se suman aquí porque llegan directo a la cuenta.</div>
+    </div>
+    <figure class="tel"><img src="guia/e13-efectivo.jpg" alt="Efectivo que tiene el encargado por entregar" width="780" height="1688" loading="lazy"><figcaption>Mi efectivo</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="senal">
+  <h2><span class="n">8</span>Sin señal</h2>
+  <div class="bloque dos-fotos">
+    <div>
+      <p>Si no hay internet, <b>igual registras</b> abonos, ventas y clientes: se guardan en el teléfono y arriba sale <b>"por enviar"</b>. Cuando vuelve la señal se envían solos, una sola vez.</p>
+      <div class="nota ojo"><b>Ojo</b>No borres la app ni cambies de teléfono mientras haya algo "por enviar".</div>
+    </div>
+    <figure class="tel"><img src="guia/31-sin-senal.jpg" alt="Abono guardado sin señal" width="780" height="1688" loading="lazy"><figcaption>Guardado en el teléfono</figcaption></figure>
+    <figure class="tel"><img src="guia/32-por-enviar.jpg" alt="Aviso de lo que falta por enviar" width="780" height="1688" loading="lazy"><figcaption>Por enviar</figcaption></figure>
+  </div>
+</section>
+
+<section class="cap" id="no">
+  <h2><span class="n">9</span>Lo que no haces tú</h2>
+  <p>Esto lo hacen Franklin o Daniel. Si hace falta, avísales:</p>
+  <ul>
+    <li>Anular un abono o una venta, hacer un descuento o cerrar una venta.</li>
+    <li>Recargos, más tiempo o retirar la mercancía a un cliente.</li>
+    <li>Cambiar la tasa, contar la mercancía o ponerle costos.</li>
+    <li>Ver los clientes de Socopó, los costos, las ganancias o los reportes.</li>
+    <li>Cargar clientes que ya debían de antes.</li>
+  </ul>
+  <div class="nota dato"><b>Si te equivocas en un abono o una venta</b>No lo vuelvas a registrar: avísale a Franklin o a Daniel para que lo corrijan. Nada se borra; se anula y queda anotado.</div>
+</section>
+
+</div></main>
+
+<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía del encargado de Pedraza (octubre de 2026).</div></footer>
+</body>
+</html>

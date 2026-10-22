@@ -159,6 +159,25 @@ var VistaReportes = (function () {
           fmtUSD(t.monto) + '</b> ' + (i === 0 ? 'por cobrar' : 'atrasado') + '</span></div>';
       }).join('') + '</div></div>';
 
+    // De quién son los créditos (quién vendió, o a quién se los pasaron)
+    var porPersona = new Map();
+    ST.ventas.forEach(function (v) {
+      if (!deLaSede(v.cliente_id)) return;
+      var p = porPersona.get(v.vendedor_id) || { activas: 0, debe: 0, atraso: 0, mes: 0 };
+      if (v.estado === 'activa') { var e = estadoDe(v); p.activas++; p.debe += e.saldo; p.atraso += e.atraso; }
+      if (v.origen === 'nueva' && v.fecha.slice(0, 7) === esteMes.ym) p.mes += Number(v.total);
+      porPersona.set(v.vendedor_id, p);
+    });
+    if (porPersona.size) {
+      h += '<div class="seccion"><div class="seccion-tit"><h2>De quién son los créditos</h2></div><div class="tarjeta">' +
+        Array.from(porPersona.entries()).sort(function (a, b) { return b[1].debe - a[1].debe; }).map(function (x) {
+          var p = x[1];
+          return '<div class="dato"><span>' + esc(nombreUsuario(x[0])) + '</span><span class="crece">' + plural(p.activas, 'crédito activo', 'créditos activos') +
+            ' · le deben <b class="num">' + fmtUSD(p.debe) + '</b>' + (p.atraso > 0 ? ' · <span style="color:var(--rojo)">atrasado ' + fmtUSD(p.atraso) + '</span>' : '') +
+            '<br><span class="tenue">Vendido este mes ' + fmtUSD(p.mes) + '</span></span></div>';
+        }).join('') + '</div></div>';
+    }
+
     // Morosos
     h += '<div class="seccion"><div class="seccion-tit"><h2>Atrasados <span class="tenue">' + morosos.length + '</span></h2>' +
       (morosos.length ? '<button type="button" class="btn btn-sec btn-chico" data-recordar-todos>' + icono('chat', 'ic-chico') + 'Recordar</button>' : '') + '</div>';

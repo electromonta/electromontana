@@ -421,6 +421,132 @@ const VIDEOS = [
     await v.decir('Los atrasados, con su último abono y su última nota.', 3400);
     await v.alejar();
     await v.cierre('Reportes', 'Fin de los videos. La guía completa está en Más → Guía de uso.');
+  } },
+
+  // Video para el encargado de la tienda: todo lo que hace él, desde su teléfono
+  { n: 12, archivo: '12-encargado-de-pedraza', titulo: 'Para el encargado de Pedraza', usuario: 'pedraza', async guion(v) {
+    await v.portada('PARA EL ENCARGADO DE LA TIENDA', 'Tu app de la tienda de Pedraza', 'Cobrar, vender a crédito o de contado, la mercancía y tu efectivo', 4600);
+    await v.decir('Entras con <b>tu usuario</b> y <b>tu clave</b>. La primera vez, la app te pide una clave nueva que <b>solo sabes tú</b>.', 4600);
+    await v.decir('Al abrir sale <b>Cobrar</b>, solo con los clientes de la <b>tienda de Pedraza</b>.', 3200);
+    await v.acercar('.cobro:has-text("Luis Mendoza")', 1.6);
+    await v.marco('.cobro:has-text("Luis Mendoza")');
+    await v.decir('Cada cliente dice cuánto debe, si está <b>atrasado</b> (en rojo) y lo que prometió.', 3600);
+    await v.alejar(700);
+
+    await v.decir('<b>1. Cobrar.</b> Toca <b>Abonar</b> en el cliente.', 600);
+    await v.tocar('.cobro:has-text("Luis Mendoza") [data-abonar]', { despues: 900 });
+    await v.decir('Elige cómo pagó y escribe el monto.', 300);
+    await v.tocar('#abMetodos [data-m="1"]');
+    await v.escribir('#abMonto', '75', { lento: true });
+    await v.soltar();
+    await v.tocar('#abGuardar', { despues: 1200 });
+    await v.esperarQue('.hoja h2:has-text("Abono registrado")');
+    await v.decir('Listo. Mándale su <b>recibo por WhatsApp</b>: le dice lo que pagó y lo que le falta.', 600);
+    await v.tocar('#agRecibo', { despues: 400 });
+    await v.whatsapp(5200);
+    await v.cerrarHojas();
+
+    await v.decir('<b>2. Vender a crédito.</b> El botón redondo <b>Vender</b>.', 600);
+    await v.tocar('#navTabs [data-ir="vender"]', { despues: 1000 });
+    await v.tocar('#vCliente [data-elegir]', { despues: 700 });
+    await v.escribir('#ecBusca', 'Rosa', { lento: true });
+    await v.tocar('#ecLista [data-ref]:has-text("Rosa Pérez")', { despues: 800 });
+    await v.acercar('#vItems', 1.5);
+    await v.decir('Escribe el producto y elígelo de la lista.', 300);
+    await v.escribir('#vItems [data-campo="descripcion"]', 'licua', { lento: true });
+    await v.tocar('#vItems .sugerencias [data-p]', { despues: 900 });
+    await v.marco('#vItems .casilla');
+    await v.decir('Si está en la tienda, sale marcado: <b>se descuenta solo</b>.', 3200);
+    await v.marco(null);
+    await v.alejar(700);
+    await v.acercar('#vInicial', 1.5);
+    await v.decir('La <b>inicial</b>: toca <b>Usar el 30 %</b> y cómo la pagó.', 500);
+    await v.tocar('#vUsarPct');
+    await v.tocar('#vMetodos [data-m="1"]', { despues: 1000 });
+    await v.alejar(700);
+    await v.acercar('#vCuotas', 1.35);
+    await v.decir('Las <b>cuotas</b>: cada cuánto y cuántas. Las fechas se ponen solas.', 300);
+    await v.escribir('#vNumero', '4', { lento: true });
+    await v.soltar();
+    await v.esperar(2600);
+    await v.alejar();
+    await v.tocar('#vGuardar', { despues: 1600 });
+    await v.esperarQue('.hoja h2:has-text("guardada")');
+    await v.marco('.hoja [data-firmar]');
+    await v.decir('Guardada. Ahora el cliente <b>firma el contrato</b> con el dedo, en la pantalla.', 4200);
+    await v.marco(null);
+    await v.cerrarHojas();
+
+    await v.decir('<b>3. Vender de contado.</b> Arriba toca <b>De contado</b>.', 600);
+    await v.tocar('#vForma [data-c="1"]', { despues: 900 });
+    await v.tocar('#vCliente [data-elegir]', { despues: 700 });
+    await v.escribir('#ecBusca', 'Luis', { lento: true });
+    await v.tocar('#ecLista [data-ref]:has-text("Luis Mendoza")', { despues: 800 });
+    await v.escribir('#vItems [data-campo="descripcion"]', 'ventil', { lento: true });
+    await v.tocar('#vItems .sugerencias [data-p]', { despues: 900 });
+    await v.acercar('#vInicial', 1.5);
+    await v.decir('Paga todo hoy: solo elige <b>cómo pagó</b>. Sin cuotas ni contrato.', 300);
+    await v.tocar('#vMetodos [data-m="1"]', { despues: 2400 });
+    await v.alejar(700);
+    await v.tocar('#vGuardar', { despues: 1600 });
+    await v.esperarQue('.hoja h2:has-text("contado")');
+    await v.decir('Y su <b>recibo por WhatsApp</b>.', 500);
+    await v.tocar('.hoja [data-resumen]', { despues: 400 });
+    await v.whatsapp(4600);
+    await v.cerrarHojas();
+
+    await v.decir('<b>4. Cuando llega mercancía:</b> Más → Mercancía.', 600);
+    await v.tocar('#navTabs [data-mas]', { despues: 700 });
+    await v.tocar('.hoja [data-ir="mercancia"]', { despues: 1300 });
+    await v.decir('Ves lo que hay en la tienda. Toca <b>Anotar mercancía que llegó</b>.', 500);
+    await v.tocar('#mcEntrada', { despues: 1000 });
+    await v.escribir('#emFilas [data-c="nombre"]', 'Plancha Oster', { lento: true });
+    await v.escribir('#emFilas [data-c="cantidad"]', '3');
+    await v.decir('Cuántos llegaron. Si es un producto nuevo, su <b>precio de venta</b>.', 300);
+    await v.escribir('#emFilas [data-c="precio"]', '28');
+    await v.soltar();
+    await v.decir('Los <b>costos</b> los ponen Franklin y Daniel: tú no los ves.', 3200);
+    await v.tocar('#emGuardar', { despues: 2200 });
+    await v.cerrarHojas();
+
+    await v.decir('<b>5. Tu efectivo.</b> Lo que cobras en efectivo queda <b>a tu nombre</b>.', 600);
+    await v.tocar('#navTabs [data-mas]', { despues: 700 });
+    await v.tocar('.hoja [data-ir="efectivo"]', { despues: 1500 });
+    await v.acercar('.deuda-caja', 1.8);
+    await v.decir('Cuando Franklin o Daniel vienen, cuentan contigo y lo anotan. Si cuadra, queda en cero.', 4200);
+    await v.alejar();
+
+    await v.decir('<b>6. Sin señal</b> igual registras: se guarda en el teléfono y se envía solo cuando vuelve.', 4200);
+    await v.decir('No te toca anular, descontar ni cambiar la tasa: eso lo hacen <b>Franklin o Daniel</b>.', 4200);
+    await v.cierre('Listo', 'Tu guía está en la app: Más → Guía de uso', 4200);
+  } },
+
+  // Para los dueños: cómo dar de alta al encargado
+  { n: 13, archivo: '13-dar-de-alta-al-encargado', titulo: 'Dar de alta al encargado', usuario: 'franklin', async guion(v) {
+    await v.portada('PARA FRANKLIN Y DANIEL', 'Dar de alta al encargado', 'Su usuario, su clave y lo que puede hacer', 4000);
+    await v.decir('En <b>Más → Ajustes</b>, en <b>Usuarios</b>.', 600);
+    await v.tocar('#navTabs [data-mas]', { despues: 700 });
+    await v.tocar('.hoja [data-ir="ajustes"]', { despues: 1300 });
+    await v.decir('Toca <b>Nuevo</b>.', 300);
+    await v.tocar('[data-nuevo-usuario]', { despues: 900 });
+    await v.escribir('#usNombre', 'José Rivas', { lento: true });
+    await v.decir('Un <b>usuario</b> corto, sin espacios, y una <b>clave temporal</b>.', 300);
+    await v.escribir('#usUsuario', 'jose', { lento: true });
+    await v.escribir('#usClave', 'temporal1', { lento: true });
+    await v.soltar();
+    await v.decir('Rol <b>Empleado</b> y sede <b>Pedraza</b>.', 400);
+    await v.tocar('#usRol [data-v="empleado"]');
+    await v.tocar('#usSede [data-v="pedraza"]', { despues: 700 });
+    await v.acercar('#usPermisos', 1.5);
+    await v.marco('#usPermisos');
+    await v.decir('Aquí dice lo que <b>podrá</b> y lo que <b>no podrá</b> hacer: no ve costos, ganancias ni reportes, ni la otra tienda.', 5600);
+    await v.marco(null);
+    await v.alejar();
+    await v.tocar('#usGuardar', { despues: 2200 });
+    await v.decir('Pásale el <b>link de la app</b>, su <b>usuario</b> y la <b>clave temporal</b> por WhatsApp. Al entrar, pone su propia clave.', 5200);
+    await v.decir('Si se le olvida: <b>Ajustes → Usuarios</b> → él → <b>Ponerle una clave nueva</b>.', 4200);
+    await v.decir('Si deja de trabajar con ustedes: quítenle <b>"Puede entrar"</b>. Lo que hizo queda guardado.', 4400);
+    await v.cierre('Dar de alta al encargado', 'Después pásale su video y su guía (Más → Guía de uso en su teléfono)', 4400);
   } }
 ];
 

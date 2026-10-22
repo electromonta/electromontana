@@ -21,6 +21,17 @@ var _estados = new Map();
 function esDueno() { return !!(ST.yo && ST.yo.activo && ST.yo.rol === 'dueno'); }
 function metodoPorId(id) { return ST.metodos.find(function (m) { return m.id === id; }); }
 function nombreUsuario(id) { var u = ST.usrPorId.get(id); return u ? u.nombre : '—'; }
+// De quién es un crédito (quien lo vendió, o a quien se lo pasaron con la aprobación del otro socio)
+function duenoCredito(v) { return v && v.vendedor_id ? nombreUsuario(v.vendedor_id) : '—'; }
+// Quiénes pueden quedar como dueños de un crédito: los socios, el empleado y uno mismo
+function personasQueVenden() {
+  return ST.usuarios.filter(function (u) { return u.activo && (u.puede_aprobar || u.rol === 'empleado' || u.id === ST.yo.id); })
+    .sort(function (a, b) { return (a.rol === 'dueno' ? 0 : 1) - (b.rol === 'dueno' ? 0 : 1) || a.nombre.localeCompare(b.nombre); });
+}
+function nombreConSede(u) {
+  var sede = u.rol === 'empleado' ? nombreSede(u.sede) : '';
+  return u.nombre + (sede && normalizar(u.nombre).indexOf(normalizar(sede)) < 0 ? ' (' + sede + ')' : '');
+}
 function tasaDeHoy() {
   return !!(ST.cfg && Number(ST.cfg.tasa_bs) > 0 && ST.cfg.tasa_actualizada_en && fechaCaracas(ST.cfg.tasa_actualizada_en) === hoyCaracas());
 }

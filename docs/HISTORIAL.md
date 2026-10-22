@@ -1,5 +1,27 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 11 — El encargado de Pedraza completo, botón Volver y de quién es cada crédito (2026-10-22)
+
+Pedidos de Franklin y Daniel (por Kinan), ya usando el sistema: cómo entra y qué hace el encargado de la tienda de Pedraza (con video para él), un botón para volver a la pantalla anterior, y ver quién anotó cada cliente y de quién es cada crédito.
+
+- **El encargado de Pedraza:** se le crea su usuario en Ajustes → Usuarios → Nuevo (rol Empleado, sede Pedraza; Ajustes ahora explica ahí qué puede y qué no). Ahora además:
+  - **Vende de contado** (Vender → De contado): paga todo en el momento, sin cuotas ni contrato, recibo por WhatsApp. Después de una de contado, la siguiente viene de contado.
+  - **Anota la mercancía que llega a su tienda** (Más → Mercancía → Anotar mercancía que llegó): solo en su sede, sin costos (los ponen los dueños), y el precio solo en un producto nuevo. Queda a su nombre.
+  - Su propia guía, `guia-empleado.html` (9 capítulos), que le abre Más → Guía de uso. Los dueños tienen la suya con un capítulo nuevo sobre cómo darle de alta.
+  - Videos (no van al repo): "Para el encargado de Pedraza" (2 min 28 s) y "Dar de alta al encargado" (52 s).
+- **Botón Volver:** flecha arriba a la izquierda en toda pantalla que tenga una anterior. El "atrás" del teléfono (Android) también vuelve a la pantalla anterior y, si hay una ventana abierta, la cierra. Antes "atrás" sacaba de la app.
+- **Quién anotó y de quién es:**
+  - La ficha del cliente dice **quién lo anotó y cuándo**; cada venta dice **de quién es el crédito** y, si la anotó otra persona, quién.
+  - Al vender (y en "Ya debía"), un dueño elige **"¿De quién es este crédito?"** (él, el otro socio o el empleado). El empleado no elige: sus ventas son suyas.
+  - Cambiarlo después: botón **De quién es** en la venta; lo aprueba el otro socio y queda en el historial de la venta y en el historial de cambios.
+  - Filtros **De Franklin / De Daniel** en Clientes y Cobrar, y en Reportes "De quién son los créditos" (créditos activos, cuánto le deben a cada uno, atrasado y vendido en el mes).
+- Arreglo: después de guardar una venta de contado, el formulario no se quedaba de contado.
+- Base: migración `008_empleado_y_creditos.sql` (`entrada_mercancia` para el empleado; `registrar_venta` con `vendedor_id`; solicitud `cambiar_vendedor`; columna `solicitudes.usuario_id`; un tipo más en las listas de tipos de `solicitudes` y `eventos_venta`, sin tocar datos).
+- **Aplicado a la base real el 2026-10-22:** respaldo antes en `respaldo_20261022` (21 tablas, mismos conteos; sin acceso para la app). Huella de las 72 funciones igual a la probada; el inspector de seguridad no muestra nada nuevo. Prueba en la base real dentro de una transacción que se deshizo: Franklin anota una venta a nombre de Daniel, pide pasarla a él, Daniel aprueba, queda en el historial; entrada de mercancía.
+- Las 5 ventas que ya había quedaron de quien las anotó (2 de `kinan`, 3 de `franklin`); si alguna es de otro, se pasa con **De quién es**.
+- Guía con 19 capítulos y 54 capturas (dueños) + guía del encargado. Versión 9 de la app.
+- Pruebas: 305 escenarios de base, 29 de cuentas, 97 del recorrido en teléfono.
+
 ## Entrega 10 — Límite a la copia de cada noche (2026-10-16) — FALTA APLICARLA EN LA BASE REAL
 
 - Kinan dio el "dale": la copia de cada noche guarda **todas las de los últimos 30 días** y, de ahí para atrás, **la primera de cada mes**. La limpieza corre sola cada noche, después de guardar la copia del día y en la misma transacción (si la copia falla, no se borra nada). Solo toca `respaldo_diario.copias`, nunca los datos del negocio.

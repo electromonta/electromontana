@@ -10,6 +10,8 @@ var VistaClientes = (function () {
     c.appendChild(raiz);
     var chips = [['todos', 'Todos'], ['deben', 'Con deuda'], ['atrasados', 'Atrasados'], ['exterior', 'Exterior']];
     if (esDueno()) chips.push(['socopo', 'Socopó'], ['pedraza', 'Pedraza'], ['novender', 'No venderle']);
+    if (esDueno()) chips = chips.concat(chipsDeQuien(false));
+    if (!chips.some(function (f) { return f[0] === filtro; })) filtro = 'todos';
     raiz.innerHTML =
       '<button type="button" class="btn btn-ancho" data-nuevo>' + icono('mas') + 'Nuevo cliente</button>' +
       '<div class="buscador" style="margin-top:12px">' + icono('buscar') + '<input id="clBusca" type="search" placeholder="Nombre, cédula, teléfono o sector" value="' + esc(busca) + '"></div>' +
@@ -40,6 +42,7 @@ var VistaClientes = (function () {
       if (filtro === 'exterior' && !c.en_exterior) return false;
       if ((filtro === 'socopo' || filtro === 'pedraza') && c.sede !== filtro) return false;
       if (filtro === 'novender' && !c.no_venderle) return false;
+      if (filtro.indexOf('u:') === 0 && !tieneCreditoDe(c.id, filtro.slice(2), false)) return false;
       if (filtro === 'deben' || filtro === 'atrasados') {
         var r = resumenCliente(c.id);
         if (filtro === 'deben' && !(r.saldo > 0.004)) return false;
@@ -74,7 +77,7 @@ var VistaClientes = (function () {
 
 function filaCliente(c) {
   var r = resumenCliente(c.id);
-  var sub = [c.sector, esDueno() ? nombreSede(c.sede) : '', c.en_exterior ? (c.pais || 'Exterior') : ''].filter(Boolean).join(' · ');
+  var sub = [c.sector, esDueno() ? nombreSede(c.sede) : '', c.en_exterior ? (c.pais || 'Exterior') : '', deQuienCliente(c.id)].filter(Boolean).join(' · ');
   var der;
   if (r.saldo > 0.004) {
     der = '<div class="monto">' + fmtUSD(r.saldo) + '</div>' + (r.atraso > 0 ? '<span class="etiqueta e-rojo">Atrasado ' + textoDias(r.dias) + '</span>' : '<span class="etiqueta e-verde">Al día</span>');
@@ -85,6 +88,35 @@ function filaCliente(c) {
     '<div class="crece"><div class="item-tit cortar">' + esc(c.nombre) + (c.no_venderle ? ' <span class="etiqueta e-rojo">No venderle</span>' : '') + '</div>' +
     '<div class="item-sub cortar">' + esc(sub || (c.cedula ? fmtCedula(c.cedula) : '—')) + '</div></div>' +
     '<div class="item-der">' + der + '</div></button>';
+}
+
+// "de Franklin" o "de Franklin y Daniel": de quién son los créditos de un cliente (los activos; si no tiene, todos)
+function deQuienCliente(cliId) {
+  var vs = ST.ventasPorCliente.get(cliId) || [], ids = [];
+  var act = vs.filter(function (v) { return v.estado === 'activa'; });
+  (act.length ? act : vs).forEach(function (v) { if (v.vendedor_id && ids.indexOf(v.vendedor_id) < 0) ids.push(v.vendedor_id); });
+  return ids.length ? 'de ' + ids.map(nombreUsuario).join(' y ') : '';
+}
+function tieneCreditoDe(cliId, uid, soloActivas) {
+  return (ST.ventasPorCliente.get(cliId) || []).some(function (v) { return v.vendedor_id === uid && (!soloActivas || v.estado === 'activa'); });
+}
+// Filtros "De Franklin", "De Daniel"… (solo si hay ventas de más de una persona)
+function chipsDeQuien(soloActivas) {
+  var ids = [];
+  ST.ventas.forEach(function (v) { if (v.vendedor_id && (!soloActivas || v.estado === 'activa') && ids.indexOf(v.vendedor_id) < 0) ids.push(v.vendedor_id); });
+  if (ids.length < 2) return [];
+  return ids.map(function (id) { return ['u:' + id, 'De ' + nombreUsuario(id)]; }).sort(function (a, b) { return a[1].localeCompare(b[1]); });
+}
+
+// "Lo anotó Franklin el 21/10/2026" (quién creó al cliente en el sistema)
+function textoAnotado(c) {
+  return 'Lo anotó ' + (c.creado_por ? nombreUsuario(c.creado_por) : '—') + (c.creado_en ? ' el ' + fmtFechaAnio(fechaCaracas(c.creado_en)) : '');
+}
+// "Crédito de Daniel · la anotó Franklin"
+function htmlDeQuien(v) {
+  var h = (v.frecuencia === 'contado' ? 'Vendió ' : 'Crédito de ') + '<b>' + esc(duenoCredito(v)) + '</b>';
+  if (v.creado_por && v.creado_por !== v.vendedor_id) h += '<span class="tenue"> · la anotó ' + esc(nombreUsuario(v.creado_por)) + '</span>';
+  return h;
 }
 
 function fmtCedula(ced) {
@@ -116,7 +148,7 @@ var VistaFicha = (function () {
       // Ya se envió: buscar el id real
       raiz.innerHTML = '<div class="cargando">Buscando…</div>';
       rpc('resolver_clave', { p_clave: clave }).then(function (r) {
-        if (r && r.id) ir('cliente', String(r.id)); else raiz.innerHTML = '<div class="vacio">No se encontró este cliente.</div>';
+        if (r && r.id) ir('cliente', String(r.id), 'reemplazar'); else raiz.innerHTML = '<div class="vacio">No se encontró este cliente.</div>';
       }).catch(function () { raiz.innerHTML = '<div class="vacio">Sin señal. Vuelve a intentar.</div>'; });
       return;
     }
@@ -160,7 +192,8 @@ var VistaFicha = (function () {
         '<div class="fila" style="align-items:flex-start"><div class="avatar" style="width:54px;height:54px;font-size:20px">' + esc(iniciales(c.nombre)) + '</div>' +
           '<div class="crece"><h2>' + esc(c.nombre) + '</h2><div class="tenue">' +
             esc([c.cedula ? fmtCedula(c.cedula) : '', c.sector, esDueno() ? nombreSede(c.sede) : ''].filter(Boolean).join(' · ') || 'Sin cédula') + '</div>' +
-            (etq ? '<div class="fila envolver" style="gap:6px;margin-top:6px">' + etq + '</div>' : '') + '</div></div>' +
+            (etq ? '<div class="fila envolver" style="gap:6px;margin-top:6px">' + etq + '</div>' : '') +
+            '<div class="tenue chico" style="margin-top:6px">' + esc(textoAnotado(c)) + '</div></div></div>' +
         '<div class="deuda-caja"><div><div class="tenue chico">Debe</div><div class="monto-grande">' + fmtUSD(r.saldo) + '</div></div>' +
           '<div><div class="tenue chico">Atrasado</div><div class="monto-grande" style="color:' + (r.atraso > 0 ? 'var(--rojo)' : 'var(--verde)') + '">' + fmtUSD(r.atraso) + '</div>' +
           '<div class="tenue chico">' + (r.atraso > 0 ? 'desde hace ' + textoDias(r.dias) : 'al día') + '</div></div></div>' +
@@ -198,7 +231,8 @@ var VistaFicha = (function () {
       (c.en_exterior ? d('Vive en', c.pais || 'el exterior') + d('Contacto aquí', [c.contacto_nombre, c.contacto_telefono].filter(Boolean).join(' · ')) : '') +
       d('Fiador', [c.fiador_nombre, fmtCedula(c.fiador_cedula), c.fiador_telefono].filter(Boolean).join(' · ')) +
       d('Casa del fiador', c.fiador_direccion) + d('Notas', c.notas) +
-      (c.lat != null ? d('Ubicación', 'Guardada el ' + fmtFechaAnio(c.ubicacion_en)) : '');
+      (c.lat != null ? d('Ubicación', 'Guardada el ' + fmtFechaAnio(c.ubicacion_en)) : '') +
+      d('Lo anotó', textoAnotado(c).replace(/^Lo anotó /, ''));
     html += '<div class="fotos" style="margin-top:12px">' +
       botonFoto(c.foto, 'cliente', 'Foto del cliente') + botonFoto(c.foto_cedula, 'cedula', 'Foto de la cédula') + '</div>';
     return html || '<p class="tenue">Sin datos.</p>';
@@ -221,6 +255,7 @@ var VistaFicha = (function () {
       '<div class="venta-cab" data-abrir="' + v.id + '">' +
         '<div class="fila-sep"><div class="fuerte">#' + v.numero + ' · ' + esc(fmtFechaAnio(v.fecha)) + (v.origen === 'carga_inicial' ? ' <span class="etiqueta e-gris">Ya debía</span>' : '') + '</div><div>' + est + '</div></div>' +
         '<div class="tenue" style="margin-top:2px">' + esc(descripcionVenta(v)) + '</div>' +
+        '<div class="chico" style="margin-top:4px">' + htmlDeQuien(v) + '</div>' +
         '<div class="fila-sep" style="margin-top:8px"><div class="tenue chico num">Total ' + fmtUSD(deuda) + ' · Pagado ' + fmtUSD(v.pagado) + '</div>' +
           '<div class="monto">' + (v.estado === 'activa' ? 'Debe ' + fmtUSD(e.saldo) : '') + '</div></div>' +
         '<div class="progreso" style="margin-top:8px"><div style="width:' + pct + '%"></div></div>' +
@@ -262,8 +297,13 @@ var VistaFicha = (function () {
         '<div class="crece">' + nombre + ' · ' + esc(fmtFechaAnio(c.fecha)) + '</div><div class="num fuerte">' + fmtUSD(c.monto) + '</div>' +
         (txt ? '<div class="tenue chico" style="width:76px;text-align:right">' + txt + '</div>' : '<div style="width:76px"></div>') + '</div>';
     }).join('') + '</div>';
-    // Contrato
+    // Contrato (una venta de contado no lleva: solo su recibo)
     var fCola = firmaEnCola(v.id, v.clave);
+    if (v.frecuencia === 'contado' && !v.firmado_en && !fCola) {
+      h += '<h3 style="margin-top:16px">Recibo</h3><div class="fila envolver" style="margin-top:8px;gap:8px">' +
+        '<span class="etiqueta e-verde">' + icono('check', 'ic-chico') + 'Pagada de contado</span>' +
+        '<button type="button" class="btn btn-sec btn-chico" data-resumen="' + v.id + '">' + icono('chat', 'ic-chico') + 'Recibo por WhatsApp</button></div>';
+    } else
     h += '<h3 style="margin-top:16px">Contrato</h3><div class="fila envolver" style="margin-top:8px;gap:8px">' +
       (v.firmado_en ? '<span class="etiqueta e-verde">' + icono('check', 'ic-chico') + 'Firmado en pantalla el ' + esc(fmtFechaAnio(fechaCaracas(v.firmado_en))) + '</span>'
         : fCola ? '<span class="etiqueta e-ambar">Firma por enviar</span>' : '') +
@@ -290,6 +330,7 @@ var VistaFicha = (function () {
         (v.mercancia === 'retirada' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="devolver">Devolver mercancía</button>' : '') +
         (v.estado === 'activa' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="cerrar">Cerrar venta</button>' : '') +
         (v.estado === 'cerrada' ? '<button type="button" class="btn btn-sec btn-chico" data-accion="reabrir">Reabrir</button>' : '') +
+        '<button type="button" class="btn btn-sec btn-chico" data-accion="vendedor">De quién es</button>' +
         (v.firmado_en ? '<button type="button" class="btn btn-sec btn-chico" data-refirmar="' + v.id + '">Volver a firmar</button>' : '') +
         (v.estado === 'cerrada' && v.mercancia === 'retirada' && !v.reingresada_en && its.some(function (i) { return i.producto_id; }) ?
           '<button type="button" class="btn btn-sec btn-chico" data-accion="reingresar">Volver a la tienda</button>' : '') +
@@ -306,10 +347,12 @@ var VistaFicha = (function () {
       evs = evs.filter(function (x) { return x.tipo !== 'costo'; });
       if (!evs.length) return;
       var nombres = { recargo: 'Recargo', descuento: 'Descuento', reprogramacion: 'Más tiempo (calendario nuevo)', retiro: 'Mercancía retirada',
-                      devolucion: 'Mercancía devuelta', cierre: 'Venta cerrada', reactivacion: 'Reabierta', anulacion: 'Anulada' };
+                      devolucion: 'Mercancía devuelta', cierre: 'Venta cerrada', reactivacion: 'Reabierta', anulacion: 'Anulada',
+                      vendedor: 'Cambió de quién es' };
       cont.innerHTML = '<h3>Historial</h3><div style="margin-top:6px">' + evs.map(function (x) {
         return '<div class="dato"><span>' + esc(fmtFechaAnio(fechaCaracas(x.creado_en))) + '</span><span class="crece">' + esc(nombres[x.tipo] || x.tipo) +
           (x.monto != null && (x.tipo === 'recargo' || x.tipo === 'descuento') ? ' ' + fmtUSD(x.monto) : '') +
+          (x.tipo === 'vendedor' && x.datos ? ': de ' + esc(nombreUsuario(x.datos.antes)) + ' a ' + esc(nombreUsuario(x.datos.despues)) : '') +
           (x.motivo ? ' · ' + esc(x.motivo) : '') + ' <span class="tenue">(' + esc(nombreUsuario(x.usuario_id)) + ')</span></span></div>';
       }).join('') + '</div>';
     } catch (e) { /* sin señal */ }
@@ -508,7 +551,7 @@ function hojaCliente(c, o) {
     try {
       await rpc('borrar_cliente', { p_id: c.id, p_motivo: motivo });
       c.deleted_at = new Date().toISOString();
-      h.cerrar(); toast('Cliente quitado', 'ok'); ir('clientes');
+      h.cerrar(); toast('Cliente quitado', 'ok'); ir('clientes', '', 'reemplazar');
     } catch (err) { toast(errMsg(err), 'error'); }
   });
 

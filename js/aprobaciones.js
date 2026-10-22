@@ -4,7 +4,8 @@
 'use strict';
 
 var TIPOS_SOLICITUD = {
-  anular_abono: 'Anular un abono', descuento: 'Descuento', anular_venta: 'Anular una venta', cerrar_venta: 'Cerrar una venta'
+  anular_abono: 'Anular un abono', descuento: 'Descuento', anular_venta: 'Anular una venta', cerrar_venta: 'Cerrar una venta',
+  cambiar_vendedor: 'Cambiar de quién es un crédito'
 };
 
 function puedoAprobar() { return !!(esDueno() && ST.yo.puede_aprobar); }
@@ -187,7 +188,8 @@ function textoAuditoria(a) {
       reprogramar: 'Más tiempo (calendario nuevo) en la ' + vn, retirar_mercancia: 'Retiró la mercancía de la ' + vn,
       devolver_mercancia: 'Devolvió la mercancía de la ' + vn, cerrar: 'Cerró la ' + vn + ' (dejó de cobrar ' + fmtUSD(an.saldo) + ')',
       reabrir: 'Reabrió la ' + vn, anular: 'Anuló la ' + vn, reingresar_mercancia: 'La mercancía de la ' + vn + ' volvió a la tienda',
-      firmar: 'Se firmó el contrato de la ' + vn, reemplazar_firma: 'Volvió a firmar el contrato de la ' + vn };
+      firmar: 'Se firmó el contrato de la ' + vn, reemplazar_firma: 'Volvió a firmar el contrato de la ' + vn,
+      cambiar_vendedor: 'La ' + vn + ' pasó de ' + nombreUsuario(an.vendedor_id) + ' a ' + nombreUsuario(de.vendedor_id) };
     t = m[a.accion] || ('Cambio en la ' + vn + ': ' + a.accion);
     if (a.accion === 'recargo' || a.accion === 'descuento') det.push('Quedó debiendo ' + fmtUSD(de.saldo));
     if (motivo) det.push(motivo);
