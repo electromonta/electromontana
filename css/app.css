@@ -258,6 +258,8 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--tenue) 
 .chip.activo { background: var(--azul); border-color: var(--azul); color: #fff; }
 .metodos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .metodos .chip { border-radius: 10px; min-height: 48px; }
+/* Se tocó Guardar sin elegir cómo pagó */
+.metodos.falta { outline: 2px solid var(--rojo); outline-offset: 4px; border-radius: 12px; }
 
 /* ---------- Ventanas (hojas) ---------- */
 .velo { position: fixed; inset: 0; z-index: 50; background: rgba(15, 22, 36, .45); display: flex; align-items: flex-end; justify-content: center; }
@@ -305,6 +307,10 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--tenue) 
 .cuota.parcial .marca { border-color: var(--verde); background: linear-gradient(90deg, var(--verde) 50%, #fff 50%); }
 .cuota.vencida { border-color: #efc2be; background: #fff8f7; }
 .cuota.vencida .marca { border-color: var(--rojo); }
+.cuota-der { width: 76px; text-align: right; flex: none; }
+button.cuota { width: 100%; min-height: 48px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+button.cuota:active { filter: brightness(.96); }
+.cuota-pagar { font-weight: 700; color: var(--cobre); font-size: 14px; }
 .dato { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #efebe4; font-size: 15px; }
 .dato:last-child { border-bottom: 0; }
 .dato > span:first-child { color: var(--tenue); width: 120px; flex: none; }

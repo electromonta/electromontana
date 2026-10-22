@@ -6,6 +6,7 @@ declare c1 bigint; c2 bigint; c3 bigint; c4 bigint; c5 bigint; c6 bigint; c7 big
 begin
   perform public.actualizar_tasa(40);
   perform public.actualizar_config('{"telefono_negocio":"0414-7000000"}');
+  perform public.guardar_metodo('{"id":5,"activo":false}');   -- Efectivo Bs: apagado, como en la base real
   c1 := (public.guardar_cliente('{"nombre":"María González","cedula":"V-14.556.120","telefono":"0414-5550101","sector":"Barrio Bolívar","direccion":"Calle 5, casa 22","referencia":"Al lado de la panadería","trabajo":"Comerciante","sede":"socopo","fiador_nombre":"José González","fiador_cedula":"9.112.334","fiador_telefono":"0424-5550102"}')->>'id')::bigint;
   c2 := (public.guardar_cliente('{"nombre":"Pedro Ramírez","cedula":"V-18.223.901","telefono":"0416-5550202","sector":"La Esperanza","direccion":"Av. principal, casa 8","trabajo":"Mecánico","sede":"socopo"}')->>'id')::bigint;
   c3 := (public.guardar_cliente('{"nombre":"Carmen Rojas","cedula":"V-20.441.876","telefono":"+56 9 5550 3030","sector":"Centro","direccion":"Calle 2 con carrera 4","sede":"socopo","en_exterior":true,"pais":"Chile","contacto_nombre":"Ana Rojas (hermana)","contacto_telefono":"0414-5550303","fiador_nombre":"Ana Rojas","fiador_cedula":"22.101.654"}')->>'id')::bigint;

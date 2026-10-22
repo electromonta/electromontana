@@ -9,7 +9,7 @@ var VistaVender = (function () {
     return {
       tipo: tipo || 'nueva', cliente: null, contado: false,   // contado: se paga todo hoy, sin cuotas ni contrato
       items: [{ descripcion: '', cantidad: 1, precio: null, costo: null, producto_id: null, sede: null }],
-      inicial: null, pagaInicial: true, metodo: (ST.metodos.find(function (m) { return m.activo; }) || {}).id, refInicial: '',
+      inicial: null, pagaInicial: true, metodo: null, refInicial: '',   // el método no viene marcado: se elige siempre
       fecha: hoy, pagadoAntes: null,
       frecuencia: 'semanal', modo: 'numero', numero: 8, cuota: null, primera: Cuentas.primeraSugerida(hoy, 'semanal'), primeraTocada: false,
       personal: null, contratoPapel: '', foto: null, notas: '',
@@ -283,6 +283,7 @@ var VistaVender = (function () {
     $('#vMetodos', cont).addEventListener('click', function (e) {
       var b = e.target.closest('[data-m]'); if (!b) return;
       F.metodo = Number(b.dataset.m);
+      this.classList.remove('falta');
       $$('.chip', this).forEach(function (x) { x.classList.toggle('activo', x === b); });
       actualizarCalculos();
     });
@@ -474,7 +475,12 @@ var VistaVender = (function () {
       if (F.contado) { datos.contrato_papel = ''; F.foto = null; }
       if (ini > 0 && (F.pagaInicial || F.contado)) {
         var p = pagoInicial();
-        if (!p) { toast(F.contado ? 'Elige cómo pagó' : 'Elige cómo pagó la inicial', 'error'); return; }
+        if (!p) {
+          toast(F.contado ? 'Toca cómo pagó: efectivo, Zelle, USDT o bolívares' : 'Toca cómo pagó la inicial: efectivo, Zelle, USDT o bolívares', 'error');
+          var vm = $('#vMetodos', raiz);
+          if (vm) { vm.classList.add('falta'); vm.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+          return;
+        }
         if (p.sinTasa) { toast('Falta la tasa del día para cobrar en bolívares', 'error'); return; }
         datos.pago_inicial = { metodo_id: p.metodo.id, monto: p.monto, tasa: p.tasa, monto_usd: p.usd, referencia: F.refInicial };
       }

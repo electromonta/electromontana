@@ -2,7 +2,9 @@
 'use strict';
 
 /* ======================= Registrar abono ======================= */
-function hojaAbono(cliId, ventaId) {
+// o.monto / o.titulo: cuando se paga una cuota desde el plan de pago (el monto se pone al elegir cómo pagó)
+function hojaAbono(cliId, ventaId, o) {
+  o = o || {};
   var c = ST.cliPorId.get(cliId);
   if (!c) return;
   var activas = ventasActivas(cliId);
@@ -10,15 +12,16 @@ function hojaAbono(cliId, ventaId) {
   var dueno = esDueno();
   var metodos = ST.metodos.filter(function (m) { return m.activo; });
   // Una sola clave por ventana: si se toca Guardar otra vez (o se reintenta), la base no lo repite
-  var A = { venta: ventaId || (activas.length === 1 ? activas[0].id : null), metodo: metodos.length ? metodos[0].id : null,
+  // Ningún método viene marcado: se elige siempre (si venía "Efectivo $" marcado, se guardaba sin mirarlo)
+  var A = { venta: ventaId || (activas.length === 1 ? activas[0].id : null), metodo: null,
             tasa: Number(ST.cfg.tasa_bs) || 0, foto: null, clave: nuevaClave() };
 
   var h = abrirHoja({
-    titulo: 'Abono de ' + c.nombre.split(' ')[0], completa: true,
+    titulo: (o.titulo ? o.titulo + ' de ' : 'Abono de ') + c.nombre.split(' ')[0], completa: true,
     html: '<div class="tarjeta"><div class="fila-sep"><span class="tenue">Debe en total</span><span class="monto" id="abDebe"></span></div>' +
         '<div id="abVentas"></div></div>' +
       '<div class="pila" style="margin-top:14px">' +
-        '<div class="campo"><span>Cómo pagó</span><div class="metodos" id="abMetodos">' + metodos.map(function (m) {
+        '<div class="campo"><span>¿Cómo pagó?</span><div class="metodos" id="abMetodos">' + metodos.map(function (m) {
           return '<button type="button" class="chip" data-m="' + m.id + '">' + esc(m.nombre) + '</button>';
         }).join('') + '</div></div>' +
         '<label class="campo"><span id="abEtqMonto">Monto</span><input id="abMonto" inputmode="decimal" placeholder="0,00" autocomplete="off"></label>' +
@@ -73,7 +76,11 @@ function hojaAbono(cliId, ventaId) {
     var m = metodo();
     $$('#abMetodos .chip', h.el).forEach(function (b) { b.classList.toggle('activo', Number(b.dataset.m) === A.metodo); });
     var ves = m && m.moneda === 'VES';
-    h.$('#abEtqMonto').textContent = ves ? 'Monto en bolívares' : 'Monto en dólares';
+    // El monto se escribe después de elegir cómo pagó (así no hay duda de si son dólares o bolívares)
+    h.$('#abMonto').disabled = !m;
+    h.$('#abMonto').placeholder = m ? '0,00' : 'Primero toca cómo pagó';
+    h.$('#abRapidos').hidden = !m;
+    h.$('#abEtqMonto').textContent = !m ? 'Monto' : ves ? 'Monto en bolívares' : 'Monto en dólares';
     h.$('#abTasaCampo').hidden = !ves;
     h.$('#abRefCampo').hidden = !(m && m.pide_referencia);
     if (ves) h.$('#abTasa').value = A.tasa > 0 ? numCampo(A.tasa) : '';
@@ -101,7 +108,16 @@ function hojaAbono(cliId, ventaId) {
   h.cuerpo.addEventListener('click', async function (e) {
     var b;
     if ((b = e.target.closest('[data-v]'))) { A.venta = b.dataset.v ? Number(b.dataset.v) : null; pintarVentas(); pintarRapidos(); return; }
-    if ((b = e.target.closest('[data-m]'))) { A.metodo = Number(b.dataset.m); h.$('#abMonto').value = ''; pintarMetodo(); return; }
+    if ((b = e.target.closest('[data-m]'))) {
+      var antes = metodo();
+      A.metodo = Number(b.dataset.m);
+      h.$('#abMetodos').classList.remove('falta');
+      if (antes && antes.moneda !== metodo().moneda) h.$('#abMonto').value = '';   // cambió de moneda
+      pintarMetodo();
+      if (!h.$('#abMonto').value && o.monto > 0) { h.$('#abMonto').value = numCampo(enMoneda(o.monto)); pintarEquiv(); }
+      if (!h.$('#abMonto').value) h.$('#abMonto').focus();
+      return;
+    }
     if ((b = e.target.closest('[data-rapido]'))) { h.$('#abMonto').value = numCampo(Number(b.dataset.rapido)); pintarEquiv(); return; }
     if (e.target.closest('#abFoto')) {
       var blob = await elegirFoto();
@@ -115,7 +131,12 @@ function hojaAbono(cliId, ventaId) {
 
   protegerBoton(h.$('#abGuardar'), async function () {
     var m = metodo();
-    if (!m) { toast('Elige cómo pagó', 'error'); return; }
+    if (!m) {
+      toast('Toca cómo pagó: efectivo, Zelle, USDT o bolívares', 'error');
+      h.$('#abMetodos').classList.add('falta');
+      h.$('#abMetodos').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     var monto = redondear2(parseNum(h.$('#abMonto').value));
     if (!(monto > 0)) { toast('Escribe el monto', 'error'); h.$('#abMonto').focus(); return; }
     if (m.moneda === 'VES' && !(A.tasa > 0)) { toast('Falta la tasa del día', 'error'); return; }
@@ -154,7 +175,6 @@ function hojaAbono(cliId, ventaId) {
 
   pintarVentas();
   pintarMetodo();
-  setTimeout(function () { h.$('#abMonto').focus(); }, 120);
 }
 
 function hojaAbonoGuardado(ok, rec) {

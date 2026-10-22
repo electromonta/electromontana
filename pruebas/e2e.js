@@ -104,6 +104,7 @@ async function tomarFoto(p, selector) {
   await p.fill('#vItems [data-campo="precio"]', '300');
   await p.fill('#vItems [data-campo="costo"]', '200');
   await p.click('#vUsarPct');
+  revisar('la inicial tampoco trae método marcado', await p.locator('#vMetodos .chip.activo').count() === 0);
   await p.click('#vMetodos [data-m="4"]');
   await p.fill('#vRef', '0102-5566');
   await p.fill('#vNumero', '7');
@@ -157,7 +158,13 @@ async function tomarFoto(p, selector) {
   revisar('Luis aparece atrasado', /Atrasado \$100,00 · \d+ días/.test(txtCobrar), txtCobrar.slice(0, 300));
   await foto(p, '07-cobrar');
   await p.click('.cobro:has-text("Luis Rojas") [data-abonar]');
+  await p.waitForSelector('#abMetodos');
+  revisar('el abono no trae ningún método marcado y el monto espera', await p.locator('#abMetodos .chip.activo').count() === 0 && await p.isDisabled('#abMonto'));
+  await p.click('#abGuardar');
+  await p.waitForTimeout(300);
+  revisar('sin elegir cómo pagó no guarda', await p.locator('#abMetodos.falta').count() === 1 && await p.locator('.hoja h2:has-text("Abono de")').count() === 1);
   await p.click('#abMetodos [data-m="1"]');
+  revisar('al elegir el método se puede escribir el monto', !(await p.isDisabled('#abMonto')) && await p.locator('#abMetodos.falta').count() === 0);
   await p.click('[data-rapido]');
   revisar('botón de lo atrasado', (await p.inputValue('#abMonto')) === '100,00');
   await foto(p, '08-abono');

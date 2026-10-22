@@ -1,5 +1,13 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 13 — El método de pago se elige siempre, y cada cuota se paga desde el plan (2026-10-22)
+
+- Kinan: "no deja elegir el método de pago en los abonos". Diagnóstico: el formulario sí lo tenía, pero abría con **Efectivo $ ya marcado** y el teclado encima; los 2 abonos de la base real quedaron en efectivo así.
+- Ahora **ningún método viene marcado** (abono, inicial y de contado): el monto no se puede escribir ni guardar hasta tocar cómo pagó, y si falta, la app lo señala en rojo.
+- **Cada cuota pendiente del plan de pago tiene "Pagar"**: abre el abono de esa venta con el monto de esa cuota, y ahí se elige efectivo, Zelle, USDT o bolívares. También "Registrar un pago de esta venta".
+- Efectivo Bs: ya estaba apagado en la base real (no sale en la app). Se quitó también de la guía y del video 2.
+- Guía actualizada; versión 11. Pruebas: 103 del recorrido en teléfono, 29 de cuentas (la base no cambió).
+
 ## Entrega 12 — Dejar listo al encargado en dos toques (2026-10-22)
 
 - Al crear un usuario (o ponerle una clave nueva) sale **"Usuario listo"** con el link de la app, el usuario y la clave temporal, y el botón **Mandarle sus datos por WhatsApp**: le llega todo escrito, con cómo ponerla como app en el teléfono y su guía.

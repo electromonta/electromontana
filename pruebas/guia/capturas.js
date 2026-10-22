@@ -52,7 +52,7 @@ async function firmar(p) {
 
   // Abono
   await p.click('.cobro:has-text("María González") [data-abonar]'); await p.waitForSelector('#abMetodos');
-  await p.click('#abMetodos [data-m="5"]'); await p.fill('#abMonto', '3200'); await p.dispatchEvent('#abMonto', 'input');
+  await p.click('#abMetodos [data-m="4"]'); await p.fill('#abMonto', '3200'); await p.dispatchEvent('#abMonto', 'input'); await p.fill('#abRef', '0102-4455');
   await foto(p, '05-abono');
   await p.click('#abGuardar'); await p.waitForSelector('.hoja h2:has-text("Abono registrado")'); await foto(p, '06-abono-guardado'); await cerrar(p);
 

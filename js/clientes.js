@@ -289,14 +289,20 @@ var VistaFicha = (function () {
       (Number(v.inicial) > 0 ? ' · Inicial ' + fmtUSD(v.inicial) : '') +
       (Number(v.plan_base) > 0 ? ' · Ya había pagado ' + fmtUSD(v.plan_base) : '') +
       (Number(v.ajuste) ? ' · Ajustes ' + fmtUSD(v.ajuste) : '') + '</p>';
+    // Cada cuota pendiente se paga desde aquí: abre el abono de esta venta con su monto (y se elige cómo pagó)
+    var sePaga = v.estado === 'activa';
     h += '<div class="cuotas">' + e.cuotas.map(function (c) {
       var nombre = c.tipo === 'inicial' ? 'Inicial' : c.tipo === 'recargo' ? 'Recargo' : 'Cuota ' + c.n;
       var cls = c.estado === 'pagada' ? 'pagada' : c.vencida ? 'vencida' : c.estado === 'parcial' ? 'parcial' : '';
       var txt = c.estado === 'pagada' ? 'Pagada' : c.estado === 'parcial' ? 'Faltan ' + fmtUSD(c.pendiente) : c.vencida ? 'Vencida' : '';
-      return '<div class="cuota ' + cls + '"><span class="marca">' + (c.estado === 'pagada' ? icono('check', 'ic-chico') : '') + '</span>' +
+      var pagar = sePaga && c.estado !== 'pagada' && c.pendiente > 0.004;
+      var cuerpo = '<span class="marca">' + (c.estado === 'pagada' ? icono('check', 'ic-chico') : '') + '</span>' +
         '<div class="crece">' + nombre + ' · ' + esc(fmtFechaAnio(c.fecha)) + '</div><div class="num fuerte">' + fmtUSD(c.monto) + '</div>' +
-        (txt ? '<div class="tenue chico" style="width:76px;text-align:right">' + txt + '</div>' : '<div style="width:76px"></div>') + '</div>';
+        '<div class="cuota-der">' + (txt ? '<div class="tenue chico">' + txt + '</div>' : '') + (pagar ? '<div class="cuota-pagar">Pagar ›</div>' : '') + '</div>';
+      return pagar ? '<button type="button" class="cuota ' + cls + '" data-pagar-cuota="' + esc(nombre) + '" data-monto="' + c.pendiente + '">' + cuerpo + '</button>'
+                   : '<div class="cuota ' + cls + '">' + cuerpo + '</div>';
     }).join('') + '</div>';
+    if (sePaga) h += '<button type="button" class="btn btn-sec btn-ancho" style="margin-top:10px" data-pagar-venta>' + icono('moneda') + 'Registrar un pago de esta venta</button>';
     // Contrato (una venta de contado no lleva: solo su recibo)
     var fCola = firmaEnCola(v.id, v.clave);
     if (v.frecuencia === 'contado' && !v.firmado_en && !fCola) {
@@ -381,6 +387,11 @@ var VistaFicha = (function () {
     var b, c = ST.cliPorId.get(cliId);
     if (!c) return;
     if (e.target.closest('[data-abonar]')) { hojaAbono(cliId); return; }
+    if ((b = e.target.closest('[data-pagar-cuota]'))) {
+      hojaAbono(cliId, Number(b.closest('[data-venta]').dataset.venta), { monto: Number(b.dataset.monto), titulo: b.dataset.pagarCuota });
+      return;
+    }
+    if (e.target.closest('[data-pagar-venta]')) { hojaAbono(cliId, Number(e.target.closest('[data-venta]').dataset.venta)); return; }
     if (e.target.closest('[data-vender]')) { ir('vender', String(cliId)); return; }
     if (e.target.closest('[data-editar]')) { hojaCliente(c); return; }
     if (e.target.closest('[data-wa]')) { abrirWhatsApp('', c.telefono || c.contacto_telefono); return; }
