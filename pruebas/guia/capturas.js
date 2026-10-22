@@ -109,7 +109,8 @@ async function firmar(p) {
   await mas(p, '[data-ir="ajustes"]'); await foto(p, '29-ajustes');
   await p.click('[data-nuevo-usuario]'); await p.waitForSelector('#usNombre');
   await p.fill('#usNombre', 'José Rivas'); await p.fill('#usUsuario', 'jose'); await p.fill('#usClave', 'temporal1');
-  await p.click('#usRol [data-v="empleado"]'); await p.click('#usSede [data-v="pedraza"]'); await foto(p, '41-nuevo-empleado'); await cerrar(p);
+  await p.click('#usRol [data-v="empleado"]'); await p.click('#usSede [data-v="pedraza"]'); await foto(p, '41-nuevo-empleado');
+  await p.click('#usGuardar'); await p.waitForSelector('.hoja h2:has-text("Usuario listo")'); await espera(500); await foto(p, '42-usuario-listo'); await cerrar(p);
   await p.evaluate(() => ir('ajustes', 'copia')); await espera(900); await foto(p, '35-copia');
 
   // Empleado de Pedraza: su pantalla, cobro en efectivo sin señal

@@ -1,7 +1,7 @@
 // Electro Montana — ajustes: tasa, reglas, contrato, usuarios, métodos de pago y este teléfono.
 'use strict';
 
-var VERSION_APP = '9';
+var VERSION_APP = '10';
 
 var VistaAjustes = (function () {
   var raiz = null;
@@ -157,8 +157,10 @@ function hojaUsuario(u) {
     var clave = await confirmar({ titulo: 'Clave nueva para ' + u.nombre, mensaje: 'Al entrar se le va a pedir que la cambie.', pedir: 'Clave temporal (mínimo 6)', boton: 'Guardar' });
     if (!clave) return;
     if (clave.length < 6) { toast('Mínimo 6 caracteres', 'error'); return; }
-    try { await funcionUsuarios({ accion: 'clave', id: u.id, clave: clave }); toast('Clave cambiada', 'ok'); }
-    catch (err) { toast(errMsg(err), 'error'); }
+    try { await funcionUsuarios({ accion: 'clave', id: u.id, clave: clave }); }
+    catch (err) { toast(errMsg(err), 'error'); return; }
+    h.cerrar();
+    hojaDatosDeEntrada({ nombre: u.nombre, usuario: u.usuario, clave: clave, rol: u.rol, claveNueva: true });
   };
   protegerBoton(h.$('#usGuardar'), async function () {
     var nombre = h.$('#usNombre').value.trim();
@@ -168,7 +170,10 @@ function hojaUsuario(u) {
       if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) { toast('El usuario debe tener de 3 a 30 letras o números, sin espacios', 'error'); return; }
       if (clave.length < 6) { toast('La clave debe tener al menos 6 caracteres', 'error'); return; }
       await funcionUsuarios({ accion: 'crear', usuario: usuario, nombre: nombre, clave: clave, rol: rol, sede: rol === 'empleado' ? sede : null });
-      toast('Usuario creado. Entra con "' + usuario + '" y la clave que pusiste.', 'ok', 6000);
+      await recargarConfig();
+      h.cerrar(); repintar();
+      hojaDatosDeEntrada({ nombre: nombre, usuario: usuario, clave: clave, rol: rol, sede: sede });
+      return;
     } else {
       await rpc('actualizar_usuario', { p_id: u.id, p_nombre: nombre, p_rol: rol, p_sede: rol === 'empleado' ? sede : null, p_activo: h.$('#usActivo') ? h.$('#usActivo').checked : u.activo });
       toast('Guardado', 'ok');
@@ -176,6 +181,34 @@ function hojaUsuario(u) {
     await recargarConfig();
     h.cerrar(); repintar();
   });
+}
+
+// Después de crear un usuario (o ponerle una clave nueva): sus datos para entrar, listos para mandárselos por WhatsApp
+function hojaDatosDeEntrada(d) {
+  var app = location.origin + location.pathname.replace(/[^/]*$/, '');
+  var guia = app + (d.rol === 'empleado' ? 'guia-empleado.html' : 'guia.html');
+  var nombre = String(d.nombre || '').split(' ')[0];
+  var texto = 'Hola ' + nombre + (d.claveNueva ? ', te puse una clave nueva para Electro Montana.' : ', ya tienes tu usuario de Electro Montana.') + '\n\n' +
+    '1. Abre este link: ' + app + '\n' +
+    '2. Usuario: *' + d.usuario + '*\n' +
+    '3. Clave temporal: *' + d.clave + '*\n\n' +
+    'Al entrar te pide una clave nueva que solo sabrás tú.' +
+    (d.claveNueva ? '' : '\n\nPara tenerla como una app: en Android, menú ⋮ → "Agregar a la pantalla principal"; en iPhone, Compartir → "Agregar a inicio".\n\n' +
+      'Tu guía: ' + guia);
+  var h = abrirHoja({
+    titulo: d.claveNueva ? 'Clave nueva lista' : 'Usuario listo',
+    html: '<div class="aviso aviso-ok">' + icono('check') + '<div><b>' + esc(d.nombre) + '</b> ya puede entrar' +
+        (d.rol === 'empleado' ? ' (empleado de ' + esc(nombreSede(d.sede || 'pedraza')) + ')' : '') + '.</div></div>' +
+      '<div class="tarjeta" style="margin-top:12px">' +
+        '<div class="dato"><span>Link</span><span class="crece" style="overflow-wrap:anywhere">' + esc(app) + '</span></div>' +
+        '<div class="dato"><span>Usuario</span><span class="crece fuerte">' + esc(d.usuario) + '</span></div>' +
+        '<div class="dato"><span>Clave temporal</span><span class="crece fuerte">' + esc(d.clave) + '</span></div></div>' +
+      '<p class="tenue" style="margin-top:12px">Mándale estos datos. La primera vez que entre, la app le pide una clave nueva que solo sabrá él.</p>',
+    pie: '<div class="pila"><button type="button" class="btn btn-ancho" id="deWhatsApp">' + icono('chat') + 'Mandarle sus datos por WhatsApp</button>' +
+      '<button type="button" class="btn btn-sec btn-ancho" id="deListo">Listo</button></div>'
+  });
+  h.$('#deWhatsApp').onclick = function () { abrirWhatsApp(texto); };
+  h.$('#deListo').onclick = function () { h.cerrar(); };
 }
 
 function hojaMetodo() {

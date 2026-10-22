@@ -257,8 +257,14 @@ async function tomarFoto(p, selector) {
   await p.click('[data-nuevo-usuario]');
   await p.fill('#usNombre', 'Pedro Prueba'); await p.fill('#usUsuario', 'pedro'); await p.fill('#usClave', 'temporal1');
   await p.click('#usGuardar');
-  await p.waitForTimeout(1200);
+  await p.waitForSelector('.hoja h2:has-text("Usuario listo")', { timeout: 15000 });
   revisar('usuario creado', sql("select rol || '/' || sede from usuarios where usuario = 'pedro'") === 'empleado/pedraza');
+  revisar('sale con su usuario y su clave temporal', (await p.textContent('.hoja')).includes('pedro') && (await p.textContent('.hoja')).includes('temporal1'));
+  await p.click('#deWhatsApp');
+  const datosEntrada = await p.evaluate(() => decodeURIComponent(window.__abiertos.pop() || ''));
+  revisar('sus datos por WhatsApp: link, usuario, clave y su guía', datosEntrada.includes('localhost:8080/') && datosEntrada.includes('Usuario: *pedro*') &&
+    datosEntrada.includes('Clave temporal: *temporal1*') && datosEntrada.includes('guia-empleado.html'), datosEntrada.slice(0, 200));
+  await p.click('#deListo');
 
   // 12. Primera entrada de Daniel: debe poner su clave
   const t3 = await nuevoTelefono(b);

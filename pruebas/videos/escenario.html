@@ -48,7 +48,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; backgro
 #wa.si { opacity: 1; transform: none; }
 #wa .eti { font: 700 30px 'Barlow Semi Condensed'; letter-spacing: .12em; text-transform: uppercase; color: #5b6474; margin-bottom: 20px; }
 #wa .burbuja { background: #fff; border-radius: 0 26px 26px 26px; padding: 26px 30px; font: 500 34px/1.38 'Barlow', Arial, sans-serif; color: #18202e;
-  white-space: pre-wrap; max-height: 980px; overflow: hidden; }
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 1180px; overflow: hidden; }
 #portada { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
   padding: 0 100px; color: #fff; background: radial-gradient(1100px 900px at 50% 40%, #1f3a6a 0%, var(--azul) 55%, var(--fondo) 100%); transition: opacity .7s ease; }
 #portada.oculta { opacity: 0; }
@@ -127,6 +127,7 @@ window.esc = {
   whatsapp: function (txt) {
     if (txt == null) { $('wa').classList.remove('si'); return; }
     $('waTexto').textContent = txt.replace(/\*([^*\n]+)\*/g, '$1');
+    $('waTexto').style.fontSize = txt.length > 320 ? '30px' : '';   // los mensajes largos, con letra un poco menor
     $('wa').classList.add('si');
   },
   portada: function (num, tit, sub) {

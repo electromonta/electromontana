@@ -521,20 +521,20 @@ const VIDEOS = [
     await v.cierre('Listo', 'Tu guía está en la app: Más → Guía de uso', 4200);
   } },
 
-  // Para los dueños: cómo dar de alta al encargado
-  { n: 13, archivo: '13-dar-de-alta-al-encargado', titulo: 'Dar de alta al encargado', usuario: 'franklin', async guion(v) {
-    await v.portada('PARA FRANKLIN Y DANIEL', 'Dar de alta al encargado', 'Su usuario, su clave y lo que puede hacer', 4000);
-    await v.decir('En <b>Más → Ajustes</b>, en <b>Usuarios</b>.', 600);
+  // Para los dueños: dejar listo al encargado (crearle el usuario, mandarle sus datos y su primera entrada)
+  { n: 13, archivo: '13-dejar-listo-al-encargado', titulo: 'Dejar listo al encargado', usuario: 'franklin', async guion(v) {
+    await v.portada('PARA FRANKLIN Y DANIEL', 'Dejar listo al encargado', 'Su usuario, su clave y su primera vez en la app', 4400);
+    await v.decir('<b>1. Crearle su usuario.</b> En <b>Más → Ajustes</b>, en <b>Usuarios</b>.', 600);
     await v.tocar('#navTabs [data-mas]', { despues: 700 });
     await v.tocar('.hoja [data-ir="ajustes"]', { despues: 1300 });
     await v.decir('Toca <b>Nuevo</b>.', 300);
     await v.tocar('[data-nuevo-usuario]', { despues: 900 });
+    await v.decir('Su <b>nombre</b>, un <b>usuario</b> corto sin espacios y una <b>clave temporal</b> (mínimo 6).', 300);
     await v.escribir('#usNombre', 'José Rivas', { lento: true });
-    await v.decir('Un <b>usuario</b> corto, sin espacios, y una <b>clave temporal</b>.', 300);
     await v.escribir('#usUsuario', 'jose', { lento: true });
     await v.escribir('#usClave', 'temporal1', { lento: true });
     await v.soltar();
-    await v.decir('Rol <b>Empleado</b> y sede <b>Pedraza</b>.', 400);
+    await v.decir('Rol <b>Empleado</b> y sede <b>Pedraza</b>: así solo ve los clientes de esa tienda.', 400);
     await v.tocar('#usRol [data-v="empleado"]');
     await v.tocar('#usSede [data-v="pedraza"]', { despues: 700 });
     await v.acercar('#usPermisos', 1.5);
@@ -542,11 +542,49 @@ const VIDEOS = [
     await v.decir('Aquí dice lo que <b>podrá</b> y lo que <b>no podrá</b> hacer: no ve costos, ganancias ni reportes, ni la otra tienda.', 5600);
     await v.marco(null);
     await v.alejar();
-    await v.tocar('#usGuardar', { despues: 2200 });
-    await v.decir('Pásale el <b>link de la app</b>, su <b>usuario</b> y la <b>clave temporal</b> por WhatsApp. Al entrar, pone su propia clave.', 5200);
-    await v.decir('Si se le olvida: <b>Ajustes → Usuarios</b> → él → <b>Ponerle una clave nueva</b>.', 4200);
-    await v.decir('Si deja de trabajar con ustedes: quítenle <b>"Puede entrar"</b>. Lo que hizo queda guardado.', 4400);
-    await v.cierre('Dar de alta al encargado', 'Después pásale su video y su guía (Más → Guía de uso en su teléfono)', 4400);
+    await v.decir('Toca <b>Crear usuario</b>.', 300);
+    await v.tocar('#usGuardar', { despues: 1500 });
+    await v.esperarQue('.hoja h2:has-text("Usuario listo")');
+    // Se graba en la copia local: en pantalla se muestra la dirección real de la app
+    await v.f.evaluate(() => document.querySelectorAll('.hoja .dato .crece').forEach(e => {
+      e.textContent = e.textContent.replace('http://localhost:8080/', 'https://electromonta.github.io/electromontana/');
+    }));
+    await v.decir('<b>2. Mandarle sus datos.</b> Sale <b>Usuario listo</b>, con el link, su usuario y su clave temporal.', 4200);
+    await v.decir('Toca <b>Mandarle sus datos por WhatsApp</b> y elige su chat.', 600);
+    await v.tocar('#deWhatsApp', { despues: 400 });
+    await v.whatsapp(8500, [['http://localhost:8080/', 'https://electromonta.github.io/electromontana/']]);
+    await v.decir('Le llega todo escrito: el link, su usuario, su clave, cómo ponerla como app y su guía.', 3800);
+    await v.tocar('#deListo', { despues: 600 });
+
+    // Ahora, en el teléfono de él (mientras se ve la portada, se sale de la cuenta de Franklin)
+    await v.decir('');
+    await v.p.evaluate(a => esc.portada(a[0], a[1], a[2]), ['3. EN EL TELÉFONO DE JOSÉ', 'Su primera vez', 'Abre el link que le mandaron']);
+    await v.f.evaluate(() => { salir(); });
+    await v.esperarQue('#pantallaLogin:not([hidden])', 20000);
+    await v.esperar(3200);
+    await v.p.evaluate(() => esc.quitarPortada());
+    await v.esperar(800);
+    await v.decir('Entra con el <b>usuario</b> y la <b>clave temporal</b> que le mandaron.', 300);
+    await v.escribir('#loginUsuario', 'jose', { lento: true });
+    await v.escribir('#loginClave', 'temporal1', { lento: true });
+    await v.soltar();
+    await v.tocar('#btnEntrar', { despues: 600 });
+    await v.esperarQue('.hoja h2:has-text("Pon tu clave")', 20000);
+    await v.decir('La app le pide <b>su propia clave</b>. Esa solo la sabe él: ni ustedes la ven.', 1200);
+    await v.escribir('#clave1', 'jose2026', { lento: true });
+    await v.escribir('#clave2', 'jose2026', { lento: true });
+    await v.soltar();
+    await v.tocar('#claveGuardar', { despues: 700 });
+    await v.decir('<b>¡Listo!</b> Ya está en <b>Cobrar</b>, solo con los clientes de la <b>tienda de Pedraza</b>.', 4400);
+    await v.decir('Su guía está en <b>Más → Guía de uso</b>, hecha para él.', 600);
+    await v.tocar('#navTabs [data-mas]', { despues: 900 });
+    await v.marco('.hoja a.item[href*="guia"]');
+    await v.esperar(3000);
+    await v.marco(null);
+    await v.cerrarHojas();
+    await v.decir('<b>Si se le olvida la clave:</b> Ajustes → Usuarios → José → <b>Ponerle una clave nueva</b>, y se la mandan igual por WhatsApp.', 5200);
+    await v.decir('<b>Si deja de trabajar con ustedes:</b> le quitan <b>"Puede entrar"</b>. Todo lo que hizo queda guardado.', 4800);
+    await v.cierre('Encargado listo', 'Pásenle también su video: "Para el encargado de Pedraza"', 4600);
   } }
 ];
 

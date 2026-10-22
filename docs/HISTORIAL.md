@@ -1,5 +1,12 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 12 — Dejar listo al encargado en dos toques (2026-10-22)
+
+- Al crear un usuario (o ponerle una clave nueva) sale **"Usuario listo"** con el link de la app, el usuario y la clave temporal, y el botón **Mandarle sus datos por WhatsApp**: le llega todo escrito, con cómo ponerla como app en el teléfono y su guía.
+- Video "Dejar listo al encargado" (1 min 40 s, no va al repo): crear el usuario, mandarle los datos, y en el teléfono de él la primera entrada con su propia clave.
+- Guía: capítulo del empleado con la captura nueva (55 capturas). Versión 10 de la app.
+- Pruebas: 99 del recorrido en teléfono, 29 de cuentas (la base no cambió).
+
 ## Entrega 11 — El encargado de Pedraza completo, botón Volver y de quién es cada crédito (2026-10-22)
 
 Pedidos de Franklin y Daniel (por Kinan), ya usando el sistema: cómo entra y qué hace el encargado de la tienda de Pedraza (con video para él), un botón para volver a la pantalla anterior, y ver quién anotó cada cliente y de quién es cada crédito.

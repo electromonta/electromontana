@@ -90,12 +90,14 @@ class Video {
     await this.p.evaluate(t => esc.texto(t), html);
     if (ms) await espera(ms);
   }
-  async whatsapp(ms) {
-    const txt = await this.f.evaluate(() => {
+  // cambios: [[de, a], …] para mostrar, por ejemplo, la dirección real de la app en vez de la local
+  async whatsapp(ms, cambios) {
+    let txt = await this.f.evaluate(() => {
       const u = window.__abiertos[window.__abiertos.length - 1] || '';
       const m = /[?&]text=([^&]*)/.exec(u);
       return m ? decodeURIComponent(m[1]) : '';
     });
+    (cambios || []).forEach(c => { txt = txt.split(c[0]).join(c[1]); });
     await this.p.evaluate(t => esc.whatsapp(t), txt);
     await espera(ms || 5000);
     await this.p.evaluate(() => esc.whatsapp(null));
