@@ -1,15 +1,17 @@
 // Electro Montana — gastos del negocio (solo dueños): alquiler, empleado, gasolina, reparaciones…
+// Cada socio anota los suyos (quedan a su nombre) y se ven por separado: Franklin, Daniel o los dos.
 // Se anotan por la cola (también sin señal). Un gasto mal anotado lo anula quien lo anotó.
 'use strict';
 
 var VistaGastos = (function () {
-  var raiz = null, mes = '', sede = 'todas';
+  var raiz = null, mes = '', sede = 'todas', quien = '';   // quien: id del socio o 'todos'
 
   function mostrar(c) {
     raiz = document.createElement('div');
     c.appendChild(raiz);
     if (!esDueno()) { raiz.innerHTML = '<div class="vacio">' + icono('candado') + '<p>Los gastos los ven solo Franklin y Daniel.</p></div>'; return; }
     if (!mes) mes = hoyCaracas().slice(0, 7);
+    if (!quien) quien = ST.yo.id;
     raiz.addEventListener('click', alTocar);
     pintar();
   }
@@ -25,17 +27,32 @@ var VistaGastos = (function () {
     return a + '-' + String(m + 1).padStart(2, '0');
   }
   function pasaSede(g) { return sede === 'todas' || (sede === 'general' ? !g.sede : g.sede === sede); }
+  function pasaQuien(g) { return quien === 'todos' || g.pagado_por === quien; }
+  // Los socios (y quien esté en la app, y cualquiera que tenga gastos anotados)
+  function socios() {
+    var ids = ST.usuarios.filter(function (u) { return u.activo && u.rol === 'dueno' && (u.puede_aprobar || u.id === ST.yo.id); }).map(function (u) { return u.id; });
+    (ST.gastos || []).forEach(function (g) { if (ids.indexOf(g.pagado_por) < 0) ids.push(g.pagado_por); });
+    return ids.sort(function (a, b) { return a === ST.yo.id ? -1 : b === ST.yo.id ? 1 : nombreUsuario(a).localeCompare(nombreUsuario(b)); });
+  }
 
   function pintar() {
     if (!raiz || !raiz.isConnected) return;
-    var lista = (ST.gastos || []).filter(function (g) { return g.fecha.slice(0, 7) === mes && pasaSede(g); })
+    var delMes = (ST.gastos || []).filter(function (g) { return g.fecha.slice(0, 7) === mes && pasaSede(g); });
+    var lista = delMes.filter(pasaQuien)
       .sort(function (a, b) { return a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : b.id - a.id; });
     var vivos = lista.filter(function (g) { return !g.anulado_en; });
     var total = redondear2(vivos.reduce(function (s, g) { return s + Number(g.monto_usd); }, 0));
     var pend = Cola.mias().filter(function (o) { return o.tipo === 'gasto'; });
     var actual = mes >= hoyCaracas().slice(0, 7);
 
-    var h = '<button type="button" class="btn btn-ancho" data-nuevo>' + icono('mas') + 'Anotar gasto</button>' +
+    // Arriba: de quién (cada uno con lo que lleva gastado en el mes)
+    var h = '<div class="seg" id="gsQuien">' + socios().concat(['todos']).map(function (id) {
+        var suma = delMes.filter(function (g) { return !g.anulado_en && (id === 'todos' || g.pagado_por === id); })
+          .reduce(function (s, g) { return s + Number(g.monto_usd); }, 0);
+        return '<button type="button" data-quien="' + id + '"' + (quien === id ? ' class="activo"' : '') + ' style="line-height:1.2;min-height:54px">' +
+          esc(id === 'todos' ? 'Los dos' : nombreUsuario(id)) + '<span class="tenue chico num" style="display:block">' + fmtUSD(suma) + '</span></button>';
+      }).join('') + '</div>' +
+      '<button type="button" class="btn btn-ancho" style="margin-top:12px" data-nuevo>' + icono('mas') + 'Anotar mi gasto</button>' +
       '<div class="fila-sep" style="margin-top:14px">' +
         '<button type="button" class="btn btn-sec btn-icono" data-mes="-1" aria-label="Mes anterior">' + icono('atras') + '</button>' +
         '<h2 style="text-align:center">' + esc(nombreMesLargo(mes)) + '</h2>' +
@@ -52,19 +69,21 @@ var VistaGastos = (function () {
       }).join('') + '</div>';
     }
 
-    h += '<div class="tarjeta" style="margin-top:14px"><div class="fila-sep"><div><div class="tenue chico">Gastos del mes</div>' +
+    h += '<div class="tarjeta" style="margin-top:14px"><div class="fila-sep"><div><div class="tenue chico">' +
+      (quien === 'todos' ? 'Gastos de los dos en el mes' : 'Gastos de ' + esc(nombreUsuario(quien)) + ' en el mes') + '</div>' +
       '<div class="monto-grande" style="color:' + (total > 0 ? 'var(--rojo)' : 'inherit') + '">' + fmtUSD(total) + '</div></div>' +
       '<div class="tenue chico" style="text-align:right">' + plural(vivos.length, 'gasto', 'gastos') + '</div></div>';
     if (vivos.length) {
-      h += '<h3 style="margin-top:14px">En qué</h3>' + barras(agrupar(vivos, function (g) { return nombreCategoria(g.categoria_id); })) +
-        '<h3 style="margin-top:14px">Quién lo pagó</h3>' + barras(agrupar(vivos, function (g) { return nombreUsuario(g.pagado_por); }));
+      h += '<h3 style="margin-top:14px">En qué</h3>' + barras(agrupar(vivos, function (g) { return nombreCategoria(g.categoria_id); }));
+      if (quien === 'todos') h += '<h3 style="margin-top:14px">De cada socio</h3>' + barras(agrupar(vivos, function (g) { return nombreUsuario(g.pagado_por); }));
       if (sede === 'todas') h += '<h3 style="margin-top:14px">De qué tienda</h3>' + barras(agrupar(vivos, function (g) { return g.sede ? nombreSede(g.sede) : 'De los dos'; }));
     }
     h += '</div>';
 
     h += '<div class="seccion"><div class="seccion-tit"><h2>Gastos</h2></div>' +
       (lista.length ? '<div class="lista">' + lista.map(filaGasto).join('') + '</div>'
-        : '<div class="vacio">' + icono('recibo') + '<p>No hay gastos anotados en ' + esc(nombreMesLargo(mes).toLowerCase()) + '.</p></div>') + '</div>';
+        : '<div class="vacio">' + icono('recibo') + '<p>' + (quien === 'todos' ? 'No hay gastos' : esc(nombreUsuario(quien)) + ' no tiene gastos') +
+          ' anotados en ' + esc(nombreMesLargo(mes).toLowerCase()) + '.</p></div>') + '</div>';
     raiz.innerHTML = h;
   }
 
@@ -84,7 +103,7 @@ var VistaGastos = (function () {
 
   function filaGasto(g) {
     var m = metodoPorId(g.metodo_id) || {};
-    var sub = [fmtFechaAnio(g.fecha), g.sede ? nombreSede(g.sede) : 'De los dos', m.nombre, 'pagó ' + nombreUsuario(g.pagado_por)].filter(Boolean).join(' · ');
+    var sub = [fmtFechaAnio(g.fecha), g.sede ? nombreSede(g.sede) : 'De los dos', m.nombre, quien === 'todos' ? 'de ' + nombreUsuario(g.pagado_por) : ''].filter(Boolean).join(' · ');
     return '<button type="button" class="item" data-gasto="' + g.id + '"' + (g.anulado_en ? ' style="opacity:.55"' : '') + '>' +
       '<div class="crece"><div class="item-tit cortar">' + esc(nombreCategoria(g.categoria_id)) + (g.descripcion ? ' <span class="tenue">· ' + esc(g.descripcion) + '</span>' : '') + '</div>' +
       '<div class="item-sub cortar">' + esc(sub) + '</div></div>' +
@@ -94,7 +113,8 @@ var VistaGastos = (function () {
 
   function alTocar(e) {
     var b;
-    if (e.target.closest('[data-nuevo]')) { hojaGasto(null); return; }
+    if (e.target.closest('[data-nuevo]')) { hojaGasto(null, function () { if (quien !== 'todos') quien = ST.yo.id; }); return; }
+    if ((b = e.target.closest('[data-quien]'))) { quien = b.dataset.quien; pintar(); return; }
     if ((b = e.target.closest('[data-mes]'))) { if (!b.disabled) { mes = otroMes(mes, Number(b.dataset.mes)); pintar(); } return; }
     if ((b = e.target.closest('[data-sede]'))) { sede = b.dataset.sede; pintar(); return; }
     if ((b = e.target.closest('[data-gasto]'))) {
@@ -111,16 +131,17 @@ function nombreCategoria(id) {
   return c ? c.nombre : 'Gasto';
 }
 
-// Anotar un gasto. base: un gasto anterior para "Repetir" (alquiler o sueldo de cada mes).
-function hojaGasto(base) {
+// Anotar un gasto (queda a nombre de quien está en la app). base: un gasto suyo para "Repetir" (alquiler o sueldo
+// de cada mes). alGuardar: lo que hace la pantalla de Gastos después de guardar.
+function hojaGasto(base, alGuardar) {
   base = base || {};
   var hoy = hoyCaracas();
   var G = { cat: base.categoria_id || null, sede: base.sede || null, metodo: base.metodo_id || null,
-            quien: base.pagado_por || ST.yo.id, tasa: Number(base.tasa) || Number(ST.cfg.tasa_bs) || 0, clave: nuevaClave() };
-  var quienes = ST.usuarios.filter(function (u) { return u.activo && u.rol === 'dueno' && (u.puede_aprobar || u.id === ST.yo.id); });
+            tasa: Number(base.tasa) || Number(ST.cfg.tasa_bs) || 0, clave: nuevaClave() };
   var h = abrirHoja({
-    titulo: base.id ? 'Repetir gasto' : 'Anotar gasto', completa: true,
-    html: '<div class="pila">' +
+    titulo: base.id ? 'Repetir gasto' : 'Anotar mi gasto', completa: true,
+    html: '<p class="tenue" style="margin:0 2px 12px">Queda a nombre de <b>' + esc(ST.yo.nombre) + '</b>. Cada socio anota sus gastos con su usuario.</p>' +
+      '<div class="pila">' +
       '<div class="campo"><span>¿En qué fue?</span><div class="metodos" id="gaCats"></div></div>' +
       '<label class="campo"><span>Detalle <span class="ayuda" id="gaDescAyuda">(opcional)</span></span><input id="gaDesc" value="' + esc(base.descripcion || '') + '" placeholder="Ej.: alquiler de octubre del local de Pedraza"></label>' +
       '<div class="campo"><span>¿De qué tienda?</span><div class="seg" id="gaSede">' +
@@ -135,9 +156,6 @@ function hojaGasto(base) {
         '<p class="chico" id="gaEquiv" style="margin:6px 0 0"></p></div>' +
       '<label class="campo" id="gaRefCampo" hidden><span>Referencia <span class="ayuda">(opcional)</span></span><input id="gaRef" placeholder="Número de confirmación"></label>' +
       '<label class="campo"><span>Fecha</span><input type="date" id="gaFecha" value="' + hoy + '" max="' + hoy + '"></label>' +
-      '<div class="campo"><span>¿Quién lo pagó?</span><div class="chips envolver" id="gaQuien">' + quienes.map(function (u) {
-        return '<button type="button" class="chip' + (u.id === G.quien ? ' activo' : '') + '" data-u="' + u.id + '">' + esc(u.nombre) + '</button>';
-      }).join('') + '</div></div>' +
       '<label class="campo"><span>Nota (opcional)</span><input id="gaNota" value="' + esc(base.nota || '') + '"></label>' +
       '</div>',
     pie: '<button type="button" class="btn btn-ancho" id="gaGuardar">Guardar gasto</button>'
@@ -203,10 +221,6 @@ function hojaGasto(base) {
       if (!h.$('#gaMonto').value) h.$('#gaMonto').focus();
       return;
     }
-    if ((b = e.target.closest('#gaQuien [data-u]'))) {
-      G.quien = b.dataset.u;
-      h.$$('#gaQuien .chip').forEach(function (x) { x.classList.toggle('activo', x === b); });
-    }
   });
   h.$('#gaMonto').addEventListener('input', pintarEquiv);
   h.$('#gaTasa').addEventListener('input', function () { var t = parseNum(this.value); G.tasa = t > 0 ? t : 0; pintarEquiv(); });
@@ -225,11 +239,12 @@ function hojaGasto(base) {
     var usd = montoUsd();
     var datos = { fecha: fecha, categoria_id: G.cat, descripcion: desc, sede: G.sede, metodo_id: m.id, monto: monto,
                   tasa: m.moneda === 'VES' ? G.tasa : null, monto_usd: usd, referencia: m.pide_referencia ? h.$('#gaRef').value.trim() : '',
-                  pagado_por: G.quien, nota: h.$('#gaNota').value.trim(), hecho_en: new Date().toISOString() };
+                  nota: h.$('#gaNota').value.trim(), hecho_en: new Date().toISOString() };
     var op = { clave: G.clave, tipo: 'gasto', datos: datos, resumen: { texto: 'Gasto: ' + nombreCategoria(G.cat) + ' ' + fmtUSD(usd) } };
     var r = await enviarYEsperar(op);
     if (r.estado === 'ok') { try { await recargarGastos(); } catch (e) { /* luego */ } }
     h.cerrar();
+    if (alGuardar) alGuardar();
     toast(r.estado === 'ok' ? 'Gasto anotado: ' + fmtUSD(usd) : 'Sin señal: el gasto quedó en el teléfono y se envía solo', r.estado === 'ok' ? 'ok' : '', 5000);
     repintar();
   });
@@ -252,15 +267,16 @@ function hojaDetalleGasto(g) {
       d('Fecha', esc(fmtFechaAnio(g.fecha))) +
       d('Tienda', g.sede ? esc(nombreSede(g.sede)) : 'De los dos') +
       d('Cómo se pagó', esc(m.nombre || '')) + d('Referencia', esc(g.referencia || '')) +
-      d('Lo pagó', esc(nombreUsuario(g.pagado_por))) +
+      d('De', esc(nombreUsuario(g.pagado_por))) +
       d('Anotado', esc(fmtFechaHora(g.hecho_en || g.creado_en)) + ' por ' + esc(nombreUsuario(g.creado_por))) +
       d('Nota', esc(g.nota || '')) +
       '</div>' +
-      (!g.anulado_en && !mio ? '<p class="tenue chico" style="margin-top:10px">Si está mal, lo anula ' + esc(nombreUsuario(g.creado_por)) + ', que fue quien lo anotó.</p>' : ''),
-    pie: '<div class="botonera"><button type="button" class="btn btn-sec" id="dgRepetir">' + icono('refrescar') + 'Repetir</button>' +
-      (!g.anulado_en && mio ? '<button type="button" class="btn btn-sec" id="dgAnular" style="color:var(--rojo)">Anular</button>' : '') + '</div>'
+      (!g.anulado_en && !mio ? '<p class="tenue chico" style="margin-top:10px">Es un gasto de ' + esc(nombreUsuario(g.creado_por)) + ': si está mal, lo anula él.</p>' : ''),
+    pie: mio ? '<div class="botonera"><button type="button" class="btn btn-sec" id="dgRepetir">' + icono('refrescar') + 'Repetir</button>' +
+      (!g.anulado_en ? '<button type="button" class="btn btn-sec" id="dgAnular" style="color:var(--rojo)">Anular</button>' : '') + '</div>' : ''
   });
-  h.$('#dgRepetir').onclick = function () { h.cerrar(); hojaGasto(g); };
+  var rp = h.$('#dgRepetir');
+  if (rp) rp.onclick = function () { h.cerrar(); hojaGasto(g); };
   var an = h.$('#dgAnular');
   if (an) protegerBoton(an, async function () {
     var motivo = await confirmar({ titulo: 'Anular gasto', pedir: 'Por qué se anula', boton: 'Anular', peligro: true,

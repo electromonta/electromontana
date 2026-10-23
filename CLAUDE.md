@@ -146,7 +146,7 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 ## Base de datos (migración `009_gastos.sql`): gastos del negocio
 
 - Tablas `categorias_gasto` (8 de entrada; los dueños agregan con `guardar_categoria_gasto`) y `gastos` (fecha, categoría, detalle, `sede` o null = de los dos, método, moneda, monto, tasa, `monto_usd`, `pagado_por` = un dueño, `creado_por`, anulación). Solo los dueños las leen (el encargado no).
-- `registrar_gasto(p, clave)` (por la cola, operación `gasto`; usa `interno.leer_pago`) y `anular_gasto(id, motivo)`: **solo quien lo anotó** (decisión de Kinan). Disparadores `no_borrar`/`no_vaciar`/`vigilar` como el resto.
+- `registrar_gasto(p, clave)` (por la cola, operación `gasto`; usa `interno.leer_pago`) y `anular_gasto(id, motivo)`: **solo quien lo anotó** (decisión de Kinan). Desde la `010`, **cada socio anota sus propios gastos**: `pagado_por` = quien lo anota (la base no deja ponerlo a nombre de otro), y la app los muestra por separado (Franklin · Daniel · Los dos). Disparadores `no_borrar`/`no_vaciar`/`vigilar` como el resto.
 - En la app: `ST.catGastos` y `ST.gastos` (últimos 13 meses, solo dueños), `recargarGastos()`; Reportes suma "Gastos del mes" y "Ganancia neta".
 
 ## Pruebas (correr antes de cada entrega)
@@ -176,4 +176,5 @@ Migraciones: `001_base.sql` (todo) y `002_respaldo_diario.sql` (copia diaria con
 - **2026-10-22 — Entrega 12:** al crear un usuario sale "Usuario listo" con el botón para mandarle sus datos por WhatsApp (`hojaDatosDeEntrada` en `ajustes.js`); video "Dejar listo al encargado". Versión 10.
 - **2026-10-22 — Entrega 13:** el método de pago nunca viene marcado (abono, inicial, contado); cada cuota pendiente del plan de pago tiene "Pagar" (`hojaAbono(cliId, ventaId, { monto, titulo })`). Efectivo Bs está apagado en la base real. Versión 11.
 - **2026-10-23 — Entrega 14:** gastos del negocio (Más → Gastos; solo dueños; anula quien lo anotó) y ganancia neta en Reportes. Migración `009_gastos` aplicada (75 funciones, misma huella; respaldo antes en `respaldo_20261023`). Versión 12.
+- **2026-10-23 — Entrega 15:** gastos de cada socio por separado (cada uno anota los suyos; se ven Franklin · Daniel · Los dos). Migración `010_gastos_por_socio` aplicada (75 funciones, misma huella). Versión 13.
 - **Sistema completo (etapas 1 a 4 + guía). Lo que falta lo hacen los dueños o Kinan (ver la lista de arriba y `docs/DOMINIO.md`).

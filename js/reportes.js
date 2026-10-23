@@ -107,10 +107,12 @@ var VistaReportes = (function () {
     var esteMes = meses[meses.length - 1];
     // Gastos del negocio (los de "de los dos" solo cuentan en "Todo")
     meses.forEach(function (m) { m.gastos = 0; });
+    var gastoSocio = new Map();   // los de este mes, de cada socio
     (ST.gastos || []).forEach(function (g) {
       if (g.anulado_en || (sede !== 'todas' && g.sede !== sede)) return;
       var m = meses.find(function (x) { return x.ym === g.fecha.slice(0, 7); });
       if (m) m.gastos += Number(g.monto_usd);
+      if (m === esteMes) gastoSocio.set(g.pagado_por, (gastoSocio.get(g.pagado_por) || 0) + Number(g.monto_usd));
     });
     var gananciaMes = esteMes.vendido - esteMes.costo;
 
@@ -131,7 +133,7 @@ var VistaReportes = (function () {
       kpi('Atrasado', fmtUSD(atrasado), porCobrar > 0 ? Math.round(atrasado / porCobrar * 100) + '% de lo que deben' : '—', atrasado > 0 ? 'rojo' : '') +
       kpi('Cobrado este mes', abonos ? fmtUSD(cobradoMes) : '—', abonos ? 'desde el 1 de ' + nombreMes(esteMes.ym).split(' ')[0] : (error ? 'sin señal' : 'cargando…'), 'verde') +
       kpi('Ganancia del mes', fmtUSD(gananciaMes), esteMes.sinCosto ? esteMes.sinCosto + ' sin costo anotado' : plural(esteMes.n, 'venta', 'ventas')) +
-      kpi('Gastos del mes', fmtUSD(esteMes.gastos), 'alquiler, gasolina, empleado…', esteMes.gastos > 0 ? 'rojo' : '') +
+      kpi('Gastos del mes', fmtUSD(esteMes.gastos), gastoSocio.size ? Array.from(gastoSocio.entries()).map(function (x) { return nombreUsuario(x[0]) + ' ' + fmtUSD(x[1]); }).join(' · ') : 'alquiler, gasolina, empleado…', esteMes.gastos > 0 ? 'rojo' : '') +
       kpi('Ganancia neta', fmtUSD(gananciaMes - esteMes.gastos), 'ganancia menos gastos', gananciaMes - esteMes.gastos >= 0 ? 'verde' : 'rojo') +
       '</div>';
 

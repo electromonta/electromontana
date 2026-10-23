@@ -1,5 +1,14 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 15 — Gastos de cada socio por separado (2026-10-23)
+
+- Pedido de Kinan: que cada socio anote sus gastos con su usuario y se vean por separado, y que cada uno pueda ver los del otro.
+- Ya no se elige "quién lo pagó": el gasto queda a nombre de quien lo anota (la base lo exige: no se puede anotar a nombre del otro).
+- **Más → Gastos** abre en los de quien está en la app; arriba **Franklin · Daniel · Los dos**, cada uno con lo que lleva en el mes. En "Los dos" sale cuánto puso cada socio. "Repetir" y "Anular" solo en los propios.
+- Reportes: "Gastos del mes" dice cuánto es de cada socio; la ganancia neta resta los de los dos.
+- Base: migración `010_gastos_por_socio.sql` (solo cambia `registrar_gasto`). Aplicada a la base real el 2026-10-23 (no había gastos guardados; misma huella de las 75 funciones; prueba dentro de una transacción que se deshizo).
+- Guía actualizada; versión 13. Pruebas: 328 de base, 29 de cuentas, 116 en teléfono.
+
 ## Entrega 14 — Gastos del negocio (2026-10-23)
 
 - Pedido de Kinan: una sección de gastos (alquiler, empleado, gasolina, reparaciones…). Decisiones de Kinan: **solo Franklin y Daniel** los anotan y los ven; un gasto mal anotado **lo anula quien lo anotó** (con el motivo; queda en el historial).

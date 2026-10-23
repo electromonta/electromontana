@@ -656,7 +656,7 @@ async function tomarFoto(p, selector) {
   await p.waitForSelector('h2:has-text("De quién son los créditos")', { timeout: 15000 });
   revisar('Reportes: cuánto le deben a cada uno', (await p.textContent('.seccion:has(h2:has-text("De quién son"))')).includes('Franklin'));
 
-  // Gastos (solo dueños): gasolina en efectivo, alquiler en bolívares pagado por Daniel, repetir y anular
+  // Gastos (solo dueños; cada socio anota los suyos): gasolina en efectivo, alquiler en bolívares, repetir y anular
   const gasto = q => sql("select g.monto_usd || '/' || c.nombre || '/' || coalesce(g.sede, 'los dos') || '/' || u.usuario || '/' || (g.anulado_en is not null) from gastos g join categorias_gasto c on c.id = g.categoria_id join usuarios u on u.id = g.pagado_por where " + q + " order by g.id desc limit 1");
   await p.click('#navTabs [data-mas]');
   await p.click('.hoja [data-ir="gastos"]');
@@ -681,14 +681,19 @@ async function tomarFoto(p, selector) {
   await p.click('#gaMetodos [data-m="4"]');
   await p.fill('#gaMonto', '4000');
   revisar('alquiler en bolívares: dice cuánto es en dólares', (await p.textContent('#gaEquiv')).includes('$100,00'), await p.textContent('#gaEquiv'));
-  await p.click('#gaQuien .chip:has-text("Daniel")');
+  revisar('el gasto queda a nombre de quien lo anota (no se elige)', await p.locator('#gaQuien').count() === 0 && (await p.textContent('.hoja')).includes('Queda a nombre de Franklin'));
   await foto(p, '28-gasto');
   await p.click('#gaGuardar');
   await p.waitForFunction(() => !document.querySelector('#gaGuardar'), null, { timeout: 15000 });
-  revisar('alquiler anotado: $100, Pedraza, lo pagó Daniel', gasto("c.nombre = 'Alquiler'") === '100.00/Alquiler/pedraza/daniel/false');
+  revisar('alquiler anotado: $100, Pedraza, de Franklin', gasto("c.nombre = 'Alquiler'") === '100.00/Alquiler/pedraza/franklin/false');
   await p.waitForTimeout(400);
-  revisar('total del mes en Gastos', (await p.textContent('#vista')).includes('$120,00'), (await p.textContent('#vista')).slice(0, 200));
+  revisar('Gastos abre con los de Franklin: $120', (await p.textContent('#gsQuien .activo')).includes('Franklin') && (await p.textContent('#vista')).includes('Gastos de Franklin en el mes') && (await p.textContent('#vista')).includes('$120,00'), (await p.textContent('#vista')).slice(0, 200));
   await foto(p, '29-gastos');
+  await p.click('#gsQuien button:has-text("Daniel")');
+  revisar('los de Daniel por separado (no tiene)', (await p.textContent('#vista')).includes('Daniel no tiene gastos'));
+  await p.click('#gsQuien [data-quien="todos"]');
+  revisar('los dos juntos', (await p.textContent('#vista')).includes('Gastos de los dos en el mes') && (await p.textContent('#vista')).includes('De cada socio'));
+  await p.click('#gsQuien button:has-text("Franklin")');
   await p.click('[data-gasto]:has-text("Alquiler")');
   await p.click('#dgRepetir');
   await p.waitForSelector('#gaGuardar');
