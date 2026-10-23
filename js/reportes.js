@@ -105,6 +105,14 @@ var VistaReportes = (function () {
       });
     });
     var esteMes = meses[meses.length - 1];
+    // Gastos del negocio (los de "de los dos" solo cuentan en "Todo")
+    meses.forEach(function (m) { m.gastos = 0; });
+    (ST.gastos || []).forEach(function (g) {
+      if (g.anulado_en || (sede !== 'todas' && g.sede !== sede)) return;
+      var m = meses.find(function (x) { return x.ym === g.fecha.slice(0, 7); });
+      if (m) m.gastos += Number(g.monto_usd);
+    });
+    var gananciaMes = esteMes.vendido - esteMes.costo;
 
     // ---- Cobrado ----
     var semanas = [], cobradoMes = 0, porMetodo = new Map(), hace30 = sumarDias(hoy, -29);
@@ -122,7 +130,9 @@ var VistaReportes = (function () {
       kpi('Por cobrar', fmtUSD(porCobrar), plural(nDeben, 'cliente', 'clientes')) +
       kpi('Atrasado', fmtUSD(atrasado), porCobrar > 0 ? Math.round(atrasado / porCobrar * 100) + '% de lo que deben' : '—', atrasado > 0 ? 'rojo' : '') +
       kpi('Cobrado este mes', abonos ? fmtUSD(cobradoMes) : '—', abonos ? 'desde el 1 de ' + nombreMes(esteMes.ym).split(' ')[0] : (error ? 'sin señal' : 'cargando…'), 'verde') +
-      kpi('Ganancia del mes', fmtUSD(esteMes.vendido - esteMes.costo), esteMes.sinCosto ? esteMes.sinCosto + ' sin costo anotado' : plural(esteMes.n, 'venta', 'ventas')) +
+      kpi('Ganancia del mes', fmtUSD(gananciaMes), esteMes.sinCosto ? esteMes.sinCosto + ' sin costo anotado' : plural(esteMes.n, 'venta', 'ventas')) +
+      kpi('Gastos del mes', fmtUSD(esteMes.gastos), 'alquiler, gasolina, empleado…', esteMes.gastos > 0 ? 'rojo' : '') +
+      kpi('Ganancia neta', fmtUSD(gananciaMes - esteMes.gastos), 'ganancia menos gastos', gananciaMes - esteMes.gastos >= 0 ? 'verde' : 'rojo') +
       '</div>';
 
     // Cobrado por semana
@@ -145,12 +155,13 @@ var VistaReportes = (function () {
     h += '<div class="seccion"><div class="seccion-tit"><h2>Ventas por mes</h2></div><div class="tarjeta">' +
       barras(meses.map(function (m, i) { return { etq: nombreMes(m.ym).replace(/ de \d+$/, '').replace(/^\w/, function (x) { return x.toUpperCase(); }), valor: m.vendido, actual: i === meses.length - 1 }; })) +
       '<div style="margin-top:12px">' + meses.slice().reverse().map(function (m) {
-        if (!m.n) return '';
+        if (!m.n && !m.gastos) return '';
         return '<div class="dato"><span>' + esc(nombreMes(m.ym)) + '</span><span class="crece">' + plural(m.n, 'venta', 'ventas') + ' · vendido <b class="num">' + fmtUSD(m.vendido) + '</b>' +
           '<br>Ganancia <b class="num">' + fmtUSD(m.vendido - m.costo) + '</b>' + (m.sinCosto ? ' <span class="tenue">(faltan ' + m.sinCosto + ' costos)</span>' : '') +
-          ' · iniciales ' + fmtUSD(m.inicial) + '</span></div>';
+          ' · iniciales ' + fmtUSD(m.inicial) +
+          (m.gastos ? '<br>Gastos <b class="num">' + fmtUSD(m.gastos) + '</b> · neto <b class="num">' + fmtUSD(m.vendido - m.costo - m.gastos) + '</b>' : '') + '</span></div>';
       }).join('') + '</div>' +
-      '<p class="tenue chico" style="margin-top:8px">La ganancia es lo vendido menos lo que costó en Yumana. Lo de "Ya debía" no se cuenta como venta del mes.</p></div></div>';
+      '<p class="tenue chico" style="margin-top:8px">La ganancia es lo vendido menos lo que costó en Yumana; la neta, además, menos los gastos del mes. Lo de "Ya debía" no se cuenta como venta del mes.</p></div></div>';
 
     // Atrasos
     h += '<div class="seccion"><div class="seccion-tit"><h2>Cómo van los que deben</h2></div><div class="tarjeta">' +

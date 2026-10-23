@@ -106,6 +106,10 @@ async function firmar(p) {
   await p.click('.item:has-text("Cocina 4 hornillas")'); await espera(900); await foto(p, '26-producto'); await cerrar(p);
   await mas(p, '[data-ir="reportes"]'); await p.waitForSelector('.barras'); await espera(800); await foto(p, '27-reportes');
   await p.locator('.seccion-tit:has-text("Ventas por mes")').scrollIntoViewIfNeeded(); await foto(p, '28-reportes-ventas');
+  await mas(p, '[data-ir="gastos"]'); await p.waitForSelector('[data-nuevo]'); await espera(400); await foto(p, '43-gastos');
+  await p.click('[data-nuevo]'); await p.click('#gaCats [data-cat]:has-text("Gasolina")'); await p.fill('#gaDesc', 'Moto, semana de cobro');
+  await p.click('#gaSede [data-v="socopo"]'); await p.click('#gaMetodos [data-m="1"]'); await p.fill('#gaMonto', '25'); await p.evaluate(() => document.activeElement.blur());
+  await espera(300); await foto(p, '44-anotar-gasto'); await cerrar(p);
   await mas(p, '[data-ir="ajustes"]'); await foto(p, '29-ajustes');
   await p.click('[data-nuevo-usuario]'); await p.waitForSelector('#usNombre');
   await p.fill('#usNombre', 'José Rivas'); await p.fill('#usUsuario', 'jose'); await p.fill('#usClave', 'temporal1');

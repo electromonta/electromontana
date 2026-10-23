@@ -206,6 +206,13 @@ function textoAuditoria(a) {
     det = [de.detalle, de.motivo ? 'Motivo: ' + de.motivo : '', a.accion === 'rechazar' && de.respuesta ? 'Por qué no: ' + de.respuesta : ''].filter(Boolean);
     return { titulo: t, detalle: det };
   }
+  if (a.tabla === 'gastos') {
+    var gx = a.accion === 'anular' ? an : de, cat = (ST.catGastos || []).find(function (c) { return c.id === gx.categoria_id; });
+    t = (a.accion === 'anular' ? 'Anuló un gasto de ' : 'Anotó un gasto de ') + fmtUSD(gx.monto_usd) + (cat ? ' (' + cat.nombre + ')' : '') +
+      (gx.fecha ? ' del ' + fmtFechaAnio(gx.fecha) : '');
+    return { titulo: t, detalle: [gx.descripcion, a.accion === 'anular' && de.motivo ? 'Motivo: ' + de.motivo : ''].filter(Boolean) };
+  }
+  if (a.tabla === 'categorias_gasto') return { titulo: 'Agregó la categoría de gastos "' + (de.nombre || '') + '"', detalle: [] };
   if (a.tabla === 'fotos') return { titulo: 'Cambió una foto (' + a.accion.replace(/^cambiar_/, '') + ')', detalle: [] };
   if (a.tabla === 'usuarios') {
     var nom = de.nombre || an.nombre || nombreUsuario(a.registro_id);
@@ -223,7 +230,7 @@ function textoAuditoria(a) {
 
 var FILTROS_HISTORIAL = [['todo', 'Todo'], ['dinero', 'Dinero'], ['clientes', 'Clientes'], ['usuarios', 'Usuarios y ajustes'], ['directo', 'Por fuera de la app']];
 function filtroHistorial(q, f) {
-  if (f === 'dinero') return q.in('tabla', ['abonos', 'ventas', 'solicitudes', 'entregas', 'cuotas']);
+  if (f === 'dinero') return q.in('tabla', ['abonos', 'ventas', 'solicitudes', 'entregas', 'cuotas', 'gastos']);
   if (f === 'clientes') return q.in('tabla', ['clientes', 'fotos']);
   if (f === 'usuarios') return q.in('tabla', ['usuarios', 'config', 'metodos_pago', 'tasas']);
   if (f === 'directo') return q.like('accion', 'directo%');

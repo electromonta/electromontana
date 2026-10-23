@@ -43,6 +43,11 @@ begin
   perform public.registrar_gestion(jsonb_build_object('cliente_id',c1,'tipo','no_estaba','nota','Casa cerrada, dejé recado con la vecina','hecho_en',now() - interval '2 days'));
   perform public.registrar_gestion(jsonb_build_object('cliente_id',c4,'tipo','promesa','promesa_fecha',hoy,'promesa_monto',75,'nota','Cobra la cosecha esta semana'));
   perform public.registrar_gestion(jsonb_build_object('cliente_id',c6,'tipo','llamada','nota','Dice que se quedó sin trabajo, pidió más tiempo'));
+  -- Gastos del mes
+  perform public.registrar_gasto(jsonb_build_object('categoria_id',(select id from public.categorias_gasto where nombre = 'Alquiler'),'descripcion','Local de Pedraza','sede','pedraza','metodo_id',4,'monto',4800,'tasa',40,'referencia','0102-998877','pagado_por','00000000-0000-0000-0000-00000000000b'));
+  perform public.registrar_gasto(jsonb_build_object('categoria_id',(select id from public.categorias_gasto where nombre = 'Empleado'),'descripcion','Quincena del encargado','sede','pedraza','metodo_id',1,'monto',80));
+  perform public.registrar_gasto(jsonb_build_object('categoria_id',(select id from public.categorias_gasto where nombre = 'Gasolina'),'descripcion','Moto, semana de cobro','sede','socopo','metodo_id',1,'monto',25));
+  perform public.registrar_gasto(jsonb_build_object('categoria_id',(select id from public.categorias_gasto where nombre = 'Reparaciones'),'descripcion','Cauchos de la moto','sede','socopo','metodo_id',2,'monto',35,'referencia','ZL-4410','pagado_por','00000000-0000-0000-0000-00000000000b'));
 end $$;
 reset role;
 -- Daniel ya cambió su clave (para las capturas de las aprobaciones); sigue como si fuera por la app

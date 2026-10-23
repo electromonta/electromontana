@@ -656,6 +656,59 @@ async function tomarFoto(p, selector) {
   await p.waitForSelector('h2:has-text("De quién son los créditos")', { timeout: 15000 });
   revisar('Reportes: cuánto le deben a cada uno', (await p.textContent('.seccion:has(h2:has-text("De quién son"))')).includes('Franklin'));
 
+  // Gastos (solo dueños): gasolina en efectivo, alquiler en bolívares pagado por Daniel, repetir y anular
+  const gasto = q => sql("select g.monto_usd || '/' || c.nombre || '/' || coalesce(g.sede, 'los dos') || '/' || u.usuario || '/' || (g.anulado_en is not null) from gastos g join categorias_gasto c on c.id = g.categoria_id join usuarios u on u.id = g.pagado_por where " + q + " order by g.id desc limit 1");
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="gastos"]');
+  await p.waitForSelector('[data-nuevo]');
+  await p.click('[data-nuevo]');
+  await p.waitForSelector('#gaCats [data-cat]');
+  await p.click('#gaGuardar');
+  await p.waitForTimeout(300);
+  revisar('gasto: sin decir en qué no guarda', await p.locator('#gaCats.falta').count() === 1);
+  await p.click('#gaCats [data-cat]:has-text("Gasolina")');
+  await p.click('#gaSede [data-v="socopo"]');
+  revisar('gasto: el monto espera al método', await p.isDisabled('#gaMonto'));
+  await p.click('#gaMetodos [data-m="1"]');
+  await p.fill('#gaMonto', '20');
+  await p.click('#gaGuardar');
+  await p.waitForFunction(() => !document.querySelector('#gaGuardar'), null, { timeout: 15000 });
+  revisar('gasolina anotada: $20, Socopó, la pagó Franklin', gasto("c.nombre = 'Gasolina'") === '20.00/Gasolina/socopo/franklin/false');
+  await p.click('[data-nuevo]');
+  await p.click('#gaCats [data-cat]:has-text("Alquiler")');
+  await p.fill('#gaDesc', 'Local de Pedraza');
+  await p.click('#gaSede [data-v="pedraza"]');
+  await p.click('#gaMetodos [data-m="4"]');
+  await p.fill('#gaMonto', '4000');
+  revisar('alquiler en bolívares: dice cuánto es en dólares', (await p.textContent('#gaEquiv')).includes('$100,00'), await p.textContent('#gaEquiv'));
+  await p.click('#gaQuien .chip:has-text("Daniel")');
+  await foto(p, '28-gasto');
+  await p.click('#gaGuardar');
+  await p.waitForFunction(() => !document.querySelector('#gaGuardar'), null, { timeout: 15000 });
+  revisar('alquiler anotado: $100, Pedraza, lo pagó Daniel', gasto("c.nombre = 'Alquiler'") === '100.00/Alquiler/pedraza/daniel/false');
+  await p.waitForTimeout(400);
+  revisar('total del mes en Gastos', (await p.textContent('#vista')).includes('$120,00'), (await p.textContent('#vista')).slice(0, 200));
+  await foto(p, '29-gastos');
+  await p.click('[data-gasto]:has-text("Alquiler")');
+  await p.click('#dgRepetir');
+  await p.waitForSelector('#gaGuardar');
+  revisar('repetir trae el mismo gasto', await p.locator('#gaCats .chip.activo:has-text("Alquiler")').count() === 1 && (await p.inputValue('#gaMonto')) === '4000,00', await p.inputValue('#gaMonto'));
+  await cerrarHojas(p);
+  await p.click('[data-gasto]:has-text("Gasolina")');
+  await p.click('#dgAnular');
+  await p.fill('#cfValor', 'Era de prueba');
+  await p.click('#cfSi');
+  await p.waitForTimeout(1500);
+  revisar('anular el gasto que anotó él', gasto("c.nombre = 'Gasolina'") === '20.00/Gasolina/socopo/franklin/true');
+  await p.click('#navTabs [data-mas]');
+  await p.click('.hoja [data-ir="reportes"]');
+  await p.waitForSelector('.kpis');
+  const kp = await p.textContent('.kpis');
+  revisar('Reportes: gastos del mes y ganancia neta', kp.includes('Gastos del mes') && kp.includes('$100,00') && kp.includes('Ganancia neta'), kp.slice(0, 300));
+  await e.click('#navTabs [data-mas]');
+  revisar('el encargado no ve Gastos', await e.locator('.hoja [data-ir="gastos"]').count() === 0);
+  await cerrarHojas(e);
+
   // Sin señal y con el permiso de la sesión vencido (la app estuvo cerrada más de 1 hora): abre igual con
   // lo del teléfono, guarda en la cola, y al volver la señal renueva la sesión y envía.
   const antesVencida = sql("select count(*) from abonos");

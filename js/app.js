@@ -12,6 +12,7 @@ var VISTAS = {
   efectivo: { v: VistaEntregas, nombre: 'Efectivo' },
   mercancia: { v: VistaMercancia, nombre: 'Mercancía' },
   reportes: { v: VistaReportes, nombre: 'Reportes' },
+  gastos: { v: VistaGastos, nombre: 'Gastos' },
   ajustes: { v: VistaAjustes, nombre: 'Ajustes' }
 };
 var TABS = [
@@ -29,7 +30,7 @@ else if (PANTALLA_ANCHA.addListener) PANTALLA_ANCHA.addListener(function () { if
 function pintarNav() {
   var actual = (VISTAS[_vistaNombre] && VISTAS[_vistaNombre].padre) || _vistaNombre;
   var ancha = PANTALLA_ANCHA.matches && ST.yo;
-  var extra = ancha ? [['mercancia', 'caja', 'Mercancía'], esDueno() ? ['reportes', 'grafica', 'Reportes'] : null,
+  var extra = ancha ? [['mercancia', 'caja', 'Mercancía'], esDueno() ? ['reportes', 'grafica', 'Reportes'] : null, esDueno() ? ['gastos', 'recibo', 'Gastos'] : null,
     ['efectivo', 'tienda', esDueno() ? 'Efectivo de Pedraza' : 'Mi efectivo'], ['ajustes', 'ajustes', 'Ajustes']].filter(Boolean) : [];
   var enMas = TABS.every(function (t) { return t.k !== actual; }) && extra.every(function (t) { return t[0] !== actual; });
   $('#navTabs').innerHTML = '<div class="tabs">' + TABS.map(function (t) {
@@ -142,7 +143,8 @@ function menuMas() {
   var h = abrirHoja({
     titulo: 'Más',
     html: '<div class="lista">' +
-      (esDueno() ? '<button type="button" class="item" data-ir="reportes">' + icono('grafica') + '<div class="crece"><div class="item-tit">Reportes</div><div class="item-sub">Cobrado por semana, ganancia, atrasados</div></div>' + icono('flecha', 'ic-chico') + '</button>' : '') +
+      (esDueno() ? '<button type="button" class="item" data-ir="reportes">' + icono('grafica') + '<div class="crece"><div class="item-tit">Reportes</div><div class="item-sub">Cobrado por semana, ganancia, atrasados</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
+        '<button type="button" class="item" data-ir="gastos">' + icono('recibo') + '<div class="crece"><div class="item-tit">Gastos</div><div class="item-sub">Alquiler, empleado, gasolina, reparaciones</div></div>' + icono('flecha', 'ic-chico') + '</button>' : '') +
       '<button type="button" class="item" data-ir="mercancia">' + icono('caja') + '<div class="crece"><div class="item-tit">Mercancía</div><div class="item-sub">' +
         (esDueno() ? 'Lo que hay en la tienda de Pedraza, entradas y conteos' : 'Lo que hay en la tienda') + '</div></div>' + icono('flecha', 'ic-chico') + '</button>' +
       '<button type="button" class="item" data-recordatorios>' + icono('chat') + '<div class="crece"><div class="item-tit">Recordar por WhatsApp</div><div class="item-sub">A los atrasados y a los que les toca</div></div>' + icono('flecha', 'ic-chico') + '</button>' +

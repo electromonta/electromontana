@@ -1,7 +1,7 @@
 // Electro Montana — ajustes: tasa, reglas, contrato, usuarios, métodos de pago y este teléfono.
 'use strict';
 
-var VERSION_APP = '11';
+var VERSION_APP = '12';
 
 var VistaAjustes = (function () {
   var raiz = null;

@@ -1,5 +1,16 @@
 # Historial de entregas — Electro Montana
 
+## Entrega 14 — Gastos del negocio (2026-10-23)
+
+- Pedido de Kinan: una sección de gastos (alquiler, empleado, gasolina, reparaciones…). Decisiones de Kinan: **solo Franklin y Daniel** los anotan y los ven; un gasto mal anotado **lo anula quien lo anotó** (con el motivo; queda en el historial).
+- **Más → Gastos:** total del mes con flechas para otros meses; en qué se fue, quién lo pagó y de qué tienda; filtros Socopó, Pedraza y De los dos; lista con lo anulado tachado.
+- **Anotar gasto:** categoría (Alquiler, Empleado, Gasolina, Reparaciones, Servicios, Transporte, Comida, Otro, y se agregan más), detalle, tienda, cómo se pagó (sin método marcado; en bolívares con su tasa), monto, fecha y quién lo pagó. Va por la cola: sin señal se guarda en el teléfono. **Repetir** copia un gasto (alquiler o sueldo de cada mes).
+- **Reportes:** "Gastos del mes" y "Ganancia neta" (ganancia de las ventas menos gastos), también mes por mes. La copia de seguridad y el historial de cambios incluyen los gastos.
+- Base: migración `009_gastos.sql` (tablas `categorias_gasto` y `gastos`, funciones `registrar_gasto`, `anular_gasto`, `guardar_categoria_gasto`; solo dueños leen; nada se borra).
+- **Aplicado a la base real el 2026-10-23:** respaldo antes en `respaldo_20261023` (21 tablas, mismos conteos; sin acceso para la app). Huella de las 75 funciones igual a la probada; el inspector de seguridad no muestra nada nuevo fuera de las 3 funciones de la app. Prueba en la base real dentro de una transacción que se deshizo: alquiler en Bs, Daniel no puede anular lo de Franklin, Franklin sí.
+- Guía: capítulo nuevo "Gastos" (20 capítulos, 57 capturas). Versión 12.
+- Pruebas: 327 escenarios de base, 29 de cuentas, 113 del recorrido en teléfono.
+
 ## Entrega 13 — El método de pago se elige siempre, y cada cuota se paga desde el plan (2026-10-22)
 
 - Kinan: "no deja elegir el método de pago en los abonos". Diagnóstico: el formulario sí lo tenía, pero abría con **Efectivo $ ya marcado** y el teclado encima; los 2 abonos de la base real quedaron en efectivo así.

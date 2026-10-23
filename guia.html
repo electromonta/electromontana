@@ -113,6 +113,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
     <li><a href="#mercancia">Mercancía de la tienda</a></li>
     <li><a href="#cuentas">Cobros y efectivo de Pedraza</a></li>
     <li><a href="#reportes">Reportes</a></li>
+    <li><a href="#gastos">Gastos</a></li>
     <li><a href="#ajustes">Ajustes</a></li>
     <li><a href="#copias">Copias de seguridad</a></li>
     <li><a href="#socios">Seguridad entre los socios</a></li>
@@ -427,7 +428,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
   <div class="bloque dos-fotos">
     <div>
       <ul>
-        <li><b>Por cobrar</b>, <b>atrasado</b>, <b>cobrado este mes</b> y <b>ganancia del mes</b>.</li>
+        <li><b>Por cobrar</b>, <b>atrasado</b>, <b>cobrado este mes</b>, <b>ganancia del mes</b>, <b>gastos del mes</b> y <b>ganancia neta</b> (ganancia menos gastos).</li>
         <li><b>Cobrado por semana</b> (las últimas 8) y por método de pago.</li>
         <li><b>Ventas por mes</b> con su ganancia (lo vendido menos lo que costó en Yumana).</li>
         <li><b>Cómo van los que deben:</b> cuántos están al día y cuántos atrasados de 1 a 15 días, de 16 a 30, de 31 a 60 y de más de 60.</li>
@@ -442,8 +443,35 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
   </div>
 </section>
 
+<section class="cap" id="gastos">
+  <h2><span class="n">13</span>Gastos (solo dueños)</h2>
+  <p class="intro"><b>Más → Gastos.</b> Alquiler, empleado, gasolina, reparaciones, servicios… Así Reportes saca la <b>ganancia neta</b>. El encargado de Pedraza no los ve.</p>
+  <div class="bloque dos-fotos">
+    <div>
+      <h3>Anotar un gasto</h3>
+      <ol class="pasos">
+        <li>Toca <span class="boton">Anotar gasto</span>.</li>
+        <li><b>¿En qué fue?</b> Alquiler, Empleado, Gasolina, Reparaciones, Servicios, Transporte, Comida u Otro. Con <span class="boton">Otra categoría</span> agregan las que necesiten.</li>
+        <li>El <b>detalle</b> si hace falta (en "Otro" es obligatorio) y <b>de qué tienda</b>: Socopó, Pedraza o de los dos.</li>
+        <li><b>¿Cómo se pagó?</b> No viene ninguno marcado. En bolívares se escribe en bolívares y la app dice cuánto es en dólares.</li>
+        <li>El <b>monto</b>, la <b>fecha</b> y <b>quién lo pagó</b> (viene marcado el que está anotando).</li>
+        <li><span class="boton">Guardar gasto</span>. Sin señal también: se guarda en el teléfono y se envía solo.</li>
+      </ol>
+      <h3>Lo que muestra</h3>
+      <ul>
+        <li>El <b>total del mes</b>, en qué se fue, quién lo pagó y de qué tienda. Con las flechas se ven otros meses.</li>
+        <li><b>Repetir:</b> toca un gasto y <span class="boton">Repetir</span> para anotar otra vez el alquiler o el sueldo del mes con los mismos datos.</li>
+        <li><b>Anular:</b> si se anotó mal, lo anula <b>quien lo anotó</b>, con el motivo. No se borra: queda tachado y en el historial de cambios.</li>
+        <li>En <b>Reportes</b> salen <b>Gastos del mes</b> y <b>Ganancia neta</b> (la ganancia de las ventas menos los gastos), también mes por mes.</li>
+      </ul>
+    </div>
+    <figure class="tel"><img src="guia/43-gastos.jpg" alt="Gastos del mes por categoría, por quién pagó y por tienda" width="780" height="1688" loading="lazy"><figcaption>Gastos del mes</figcaption></figure>
+    <figure class="tel"><img src="guia/44-anotar-gasto.jpg" alt="Anotar un gasto" width="780" height="1688" loading="lazy"><figcaption>Anotar un gasto</figcaption></figure>
+  </div>
+</section>
+
 <section class="cap" id="ajustes">
-  <h2><span class="n">13</span>Ajustes</h2>
+  <h2><span class="n">14</span>Ajustes</h2>
   <div class="bloque">
     <div>
       <p><b>Más → Ajustes.</b> Los dueños ven todo; el empleado solo ve su cuenta.</p>
@@ -464,7 +492,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="copias">
-  <h2><span class="n">14</span>Copias de seguridad</h2>
+  <h2><span class="n">15</span>Copias de seguridad</h2>
   <p class="intro">Para que nunca se pierdan los datos. Hay dos copias: una que el sistema hace solo cada noche, y otra que ustedes descargan una vez por semana.</p>
   <div class="bloque">
     <div>
@@ -486,7 +514,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="socios">
-  <h2><span class="n">15</span>Seguridad entre los socios</h2>
+  <h2><span class="n">16</span>Seguridad entre los socios</h2>
   <p class="intro">El sistema es de dos dueños. Por eso lo que <b>baja una deuda o borra un pago</b> no lo puede hacer uno solo: lo pide uno y lo aprueba el otro. Y todo cambio queda en un historial que nadie puede borrar.</p>
   <div class="bloque">
     <div>
@@ -530,7 +558,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="senal">
-  <h2><span class="n">16</span>Sin señal</h2>
+  <h2><span class="n">17</span>Sin señal</h2>
   <p class="intro">En la calle la señal es lenta o se va. La app está hecha para eso: <b>nada de lo que se registra se pierde</b>.</p>
   <div class="bloque dos-fotos">
     <div>
@@ -549,7 +577,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="empleado">
-  <h2><span class="n">17</span>El empleado de Pedraza</h2>
+  <h2><span class="n">18</span>El empleado de Pedraza</h2>
   <div class="bloque dos-fotos">
     <div>
       <h3>Darle su usuario (lo hace uno de ustedes)</h3>
@@ -590,7 +618,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="preguntas">
-  <h2><span class="n">18</span>Preguntas frecuentes</h2>
+  <h2><span class="n">19</span>Preguntas frecuentes</h2>
   <h3>Me equivoqué en un abono. ¿Lo borro?</h3>
   <p>Nada se borra. Un dueño pide anularlo (ficha → Abonos → tocar el abono → Pedir anulación), el otro socio lo aprueba, y se registra de nuevo bien. La deuda se recalcula sola.</p>
   <h3>Un cliente pagó en bolívares y la tasa de hoy no está puesta.</h3>
@@ -608,7 +636,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 </section>
 
 <section class="cap" id="mostrar">
-  <h2><span class="n">19</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
+  <h2><span class="n">20</span>Cómo mostrarlo en 10 minutos (para Kinan)</h2>
   <p class="intro">Un recorrido para enseñarlo a Franklin y Daniel con un cliente de prueba. Al final se anula lo que se hizo.</p>
   <div class="guion">
     <ol class="pasos">
@@ -633,7 +661,7 @@ a:focus-visible { outline: 3px solid var(--cobre-claro); outline-offset: 2px; }
 
 </div></main>
 
-<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 11 de la app (octubre de 2026). El encargado de Pedraza tiene su propia guía: <a href="guia-empleado.html">guía del empleado</a>.</div></footer>
+<footer><div class="envoltura pie">Electro Montana · Todo a tu alcance · Guía de la versión 12 de la app (octubre de 2026). El encargado de Pedraza tiene su propia guía: <a href="guia-empleado.html">guía del empleado</a>.</div></footer>
 
 </body>
 </html>

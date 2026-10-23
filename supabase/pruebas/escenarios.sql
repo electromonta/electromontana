@@ -542,6 +542,45 @@ select igual('y en auditoría', $q$ (select count(*) from public.auditoria where
 select igual('las cuentas no cambian', $q$ public.cuadre() $q$, 'todo cuadra');
 reset role;
 
+-- ===================== Gastos (migración 009) =====================
+create function public.gc(n text) returns bigint language sql security definer as $$ select id from public.categorias_gasto where nombre = n $$;
+grant execute on function public.gc(text) to authenticated;
+create function public.gk(c text) returns bigint language sql security definer as $$ select id from public.gastos where clave = c::uuid $$;
+grant execute on function public.gk(text) to authenticated;
+select como('F'); set role authenticated;
+select igual('categorías de entrada', $q$ (select count(*) from public.categorias_gasto where activo) $q$, '8');
+select t('sin categoría no', $q$ public.registrar_gasto('{"metodo_id":1,"monto":20}') $q$, 'Elige en qué fue');
+select t('sin método no', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Gasolina'), 'monto', 20)) $q$, 'Elige cómo pagó');
+select t('"Otro" sin decir en qué', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Otro'), 'metodo_id', 1, 'monto', 5)) $q$, 'Escribe en qué fue');
+select t('fecha futura no', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Gasolina'), 'metodo_id', 1, 'monto', 5, 'fecha', h(1))) $q$, 'no puede ser futura');
+select t('quién lo pagó tiene que ser un dueño', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Gasolina'), 'metodo_id', 1, 'monto', 5, 'pagado_por', '00000000-0000-0000-0000-00000000000e')) $q$, 'Elige quién lo pagó');
+select igual('Franklin anota gasolina: $20 en efectivo', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Gasolina'), 'metodo_id', 1, 'monto', 20, 'sede', 'socopo'), 'cccccccc-0000-0000-0000-000000000001')->>'monto_usd' $q$, '20.00');
+select igual('misma clave no lo repite', $q$ (public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Gasolina'), 'metodo_id', 1, 'monto', 20), 'cccccccc-0000-0000-0000-000000000001')->>'id')::bigint = public.gk('cccccccc-0000-0000-0000-000000000001') and (select count(*) from public.gastos) = 1 $q$, 'true');
+select igual('alquiler en bolívares a la tasa, lo pagó Daniel', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Alquiler'), 'descripcion', 'Local de Pedraza, octubre', 'sede', 'pedraza', 'metodo_id', 4, 'monto', 4000, 'tasa', 40, 'referencia', '7788', 'pagado_por', '00000000-0000-0000-0000-00000000000b'), 'cccccccc-0000-0000-0000-000000000002')->>'monto_usd' $q$, '100.00');
+select igual('quedó como se anotó', $q$ (select g.moneda || '/' || g.monto || '/' || g.sede || '/' || u.usuario || '/' || (select usuario from public.usuarios where id = g.creado_por) from public.gastos g join public.usuarios u on u.id = g.pagado_por where g.id = public.gk('cccccccc-0000-0000-0000-000000000002')) $q$, 'VES/4000.00/pedraza/daniel/franklin');
+select igual('categoría nueva (y no se repite)', $q$ public.guardar_categoria_gasto('Publicidad') = public.guardar_categoria_gasto(' publicidad ') $q$, 'true');
+reset role;
+select como('D'); set role authenticated;
+select igual('Daniel ve los gastos', $q$ (select count(*) from public.gastos) $q$, '2');
+select t('Daniel no anula lo que anotó Franklin', $q$ (select public.anular_gasto(public.gk('cccccccc-0000-0000-0000-000000000001'), 'x')) $q$, 'Solo lo puede anular quien lo anotó (Franklin)');
+reset role;
+select como('E'); set role authenticated;
+select igual('el encargado no ve gastos', $q$ (select count(*) from public.gastos) || '/' || (select count(*) from public.categorias_gasto) $q$, '0/0');
+select t('ni los anota', $q$ public.registrar_gasto(jsonb_build_object('categoria_id', public.gc('Gasolina'), 'metodo_id', 1, 'monto', 5)) $q$, 'Solo los dueños');
+reset role;
+select como('F'); set role authenticated;
+select t('anular sin motivo', $q$ (select public.anular_gasto(public.gk('cccccccc-0000-0000-0000-000000000001'), ' ')) $q$, 'Escribe por qué');
+select t('Franklin anula el suyo', $q$ (select public.anular_gasto(public.gk('cccccccc-0000-0000-0000-000000000001'), 'Era de otro día')) $q$);
+select t('anularlo dos veces', $q$ (select public.anular_gasto(public.gk('cccccccc-0000-0000-0000-000000000001'), 'x')) $q$, 'ya estaba anulado');
+select igual('queda anulado, con el motivo, y en auditoría', $q$ (select (anulado_en is not null)::text || '/' || motivo_anulacion || '/' || (select count(*) from public.auditoria where tabla = 'gastos' and accion = 'anular') from public.gastos where id = public.gk('cccccccc-0000-0000-0000-000000000001')) $q$, 'true/Era de otro día/1');
+reset role;
+do $$ begin delete from public.gastos; raise notice '!!! se pudo borrar un gasto';
+exception when others then raise notice 'ok  un gasto no se borra ni desde la base → %', sqlerrm; end $$;
+set role anon;
+select t('anónimo no anota gastos', $q$ public.registrar_gasto('{}') $q$, 'permission denied');
+select t('anónimo no ve gastos', $q$ (select count(*) from public.gastos) $q$, 'permission denied');
+reset role;
+
 -- ===================== Copia de cada noche: 30 días completos y una por mes (migración 007) =====================
 reset role;
 select set_config('request.jwt.claims', '', false);

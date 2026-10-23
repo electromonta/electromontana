@@ -116,7 +116,8 @@ function agrupar(lista, campo) {
 function fotoDatos() {
   return { cfg: ST.cfg, metodos: ST.metodos, usuarios: ST.usuarios, clientes: ST.clientes, ventas: ST.ventas, cuotas: ST.cuotas,
            items: ST.items, itemCostos: ST.itemCostos, productos: ST.productos, prodCostos: ST.prodCostos,
-           existencias: ST.existencias, gestiones: ST.gestiones, ultimosAbonos: ST.ultimosAbonos, solicitudes: ST.solicitudes, cargadoEn: ST.cargadoEn };
+           existencias: ST.existencias, gestiones: ST.gestiones, ultimosAbonos: ST.ultimosAbonos, solicitudes: ST.solicitudes,
+           catGastos: ST.catGastos, gastos: ST.gastos, cargadoEn: ST.cargadoEn };
 }
 function aplicarDatos(d) {
   ST.cfg = d.cfg; ST.metodos = d.metodos || []; ST.usuarios = d.usuarios || []; ST.clientes = d.clientes || [];
@@ -124,6 +125,7 @@ function aplicarDatos(d) {
   ST.productos = d.productos || []; ST.prodCostos = d.prodCostos || []; ST.cargadoEn = d.cargadoEn;
   ST.existencias = d.existencias || []; ST.gestiones = d.gestiones || []; ST.ultimosAbonos = d.ultimosAbonos || [];
   ST.solicitudes = d.solicitudes || [];
+  ST.catGastos = d.catGastos || []; ST.gastos = d.gastos || [];
   indexar();
 }
 var guardarCache = debounce(function () {
@@ -155,12 +157,25 @@ async function cargarTodo() {
     tareas.push(traerTodo('venta_item_costos', 'item_id,costo', null, 'item_id'));
     tareas.push(traerTodo('producto_costos', 'producto_id,costo', null, 'producto_id'));
     tareas.push(traerTodo('solicitudes'));
+    tareas.push(traerTodo('categorias_gasto', '*', null, 'orden,nombre'));
+    tareas.push(traerGastos());
   }
   var r = await Promise.all(tareas);
   aplicarDatos({ cfg: r[0], metodos: r[1], usuarios: r[2], clientes: r[3], ventas: r[4], cuotas: r[5], items: r[6],
                  productos: r[7], existencias: r[8], gestiones: r[9], ultimosAbonos: r[10],
-                 itemCostos: r[11] || [], prodCostos: r[12] || [], solicitudes: r[13] || [], cargadoEn: new Date().toISOString() });
+                 itemCostos: r[11] || [], prodCostos: r[12] || [], solicitudes: r[13] || [],
+                 catGastos: r[14] || [], gastos: r[15] || [], cargadoEn: new Date().toISOString() });
   ST.desdeCache = false;
+  guardarCache();
+}
+
+// Gastos del negocio (solo dueños): los de los últimos 13 meses, para Gastos y Reportes
+function traerGastos() {
+  return traerTodo('gastos', '*', function (q) { return q.gte('fecha', sumarDias(hoyCaracas(), -400)); }, 'fecha,id');
+}
+async function recargarGastos() {
+  var r = await Promise.all([traerTodo('categorias_gasto', '*', null, 'orden,nombre'), traerGastos()]);
+  ST.catGastos = r[0]; ST.gastos = r[1];
   guardarCache();
 }
 
@@ -434,6 +449,7 @@ async function enviarOp(op) {
   if (op.tipo === 'venta') return rpc('registrar_venta', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'abono') return rpc('registrar_abono', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'gestion') return rpc('registrar_gestion', { p: op.datos, p_clave: op.clave }, 25000);
+  if (op.tipo === 'gasto') return rpc('registrar_gasto', { p: op.datos, p_clave: op.clave }, 25000);
   if (op.tipo === 'foto') return subirFotoOp(op);
   if (op.tipo === 'firma') return subirFirmaOp(op);
   throw { code: 'EM000', message: 'Operación desconocida' };
